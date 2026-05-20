@@ -1,0 +1,5 @@
+<?php
+
+require base_path('app/Modules/Auth/routes/api.php');
+require base_path('app/Modules/Sidebar/routes/api.php');
+require base_path('app/Modules/Templates/routes/api.php');
