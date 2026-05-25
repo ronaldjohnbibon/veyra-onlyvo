@@ -88,6 +88,7 @@ export interface TemplateRecord {
   id: string
   tenant_id?: string
   name: string
+  slug: string
   business_name: string
   logo: string
   contact_info: TemplateContactInfo
@@ -98,6 +99,7 @@ export interface TemplateRecord {
   background_color: string
   text_color: string
   status: TemplateStatus
+  is_default: boolean
   sections: TemplateSection[]
   created_at?: string
   updated_at?: string
@@ -105,6 +107,7 @@ export interface TemplateRecord {
 
 export interface TemplatePayload {
   name: string
+  slug: string
   business_name: string
   logo: string
   contact_info: TemplateContactInfo
@@ -115,6 +118,7 @@ export interface TemplatePayload {
   background_color: string
   text_color: string
   status: TemplateStatus
+  is_default: boolean
   sections: TemplateSection[]
 }
 

@@ -82,4 +82,12 @@ export const templateService = {
   designDestroy(id: string) {
     return http.delete(`template-section-designs/${id}`).then((response) => response.data)
   },
+
+  publicShow(slug: string) {
+    return http.get<TemplateResponse>(`public/sites/${slug}`).then((response) => response.data)
+  },
+
+  publicDefault() {
+    return http.get<TemplateResponse>('public/sites/default').then((response) => response.data)
+  },
 }

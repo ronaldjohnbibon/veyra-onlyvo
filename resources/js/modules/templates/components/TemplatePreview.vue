@@ -7,6 +7,7 @@ import { computed, ref, type CSSProperties } from 'vue'
 
 const props = defineProps<{
   template: TemplateRecord
+  showControls?: boolean
 }>()
 
 const previewSizes = [
@@ -47,7 +48,10 @@ const previewFrameStyle = computed<CSSProperties>(() => ({
 
 <template>
   <div class="space-y-3">
-    <div class="flex flex-wrap items-center justify-between gap-2">
+    <div
+      v-if="props.showControls !== false"
+      class="flex flex-wrap items-center justify-between gap-2"
+    >
       <p class="text-xs font-semibold text-muted-foreground">Preview size</p>
 
       <div class="flex flex-wrap items-center gap-1 rounded border bg-background p-1">

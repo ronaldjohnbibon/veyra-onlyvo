@@ -2,9 +2,11 @@
 
 namespace App\Modules\Templates\Http\Requests;
 
+use App\Modules\Templates\Models\Template;
 use App\Modules\Templates\Models\TemplateSectionDesign;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class TemplateRequest extends FormRequest
@@ -34,6 +36,16 @@ class TemplateRequest extends FormRequest
                     ->ignore($templateId)
                     ->where(fn ($query) => $query->where('tenant_id', $tenantId)),
             ],
+            'slug' => [
+                'required',
+                'string',
+                'lowercase',
+                'max:120',
+                'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/',
+                Rule::unique('templates', 'slug')
+                    ->ignore($templateId)
+                    ->where(fn ($query) => $query->where('tenant_id', $tenantId)),
+            ],
             'business_name'    => ['required', 'string', 'max:150'],
             'logo'             => ['required', 'string'],
             'contact_info'     => ['required', 'array'],
@@ -44,6 +56,7 @@ class TemplateRequest extends FormRequest
             'background_color' => ['required', 'string', 'max:20'],
             'text_color'       => ['required', 'string', 'max:20'],
             'status'           => ['required', Rule::in(['draft', 'published'])],
+            'is_default'       => ['required', 'boolean'],
 
             'sections'                => ['required', 'array', 'min:1'],
             'sections.*.section_type' => ['required', 'string', "in:$sections"],
@@ -68,6 +81,14 @@ class TemplateRequest extends FormRequest
                 $this->merge([$field => trim((string) $this->input($field))]);
             }
         }
+
+        $providedSlug = $this->has('slug') && trim((string) $this->input('slug')) !== '';
+        $slugSource   = $providedSlug ? (string) $this->input('slug') : (string) $this->input('name', 'site');
+
+        $this->merge([
+            'slug'       => $providedSlug ? Str::slug($slugSource) : $this->uniqueSlug($slugSource),
+            'is_default' => $this->boolean('is_default'),
+        ]);
     }
 
     /**
@@ -82,5 +103,32 @@ class TemplateRequest extends FormRequest
             ->all();
 
         return $sectionTypes ?: ['header', 'hero', 'about', 'services', 'products', 'portfolio', 'faq', 'contact', 'footer'];
+    }
+
+    private function uniqueSlug(string $value): string
+    {
+        $routeParam = $this->route('template');
+        $templateId = is_object($routeParam) ? $routeParam->id : $routeParam;
+        $tenantId   = (string) $this->input('tenant_id');
+        $baseSlug   = Str::slug($value) ?: 'site';
+        $slug       = $baseSlug;
+        $nextIndex  = 2;
+
+        while ($this->slugExists($tenantId, $slug, $templateId)) {
+            $slug = $baseSlug.'-'.$nextIndex++;
+        }
+
+        return $slug;
+    }
+
+    private function slugExists(string $tenantId, string $slug, mixed $templateId): bool
+    {
+        return Template::withoutTenantRestrictions(function () use ($tenantId, $slug, $templateId): bool {
+            return Template::query()
+                ->where('tenant_id', $tenantId)
+                ->where('slug', $slug)
+                ->when($templateId, fn ($query) => $query->whereKeyNot($templateId))
+                ->exists();
+        });
     }
 }

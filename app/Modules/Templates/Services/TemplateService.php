@@ -5,6 +5,7 @@ namespace App\Modules\Templates\Services;
 use App\Modules\Templates\Models\Template;
 use App\Modules\Templates\Models\TemplateSectionDesign;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class TemplateService
 {
@@ -17,7 +18,14 @@ class TemplateService
             $sections = $data['sections'] ?? [];
             unset($data['sections']);
 
-            $template = Template::create($this->normalizeTemplate($data));
+            $data         = $this->normalizeTemplate($data);
+            $data['slug'] = $this->slugForTemplate($data['tenant_id'], $data['slug'] ?? $data['name']);
+
+            if (! empty($data['is_default'])) {
+                $this->clearTenantDefaults((string) $data['tenant_id']);
+            }
+
+            $template = Template::create($data);
             $this->syncSections($template, $sections);
 
             return $template->fresh(['sections']);
@@ -33,7 +41,19 @@ class TemplateService
             $sections = $data['sections'] ?? [];
             unset($data['sections']);
 
-            $template->update($this->normalizeTemplate($data));
+            $data = $this->normalizeTemplate($data);
+
+            if (! array_key_exists('slug', $data) || ! $data['slug']) {
+                $data['slug'] = $data['name'];
+            }
+
+            $data['slug'] = $this->slugForTemplate($data['tenant_id'], $data['slug'], $template->id);
+
+            if (! empty($data['is_default'])) {
+                $this->clearTenantDefaults((string) $data['tenant_id'], $template->id);
+            }
+
+            $template->update($data);
             $this->syncSections($template, $sections);
 
             return $template->fresh(['sections']);
@@ -46,13 +66,56 @@ class TemplateService
      */
     private function normalizeTemplate(array $data): array
     {
-        foreach (['name', 'business_name', 'logo', 'font_family'] as $field) {
+        foreach (['name', 'slug', 'business_name', 'logo', 'font_family'] as $field) {
             if (isset($data[$field])) {
                 $data[$field] = trim((string) $data[$field]);
             }
         }
 
+        if (isset($data['slug'])) {
+            $data['slug'] = Str::slug($data['slug']);
+        }
+
+        if (isset($data['is_default'])) {
+            $data['is_default'] = (bool) $data['is_default'];
+        }
+
         return $data;
+    }
+
+    private function slugForTemplate(string $tenantId, string $value, ?string $ignoreId = null): string
+    {
+        $baseSlug  = Str::slug($value) ?: 'site';
+        $slug      = $baseSlug;
+        $nextIndex = 2;
+
+        while ($this->slugExists($tenantId, $slug, $ignoreId)) {
+            $slug = $baseSlug.'-'.$nextIndex++;
+        }
+
+        return $slug;
+    }
+
+    private function slugExists(string $tenantId, string $slug, ?string $ignoreId = null): bool
+    {
+        return Template::withoutTenantRestrictions(function () use ($tenantId, $slug, $ignoreId): bool {
+            return Template::query()
+                ->where('tenant_id', $tenantId)
+                ->where('slug', $slug)
+                ->when($ignoreId, fn ($query) => $query->whereKeyNot($ignoreId))
+                ->exists();
+        });
+    }
+
+    private function clearTenantDefaults(string $tenantId, ?string $ignoreId = null): void
+    {
+        // Keep one public default per tenant by clearing older defaults first.
+        Template::withoutTenantRestrictions(function () use ($tenantId, $ignoreId): void {
+            Template::query()
+                ->where('tenant_id', $tenantId)
+                ->when($ignoreId, fn ($query) => $query->whereKeyNot($ignoreId))
+                ->update(['is_default' => false]);
+        });
     }
 
     /**

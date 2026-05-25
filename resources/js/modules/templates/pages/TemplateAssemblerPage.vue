@@ -24,15 +24,26 @@ import { Input } from '@/components/ui/input'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Textarea } from '@/components/ui/textarea'
 import { ArrowDown, ArrowUp, ChevronDown, Plus, Save, Trash2 } from 'lucide-vue-next'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 const templateStore = useTemplateStore()
 const router = useRouter()
 const selectedTemplateId = ref<string | null>(null)
 const formError = ref('')
+const slugTouched = ref(false)
 
 const fonts = ['Inter', 'Poppins', 'Arial', 'Georgia']
+
+const slugify = (value: string): string => {
+  return (
+    value
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '') || 'site'
+  )
+}
 
 const defaultSectionDesigns = computed(() => {
   const usedSectionTypes = new Set<TemplateSectionType>()
@@ -66,6 +77,7 @@ const createDefaultSections = (): TemplateSection[] => {
 
 const createBlankTemplate = (): TemplatePayload => ({
   name: 'Business Website',
+  slug: 'business-website',
   business_name: 'Onlyvo Studio',
   logo: 'https://dummyimage.com/120x120/14b8a6/ffffff.png&text=OV',
   contact_info: {
@@ -85,6 +97,7 @@ const createBlankTemplate = (): TemplatePayload => ({
   background_color: '#ffffff',
   text_color: '#111827',
   status: 'draft',
+  is_default: false,
   sections: createDefaultSections(),
 })
 
@@ -163,8 +176,14 @@ const selectDesign = (section: TemplateSection, designKey: string): void => {
 
 const resetForm = (): void => {
   selectedTemplateId.value = null
+  slugTouched.value = false
   form.value = createBlankTemplate()
   formError.value = ''
+}
+
+const updateSlug = (): void => {
+  slugTouched.value = true
+  form.value.slug = slugify(form.value.slug)
 }
 
 const hydrateForm = (template: TemplateRecord): void => {
@@ -190,8 +209,10 @@ const hydrateForm = (template: TemplateRecord): void => {
   })
 
   selectedTemplateId.value = template.id
+  slugTouched.value = true
   form.value = {
     name: template.name,
+    slug: template.slug,
     business_name: template.business_name,
     logo: template.logo,
     contact_info: {
@@ -211,6 +232,7 @@ const hydrateForm = (template: TemplateRecord): void => {
     background_color: template.background_color,
     text_color: template.text_color,
     status: template.status,
+    is_default: template.is_default,
     sections,
   }
   formError.value = ''
@@ -232,6 +254,11 @@ const validate = (): boolean => {
 
   if (required.some((value) => !String(value).trim())) {
     formError.value = 'Template name, business name, logo, email, and phone are required.'
+    return false
+  }
+
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(form.value.slug) || form.value.slug.length > 120) {
+    formError.value = 'Site slug must use lowercase letters, numbers, and hyphens only.'
     return false
   }
 
@@ -286,6 +313,15 @@ onMounted(async () => {
   form.value = createBlankTemplate()
   await templateStore.index()
 })
+
+watch(
+  () => form.value.name,
+  (name) => {
+    if (!slugTouched.value) {
+      form.value.slug = slugify(name)
+    }
+  }
+)
 </script>
 
 <template>
@@ -323,7 +359,10 @@ onMounted(async () => {
             >
               <span class="block font-semibold">{{ template.name }}</span>
               <span class="block text-muted-foreground">{{ template.business_name }}</span>
-              <Badge class="mt-2" variant="outline">{{ template.status }}</Badge>
+              <span class="mt-2 flex flex-wrap gap-2">
+                <Badge variant="outline">{{ template.status }}</Badge>
+                <Badge v-if="template.is_default" variant="outline">Default</Badge>
+              </span>
             </Button>
           </div>
         </aside>
@@ -349,6 +388,22 @@ onMounted(async () => {
                     <Field>
                       <FieldLabel for="business-name">Business Name</FieldLabel>
                       <Input id="business-name" v-model="form.business_name" required />
+                    </Field>
+
+                    <Field>
+                      <FieldLabel for="site-slug">Site Slug</FieldLabel>
+                      <Input
+                        id="site-slug"
+                        v-model="form.slug"
+                        maxlength="120"
+                        required
+                        @input="updateSlug"
+                      />
+                    </Field>
+
+                    <Field orientation="horizontal" class="items-center gap-3 self-end">
+                      <Checkbox id="default-site" v-model="form.is_default" />
+                      <FieldLabel for="default-site">Default public site</FieldLabel>
                     </Field>
 
                     <Field class="md:col-span-2">

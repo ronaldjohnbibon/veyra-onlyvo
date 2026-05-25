@@ -18,6 +18,7 @@ class Template extends Model
     protected $fillable = [
         'tenant_id',
         'name',
+        'slug',
         'business_name',
         'logo',
         'contact_info',
@@ -28,6 +29,7 @@ class Template extends Model
         'background_color',
         'text_color',
         'status',
+        'is_default',
     ];
 
     protected function casts(): array
@@ -35,6 +37,7 @@ class Template extends Model
         return [
             'contact_info' => 'array',
             'social_links' => 'array',
+            'is_default'   => 'boolean',
         ];
     }
 

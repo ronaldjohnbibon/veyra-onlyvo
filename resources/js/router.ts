@@ -6,18 +6,25 @@ import authRoutes from '@/modules/auth/routes'
 import adminRoutes from '@/modules/admin/routes'
 import sidebarRoutes from './modules/sidebar/routes'
 import adminSidebarRoutes from './modules/admin/sidebar/routes'
-import templateRoutes from './modules/templates/routes'
+import templateRoutes, { publicTemplateRoutes } from './modules/templates/routes'
 
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
-    redirect: '/sidebar',
+    name: 'public.sites.default',
+    component: () => import('@/modules/templates/pages/PublicSitePage.vue'),
+    meta: {
+      layout: 'empty',
+      title: 'Published Site',
+      description: 'Published tenant website',
+    },
   },
   ...authRoutes,
   ...adminRoutes,
   ...adminSidebarRoutes,
   ...sidebarRoutes,
   ...templateRoutes,
+  ...publicTemplateRoutes,
 ]
 
 const router = createRouter({

@@ -18,6 +18,7 @@ const payloadFromTemplate = (
   status: TemplateStatus
 ): TemplatePayload => ({
   name: template.name,
+  slug: template.slug,
   business_name: template.business_name,
   logo: template.logo,
   contact_info: template.contact_info,
@@ -28,6 +29,7 @@ const payloadFromTemplate = (
   background_color: template.background_color,
   text_color: template.text_color,
   status,
+  is_default: template.is_default,
   sections: template.sections,
 })
 

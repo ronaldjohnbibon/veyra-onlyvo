@@ -30,6 +30,8 @@ const resolveBaseURL = (): string => {
 }
 
 const resolveToken = (url: string): string | null => {
+  if (url.startsWith('public/')) return null
+
   const tokenKey = url.startsWith('admin/') ? 'admin_token' : 'tenant_token'
 
   return localStorage.getItem(tokenKey)
@@ -38,7 +40,11 @@ const resolveToken = (url: string): string | null => {
 const normalizeUrl = (url: string): string => {
   const normalized = url.replace(/^\/+/, '')
 
-  if (!normalized.startsWith('admin/') && !normalized.startsWith('app/')) {
+  if (
+    !normalized.startsWith('admin/') &&
+    !normalized.startsWith('app/') &&
+    !normalized.startsWith('public/')
+  ) {
     return `app/${normalized}`
   }
 
