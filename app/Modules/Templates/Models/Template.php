@@ -2,6 +2,7 @@
 
 namespace App\Modules\Templates\Models;
 
+use App\Modules\Posts\Models\Post;
 use App\Modules\Tenant\Models\Tenant;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -54,6 +55,11 @@ class Template extends Model
     public function sections(): HasMany
     {
         return $this->hasMany(TemplateSection::class)->orderBy('sort_order');
+    }
+
+    public function posts(): HasMany
+    {
+        return $this->hasMany(Post::class)->latest('published_at')->latest();
     }
 
     #[TenantRelation]

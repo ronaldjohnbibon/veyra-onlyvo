@@ -3,6 +3,7 @@
 namespace App\Modules\Tenant\Models;
 
 use App\Modules\Sidebar\Models\Sidebar;
+use App\Modules\Templates\Models\Template;
 use App\Modules\User\Models\User;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -39,6 +40,11 @@ class Tenant extends Model implements SproutTenant
     public function sidebars(): HasMany
     {
         return $this->hasMany(Sidebar::class);
+    }
+
+    public function templates(): HasMany
+    {
+        return $this->hasMany(Template::class);
     }
 
     public function users(): HasMany

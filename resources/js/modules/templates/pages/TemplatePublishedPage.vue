@@ -3,7 +3,7 @@ import TemplatePreview from '@/modules/templates/components/TemplatePreview.vue'
 import { useTemplateStore } from '@/modules/templates/template-store'
 import { Button } from '@/components/ui/button'
 import type { TemplatePayload, TemplateRecord, TemplateStatus } from '@/types/templates'
-import { ArrowLeft, Save, Send, Trash2 } from 'lucide-vue-next'
+import { ArrowLeft, FileText, Save, Send, Trash2 } from 'lucide-vue-next'
 import { onMounted } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
@@ -58,6 +58,12 @@ onMounted(async () => {
         <RouterLink to="/templates">
           <ArrowLeft class="size-4" />
           Back
+        </RouterLink>
+      </Button>
+      <Button as-child variant="outline">
+        <RouterLink :to="{ name: 'posts.index', query: { templateId } }">
+          <FileText class="size-4" />
+          Posts
         </RouterLink>
       </Button>
     </div>

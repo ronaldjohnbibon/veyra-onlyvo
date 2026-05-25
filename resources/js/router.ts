@@ -7,6 +7,7 @@ import adminRoutes from '@/modules/admin/routes'
 import sidebarRoutes from './modules/sidebar/routes'
 import adminSidebarRoutes from './modules/admin/sidebar/routes'
 import templateRoutes, { publicTemplateRoutes } from './modules/templates/routes'
+import postRoutes, { publicPostRoutes } from './modules/posts/routes'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -24,6 +25,8 @@ const routes: RouteRecordRaw[] = [
   ...adminSidebarRoutes,
   ...sidebarRoutes,
   ...templateRoutes,
+  ...postRoutes,
+  ...publicPostRoutes,
   ...publicTemplateRoutes,
 ]
 

@@ -40,6 +40,7 @@ class SidebarSeeder extends Seeder
                             'is_active'   => true,
                             'items'       => [
                                 ['title' => 'Templates', 'url' => 'templates', 'is_active' => true],
+                                ['title' => 'Posts', 'url' => 'posts', 'is_active' => true],
                             ],
                         ],
                         [
