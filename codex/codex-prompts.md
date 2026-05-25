@@ -21,7 +21,6 @@ Rules:
 - Use `saas` only as reference. Do not modify anything inside it.
 - Apply all changes only inside `onlyvo`.
 - Follow the existing `onlyvo` project structure, coding style, and patterns.
-- Before adding new code, check if the same or similar setup already exists.
 - When changing frontend code, also check and update related backend code if needed.
 - When changing backend code, also check and update related frontend code if needed.
 - Use existing shadcn UI components for fields, buttons, dialogs, tables, cards, and other UI elements when suitable.
@@ -50,7 +49,6 @@ Rules:
 
 - Read C:\Users\lenovo\Desktop\projects\onlyvo\codex\codex.md first.
 - Follow the existing project structure, coding style, and patterns.
-- Before adding new code, check if the same or similar setup already exists.
 - When changing frontend code, also check and update related backend code if needed.
 - When changing backend code, also check and update related frontend code if needed.
 - Use existing shadcn UI components for fields, buttons, dialogs, tables, cards, and other UI elements when suitable.
