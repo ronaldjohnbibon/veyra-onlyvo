@@ -29,6 +29,10 @@ const selectedTemplate = computed(() => {
 
 const canCreate = computed(() => Boolean(selectedTemplateId.value))
 
+const postRows = computed(() => {
+  return selectedTemplateId.value ? postStore.posts : []
+})
+
 const emptyText = computed(() => {
   return `No posts found for ${selectedTemplate.value?.name || 'this template'}.`
 })
@@ -116,7 +120,7 @@ watch(selectedTemplateId, (templateId) => {
         <BaseTable
           :columns="tableColumns"
           :create-disabled="!canCreate"
-          :data="postStore.posts"
+          :data="postRows"
           :empty-text="emptyText"
           :loading="postStore.loading"
           :page="postStore.params.page ?? 1"
@@ -180,6 +184,7 @@ watch(selectedTemplateId, (templateId) => {
             <div class="flex justify-end gap-2">
               <Button as-child variant="outline" size="sm" aria-label="Edit post" title="Edit post">
                 <RouterLink
+                  v-if="selectedTemplateId"
                   :to="{
                     name: 'posts.edit',
                     params: { templateId: selectedTemplateId, postId: row.id },

@@ -30,7 +30,9 @@ const loadSite = async (): Promise<void> => {
       : await templateService.publicDefault()
 
     template.value = response.data
-    posts.value = template.value?.slug ? (await postService.publicIndex(template.value.slug)).data : []
+    posts.value = template.value?.slug
+      ? (await postService.publicIndex(template.value.slug)).data
+      : []
   } catch (error) {
     template.value = null
     posts.value = []
@@ -73,7 +75,10 @@ watch(siteSlug, loadSite)
           <RouterLink
             v-for="post in posts"
             :key="post.id"
-            :to="{ name: 'public.posts.show', params: { siteSlug: template.slug, postSlug: post.slug } }"
+            :to="{
+              name: 'public.posts.show',
+              params: { siteSlug: template.slug, postSlug: post.slug },
+            }"
             class="rounded border bg-card text-card-foreground transition hover:border-primary hover:shadow-md"
           >
             <img

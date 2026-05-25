@@ -2,7 +2,7 @@
 import type { Component } from 'vue'
 import type { SidebarMenuButtonProps } from './SidebarMenuButtonChild.vue'
 import { reactiveOmit } from '@vueuse/core'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { computed } from 'vue'
 import SidebarMenuButtonChild from './SidebarMenuButtonChild.vue'
 import { useSidebar } from './utils'
 
@@ -26,24 +26,16 @@ const props = withDefaults(
 const { isMobile, state } = useSidebar()
 
 const delegatedProps = reactiveOmit(props, 'tooltip')
+
+const tooltipTitle = computed(() => {
+  if (typeof props.tooltip !== 'string') return undefined
+
+  return state.value === 'collapsed' && !isMobile.value ? props.tooltip : undefined
+})
 </script>
 
 <template>
-  <SidebarMenuButtonChild v-if="!tooltip" v-bind="{ ...delegatedProps, ...$attrs }">
+  <SidebarMenuButtonChild v-bind="{ ...delegatedProps, ...$attrs }" :title="tooltipTitle">
     <slot />
   </SidebarMenuButtonChild>
-
-  <Tooltip v-else>
-    <TooltipTrigger as-child>
-      <SidebarMenuButtonChild v-bind="{ ...delegatedProps, ...$attrs }">
-        <slot />
-      </SidebarMenuButtonChild>
-    </TooltipTrigger>
-    <TooltipContent side="right" align="center" :hidden="state !== 'collapsed' || isMobile">
-      <template v-if="typeof tooltip === 'string'">
-        {{ tooltip }}
-      </template>
-      <component :is="tooltip" v-else />
-    </TooltipContent>
-  </Tooltip>
 </template>
