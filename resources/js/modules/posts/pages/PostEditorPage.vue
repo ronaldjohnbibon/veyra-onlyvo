@@ -22,6 +22,7 @@ const form = ref<PostPayload>({
   featured_image: '',
   status: 'draft',
 })
+const maxFeaturedImageSize = 4 * 1024 * 1024
 
 const isEditing = computed(() => Boolean(postId.value))
 
@@ -50,17 +51,24 @@ const savePost = async (status: PostStatus): Promise<void> => {
   })
 }
 
-const handleImageUpload = (event: Event): void => {
+const handleImageUpload = async (event: Event): Promise<void> => {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
 
   if (!file) return
 
-  const reader = new FileReader()
-  reader.onload = () => {
-    form.value.featured_image = String(reader.result)
+  if (file.size > maxFeaturedImageSize) {
+    formError.value = 'Featured image must be 4 MB or smaller.'
+    input.value = ''
+    return
   }
-  reader.readAsDataURL(file)
+
+  try {
+    form.value.featured_image = await postStore.uploadFeaturedImage(templateId.value, file)
+    formError.value = ''
+  } finally {
+    input.value = ''
+  }
 }
 
 onMounted(async () => {
@@ -80,70 +88,80 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="flex flex-1 flex-col gap-4 p-4">
-    <div class="module-heading-container">
-      <div>
-        <h2 class="module-container-title">{{ isEditing ? 'Edit Post' : 'Create Post' }}</h2>
-        <p class="module-container-description">
-          Write a post for this website template and publish it when ready.
-        </p>
-      </div>
-      <Button as-child variant="outline">
-        <RouterLink to="/posts">
-          <ArrowLeft class="size-4" />
-          Back
-        </RouterLink>
-      </Button>
-    </div>
-
-    <Card class="gap-4 py-4">
-      <CardHeader class="px-4">
-        <CardTitle class="text-sm">Post Details</CardTitle>
-      </CardHeader>
-      <CardContent class="px-4">
-        <form class="space-y-5" @submit.prevent>
-          <FieldGroup>
-            <FieldSet>
-              <Field>
-                <FieldLabel for="post-title">Title</FieldLabel>
-                <Input id="post-title" v-model="form.title" required />
-              </Field>
-
-              <Field>
-                <FieldLabel for="featured-image">Featured Image</FieldLabel>
-                <Input id="featured-image" v-model="form.featured_image" />
-                <Input
-                  type="file"
-                  accept="image/*"
-                  class="cursor-pointer text-muted-foreground"
-                  @change="handleImageUpload"
-                />
-              </Field>
-
-              <Field v-if="form.featured_image">
-                <img
-                  :src="form.featured_image"
-                  alt=""
-                  class="max-h-72 w-full rounded border object-cover"
-                />
-              </Field>
-
-              <Field>
-                <FieldLabel for="post-content">Content</FieldLabel>
-                <Textarea id="post-content" v-model="form.content" class="min-h-[320px]" required />
-              </Field>
-            </FieldSet>
-          </FieldGroup>
-
-          <p
-            v-if="formError"
-            class="rounded border border-destructive/40 bg-destructive/10 p-3 text-sm font-medium text-destructive"
-          >
-            {{ formError }}
+  <div class="flex flex-1 flex-col gap-2 p-4">
+    <div class="min-h-screen rounded pb-28">
+      <div class="module-heading-container">
+        <div>
+          <h2 class="module-container-title">{{ isEditing ? 'Edit Post' : 'Create Post' }}</h2>
+          <p class="module-container-description">
+            Write a post for this website template and publish it when ready.
           </p>
-        </form>
-      </CardContent>
-    </Card>
+        </div>
+        <Button as-child variant="outline">
+          <RouterLink to="/posts">
+            <ArrowLeft class="size-4" />
+            Back
+          </RouterLink>
+        </Button>
+      </div>
+
+      <div class="space-y-4">
+        <Card class="gap-4 py-4">
+          <CardHeader class="px-4">
+            <CardTitle class="text-sm">Post Details</CardTitle>
+          </CardHeader>
+          <CardContent class="px-4">
+            <form class="space-y-5" @submit.prevent>
+              <FieldGroup>
+                <FieldSet>
+                  <Field>
+                    <FieldLabel for="post-title">Title</FieldLabel>
+                    <Input id="post-title" v-model="form.title" required />
+                  </Field>
+
+                  <Field>
+                    <FieldLabel for="featured-image">Featured Image</FieldLabel>
+                    <Input id="featured-image" v-model="form.featured_image" />
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      class="cursor-pointer text-muted-foreground"
+                      :disabled="postStore.loading"
+                      @change="handleImageUpload"
+                    />
+                  </Field>
+
+                  <Field v-if="form.featured_image">
+                    <img
+                      :src="form.featured_image"
+                      alt=""
+                      class="max-h-72 w-full rounded border object-cover"
+                    />
+                  </Field>
+
+                  <Field>
+                    <FieldLabel for="post-content">Content</FieldLabel>
+                    <Textarea
+                      id="post-content"
+                      v-model="form.content"
+                      class="min-h-[320px]"
+                      required
+                    />
+                  </Field>
+                </FieldSet>
+              </FieldGroup>
+
+              <p
+                v-if="formError"
+                class="rounded border border-destructive/40 bg-destructive/10 p-3 text-sm font-medium text-destructive"
+              >
+                {{ formError }}
+              </p>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
 
     <div class="fixed bottom-6 right-6 z-20 flex w-[100px] flex-col gap-2 draggable">
       <Button

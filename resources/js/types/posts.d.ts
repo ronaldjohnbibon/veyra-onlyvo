@@ -22,8 +22,10 @@ export interface PostPayload {
 }
 
 export interface PostParams {
+  direction?: 'asc' | 'desc'
   search?: string
   status?: PostStatus | ''
   page?: number
   pageSize?: number
+  sort?: string
 }

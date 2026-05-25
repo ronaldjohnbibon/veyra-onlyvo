@@ -20,7 +20,7 @@ class PostRequest extends FormRequest
         return [
             'title'          => ['required', 'string', 'max:180'],
             'content'        => ['required', 'string'],
-            'featured_image' => ['nullable', 'string'],
+            'featured_image' => ['nullable', 'string', 'max:2048', 'not_regex:/^data:/i'],
             'status'         => ['nullable', Rule::in(['draft', 'published'])],
         ];
     }

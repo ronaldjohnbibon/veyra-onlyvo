@@ -36,6 +36,7 @@ const props = withDefaults(
     loading?: boolean
     withSearch?: boolean
     withCreate?: boolean
+    createDisabled?: boolean
     withDetails?: boolean
     withPageSize?: boolean
     createLabel?: string
@@ -49,6 +50,7 @@ const props = withDefaults(
   }>(),
   {
     createLabel: 'Create',
+    createDisabled: false,
     emptyText: 'No results.',
     loadingText: 'Loading...',
     pageSizeOptions: () => [10, 15, 25, 50],
@@ -205,7 +207,14 @@ const updatePageSize = (event: Event): void => {
           </option>
         </NativeSelect>
 
-        <Button v-if="withCreate" variant="create" size="sm" type="button" @click="emit('create')">
+        <Button
+          v-if="withCreate"
+          variant="create"
+          size="sm"
+          type="button"
+          :disabled="createDisabled"
+          @click="emit('create')"
+        >
           <Plus class="size-3" />
           {{ createLabel }}
         </Button>

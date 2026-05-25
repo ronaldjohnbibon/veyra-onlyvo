@@ -16,6 +16,7 @@ Route::prefix('app')->name('app.')->group(function (): void {
         Route::middleware('api.auth')->group(function (): void {
             Route::get('templates/{template}/posts', [PostController::class, 'index'])->name('templates.posts.index');
             Route::get('templates/{template}/posts/{post}', [PostController::class, 'show'])->name('templates.posts.show');
+            Route::post('templates/{template}/posts/featured-image', [PostController::class, 'uploadFeaturedImage'])->name('templates.posts.featured-image');
             Route::post('templates/{template}/posts', [PostController::class, 'store'])->name('templates.posts.store');
             Route::put('templates/{template}/posts/{post}', [PostController::class, 'update'])->name('templates.posts.update');
             Route::delete('templates/{template}/posts/{post}', [PostController::class, 'destroy'])->name('templates.posts.destroy');

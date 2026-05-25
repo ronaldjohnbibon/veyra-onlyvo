@@ -63,6 +63,15 @@ export const usePostStore = defineStore('tenant-posts', () => {
     }
   }
 
+  const uploadFeaturedImage = async (templateId: string, image: File): Promise<string> => {
+    try {
+      loading.value = true
+      return (await postService.uploadFeaturedImage(templateId, image)).data.url
+    } finally {
+      loading.value = false
+    }
+  }
+
   const destroy = async (templateId: string, postId: string): Promise<void> => {
     try {
       loading.value = true
@@ -107,5 +116,6 @@ export const usePostStore = defineStore('tenant-posts', () => {
     total,
     unpublish,
     update,
+    uploadFeaturedImage,
   }
 })

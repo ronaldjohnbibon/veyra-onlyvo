@@ -11,6 +11,7 @@ use App\Modules\Templates\Models\Template;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class PostController extends Controller
 {
@@ -22,11 +23,23 @@ class PostController extends Controller
             return $this->error('Template not found.', 404);
         }
 
+        $sorts = [
+            'created_at'   => 'created_at',
+            'published_at' => 'published_at',
+            'status'       => 'status',
+            'title'        => 'title',
+        ];
+        $sort       = (string) $request->input('sort', 'created_at');
+        $sortColumn = $sorts[$sort] ?? 'created_at';
+        $direction  = $request->input('direction') === 'asc' ? 'asc' : 'desc';
+
         $posts = $templateRecord->posts()
             ->filter([
                 'search' => $request->input('search'),
                 'status' => $request->input('status'),
             ])
+            ->orderBy($sortColumn, $direction)
+            ->orderBy('title')
             ->paginate(
                 (int) $request->input('pageSize', 15),
                 ['*'],
@@ -48,6 +61,28 @@ class PostController extends Controller
         $post = $service->create($templateRecord, $request->validated());
 
         return $this->success(new PostResource($post), 'Post saved.', 201);
+    }
+
+    public function uploadFeaturedImage(Request $request, string $template): JsonResponse
+    {
+        $templateRecord = $this->tenantTemplate($template);
+
+        if (! $templateRecord) {
+            return $this->error('Template not found.', 404);
+        }
+
+        $validated = $request->validate([
+            'image' => ['required', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:4096'],
+        ]);
+
+        $path = $validated['image']->storePublicly(
+            "posts/{$this->tenantId()}/{$templateRecord->id}/featured-images",
+            'public',
+        );
+
+        return $this->success([
+            'url' => Storage::disk('public')->url($path),
+        ], 'Image uploaded.', 201);
     }
 
     public function show(string $template, string $post): JsonResponse

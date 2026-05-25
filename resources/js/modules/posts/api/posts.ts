@@ -12,6 +12,12 @@ interface PostResponse {
   data: PostRecord
 }
 
+interface PostImageUploadResponse {
+  data: {
+    url: string
+  }
+}
+
 export const postService = {
   index(templateId: string, params: PostParams = {}) {
     return http
@@ -28,6 +34,17 @@ export const postService = {
   store(templateId: string, payload: PostPayload) {
     return http
       .post<PostResponse>(`templates/${templateId}/posts`, payload)
+      .then((response) => response.data)
+  },
+
+  uploadFeaturedImage(templateId: string, image: File) {
+    const payload = new FormData()
+    payload.append('image', image)
+
+    return http
+      .post<PostImageUploadResponse>(`templates/${templateId}/posts/featured-image`, payload, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
       .then((response) => response.data)
   },
 
