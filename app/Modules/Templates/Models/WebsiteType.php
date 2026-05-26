@@ -29,4 +29,9 @@ class WebsiteType extends Model
     {
         return $this->hasMany(Template::class);
     }
+
+    public function catalogItems(): HasMany
+    {
+        return $this->hasMany(TemplateCatalogItem::class);
+    }
 }

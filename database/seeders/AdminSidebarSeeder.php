@@ -35,6 +35,7 @@ class AdminSidebarSeeder extends Seeder
                             'items'       => [
                                 ['title' => 'Dashboard', 'url' => 'dashboard', 'is_active' => true],
                                 ['title' => 'Sidebars', 'url' => 'sidebar', 'is_active' => true],
+                                ['title' => 'Templates', 'url' => 'templates', 'is_active' => true],
                             ],
                         ],
                     ],

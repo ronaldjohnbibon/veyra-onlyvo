@@ -84,16 +84,14 @@ class TemplateController extends Controller
         return $this->success(null, 'Template deleted.');
     }
 
-    public function websiteTypes(TemplateCatalogService $catalog): JsonResponse
+    public function websiteTypes(): JsonResponse
     {
         $types = WebsiteType::query()
             ->where('is_active', true)
             ->withCount('templates')
+            ->withCount(['catalogItems as available_templates_count' => fn ($query) => $query->where('is_active', true)])
             ->orderBy('name')
-            ->get()
-            ->each(function (WebsiteType $type) use ($catalog): void {
-                $type->available_templates_count = count($catalog->forWebsiteType($type));
-            });
+            ->get();
 
         return $this->success(WebsiteTypeResource::collection($types), 'Website types retrieved.');
     }

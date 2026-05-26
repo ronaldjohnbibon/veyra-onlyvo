@@ -1,8 +1,18 @@
 <?php
 
+use App\Modules\Templates\Http\Controllers\AdminTemplateCatalogController;
+use App\Modules\Templates\Http\Controllers\AdminWebsiteTypeController;
 use App\Modules\Templates\Http\Controllers\PublicTemplateController;
 use App\Modules\Templates\Http\Controllers\TemplateController;
 use Illuminate\Support\Facades\Route;
+
+Route::prefix('admin')->name('admin.')->middleware('api.auth')->group(function (): void {
+    Route::apiResource('template-catalog-items', AdminTemplateCatalogController::class)
+        ->parameters(['template-catalog-items' => 'templateCatalogItem']);
+    Route::apiResource('website-types', AdminWebsiteTypeController::class)
+        ->parameters(['website-types' => 'websiteType'])
+        ->except(['show']);
+});
 
 Route::prefix('public')->name('public.')->group(function (): void {
     Route::tenanted(function (): void {

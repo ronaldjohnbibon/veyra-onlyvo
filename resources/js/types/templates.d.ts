@@ -24,12 +24,33 @@ export interface WebsiteType {
 }
 
 export interface TemplateCatalogItem {
+  id?: string
   website_type_id?: string
   website_type_slug?: string
+  website_type?: WebsiteType
   key: string
   name: string
   description?: string | null
   preview_image?: string | null
+  is_active?: boolean
+  created_at?: string
+  updated_at?: string
+}
+
+export interface WebsiteTypePayload {
+  name: string
+  slug: string
+  description: string
+  is_active: boolean
+}
+
+export interface TemplateCatalogPayload {
+  website_type_id: string
+  key: string
+  name: string
+  description: string
+  preview_image: string
+  is_active: boolean
 }
 
 export interface TemplateRecord {

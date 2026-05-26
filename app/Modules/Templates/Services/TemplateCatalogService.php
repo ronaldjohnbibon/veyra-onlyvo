@@ -2,41 +2,12 @@
 
 namespace App\Modules\Templates\Services;
 
+use App\Modules\Templates\Http\Resources\TemplateCatalogItemResource;
+use App\Modules\Templates\Models\TemplateCatalogItem;
 use App\Modules\Templates\Models\WebsiteType;
-use Illuminate\Support\Collection;
 
 class TemplateCatalogService
 {
-    /**
-     * @var array<string, array<int, array<string, mixed>>>
-     */
-    private const TEMPLATES = [
-        'business-website' => [
-            [
-                'key'           => 'template-1',
-                'name'          => 'Business Classic',
-                'description'   => 'A polished company website with hero, services, proof, and contact areas.',
-                'preview_image' => null,
-            ],
-        ],
-        'portfolio-website' => [
-            [
-                'key'           => 'template-1',
-                'name'          => 'Portfolio Studio',
-                'description'   => 'A clean personal portfolio with project highlights and contact details.',
-                'preview_image' => null,
-            ],
-        ],
-        'restaurant-website' => [
-            [
-                'key'           => 'template-1',
-                'name'          => 'Restaurant Showcase',
-                'description'   => 'A warm restaurant website with menu highlights, hours, and booking prompts.',
-                'preview_image' => null,
-            ],
-        ],
-    ];
-
     /**
      * @return array<int, array<string, mixed>>
      */
@@ -48,13 +19,23 @@ class TemplateCatalogService
             return [];
         }
 
-        return Collection::make(self::TEMPLATES[$slug] ?? [])
-            ->map(fn (array $template): array => array_merge($template, [
-                'website_type_id'   => $websiteType instanceof WebsiteType ? $websiteType->id : null,
-                'website_type_slug' => $slug,
-            ]))
-            ->values()
-            ->all();
+        $websiteTypeId = $websiteType instanceof WebsiteType
+            ? $websiteType->id
+            : WebsiteType::query()->where('slug', $slug)->value('id');
+
+        if (! $websiteTypeId) {
+            return [];
+        }
+
+        $items = TemplateCatalogItem::query()
+            ->with('websiteType')
+            ->where('website_type_id', $websiteTypeId)
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+
+        // Catalog records describe complete Vue templates managed by admins.
+        return TemplateCatalogItemResource::collection($items)->resolve();
     }
 
     /**
@@ -62,7 +43,7 @@ class TemplateCatalogService
      */
     public function keys(WebsiteType|string|null $websiteType): array
     {
-        return Collection::make($this->forWebsiteType($websiteType))->pluck('key')->filter()->values()->all();
+        return collect($this->forWebsiteType($websiteType))->pluck('key')->filter()->values()->all();
     }
 
     public function defaultKey(WebsiteType|string|null $websiteType): ?string
@@ -85,11 +66,10 @@ class TemplateCatalogService
             return null;
         }
 
-        if (array_key_exists($websiteType, self::TEMPLATES)) {
-            return $websiteType;
-        }
-
         // Template keys are scoped by website type, so IDs are resolved to slugs.
-        return WebsiteType::query()->whereKey($websiteType)->value('slug');
+        return WebsiteType::query()
+            ->whereKey($websiteType)
+            ->orWhere('slug', $websiteType)
+            ->value('slug');
     }
 }
