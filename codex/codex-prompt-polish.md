@@ -22,4 +22,7 @@ Rules:
 - Add short, direct comments for important logic and functions. Each comment should be simple and explain what the code does in one short sentence.
 
 Task:
-I want you to combine all the migrations that are connected, those migrations that should be on one migration only. Treat it like a fresh app that's will only run it's first migration.
+We will update the `Templates` module.
+
+- All sections have design 1 and design 2 already, I want you to remove the design 2, leave 1 design only the design 1.
+- I want you to separated all the migrations of the sections per design. For example the about sections design 1 have it's own migration and also the design 2.
