@@ -13,14 +13,14 @@ Prompt:
 We are working on two folders:
 
 - Reference only: C:\Users\lenovo\Desktop\projects\saas
-- Target project: C:\Users\lenovo\Desktop\projects\onlyvo
+- Target project: C:\Users\lenovo\Desktop\projects\veyra-onlyvo
 
 Rules:
 
-- Read C:\Users\lenovo\Desktop\projects\onlyvo\codex\codex.md first.
+- Read C:\Users\lenovo\Desktop\projects\veyra-onlyvo\codex\codex.md.
 - Use `saas` only as reference. Do not modify anything inside it.
-- Apply all changes only inside `onlyvo`.
-- Follow the existing `onlyvo` project structure, coding style, and patterns.
+- Apply all changes only inside `veyra-onlyvo`.
+- Follow the existing `veyra-onlyvo` project structure, coding style, and patterns.
 - When changing frontend code, also check and update related backend code if needed.
 - When changing backend code, also check and update related frontend code if needed.
 - Use existing shadcn UI components for fields, buttons, dialogs, tables, cards, and other UI elements when suitable.
@@ -47,7 +47,7 @@ Prompt:
 
 Rules:
 
-- Read C:\Users\lenovo\Desktop\projects\onlyvo\codex\codex.md first.
+- Read C:\Users\lenovo\Desktop\projects\veyra-onlyvo\codex\codex.md.
 - Follow the existing project structure, coding style, and patterns.
 - When changing frontend code, also check and update related backend code if needed.
 - When changing backend code, also check and update related frontend code if needed.

@@ -6,7 +6,6 @@
 
 # TENANT
 
-- can post
 - receive email
 - send email
 

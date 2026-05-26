@@ -15,6 +15,7 @@ interface PostResponse {
 interface PostImageUploadResponse {
   data: {
     url: string
+    path: string
   }
 }
 

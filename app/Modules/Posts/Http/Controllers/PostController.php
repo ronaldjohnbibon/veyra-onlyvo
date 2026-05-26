@@ -11,7 +11,6 @@ use App\Modules\Templates\Models\Template;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
 
 class PostController extends Controller
 {
@@ -81,7 +80,8 @@ class PostController extends Controller
         );
 
         return $this->success([
-            'url' => Storage::disk('public')->url($path),
+            'url'  => '/storage/'.$path,
+            'path' => $path,
         ], 'Image uploaded.', 201);
     }
 

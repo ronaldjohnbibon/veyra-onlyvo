@@ -59,7 +59,7 @@ class PostService
             'title'          => trim((string) $data['title']),
             'slug'           => $this->slugForTemplate($template, (string) $data['title'], $post?->id),
             'content'        => trim((string) $data['content']),
-            'featured_image' => $data['featured_image'] ?? null,
+            'featured_image' => $this->featuredImagePath($data['featured_image'] ?? null),
             'status'         => $status,
             'published_at'   => $status === 'published' ? ($post?->published_at ?? now()) : null,
         ];
@@ -85,5 +85,43 @@ class PostService
             ->where('slug', $slug)
             ->when($ignoreId, fn ($query) => $query->whereKeyNot($ignoreId))
             ->exists();
+    }
+
+    private function featuredImagePath(?string $value): ?string
+    {
+        if (! $value) {
+            return null;
+        }
+
+        $parts = parse_url($value) ?: [];
+        $path  = $parts['path'] ?? $value;
+
+        if (($parts['scheme'] ?? null) && ! $this->isLocalStorageHost($parts['host'] ?? null)) {
+            return $value;
+        }
+
+        // Store local public-disk images as paths so tenant hosts resolve them correctly.
+        if (str_starts_with($path, '/storage/')) {
+            return ltrim(substr($path, strlen('/storage/')), '/');
+        }
+
+        if (str_starts_with($path, 'storage/')) {
+            return substr($path, strlen('storage/'));
+        }
+
+        return $value;
+    }
+
+    private function isLocalStorageHost(?string $host): bool
+    {
+        if (! $host) {
+            return false;
+        }
+
+        $appHost      = parse_url((string) config('app.url'), PHP_URL_HOST);
+        $tenantDomain = config('multitenancy.resolvers.subdomain.domain');
+
+        return $host === $appHost
+            || ($tenantDomain && ($host === $tenantDomain || str_ends_with($host, '.'.$tenantDomain)));
     }
 }

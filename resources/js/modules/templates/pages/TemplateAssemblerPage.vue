@@ -395,6 +395,8 @@ watch(
                       <Input
                         id="site-slug"
                         v-model="form.slug"
+                        readonly
+                        class="cursor-not-allowed"
                         maxlength="120"
                         required
                         @input="updateSlug"
