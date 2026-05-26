@@ -9,8 +9,10 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { useTemplateMaintenanceStore } from '@/modules/admin/templates/template-maintenance-store'
 import type {
+  TemplateContent,
   TemplateCatalogItem,
   TemplateCatalogPayload,
+  TemplateFieldSchema,
   WebsiteType,
   WebsiteTypePayload,
 } from '@/types/templates'
@@ -23,6 +25,8 @@ const selectedCatalogItemId = ref<string | null>(null)
 const formError = ref('')
 const typeSlugTouched = ref(false)
 const itemKeyTouched = ref(false)
+const fieldSchemaJson = ref('[]')
+const defaultContentJson = ref('{}')
 // Tracks which details card should show the active edit border.
 const activeFormSection = ref<'websiteType' | 'template'>('websiteType')
 
@@ -49,6 +53,8 @@ const blankCatalogItem = (): TemplateCatalogPayload => ({
   name: '',
   description: '',
   preview_image: '',
+  field_schema: [],
+  default_content: {},
   is_active: true,
 })
 
@@ -74,6 +80,46 @@ const renderPath = computed(() => {
   return `resources/js/modules/templates/templates/${selectedWebsiteType.value.slug}/${catalogItemForm.value.key}.vue`
 })
 
+const formatJson = (value: unknown, fallback: unknown): string => {
+  return JSON.stringify(value ?? fallback, null, 2)
+}
+
+const parseSchemaJson = (): TemplateFieldSchema[] | null => {
+  if (!fieldSchemaJson.value.trim()) return []
+
+  try {
+    const parsed = JSON.parse(fieldSchemaJson.value)
+
+    if (!Array.isArray(parsed)) {
+      formError.value = 'Field schema must be a JSON array.'
+      return null
+    }
+
+    return parsed as TemplateFieldSchema[]
+  } catch {
+    formError.value = 'Field schema contains invalid JSON.'
+    return null
+  }
+}
+
+const parseDefaultContentJson = (): TemplateContent | null => {
+  if (!defaultContentJson.value.trim()) return {}
+
+  try {
+    const parsed = JSON.parse(defaultContentJson.value)
+
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      formError.value = 'Default content must be a JSON object.'
+      return null
+    }
+
+    return parsed as TemplateContent
+  } catch {
+    formError.value = 'Default content contains invalid JSON.'
+    return null
+  }
+}
+
 const selectWebsiteType = async (websiteType: WebsiteType): Promise<void> => {
   selectedWebsiteTypeId.value = websiteType.id
   selectedCatalogItemId.value = null
@@ -87,6 +133,8 @@ const selectWebsiteType = async (websiteType: WebsiteType): Promise<void> => {
     is_active: websiteType.is_active,
   }
   catalogItemForm.value = blankCatalogItem()
+  fieldSchemaJson.value = '[]'
+  defaultContentJson.value = '{}'
   formError.value = ''
 
   await maintenanceStore.loadCatalogItems(websiteType.id)
@@ -102,8 +150,12 @@ const selectCatalogItem = (item: TemplateCatalogItem): void => {
     name: item.name,
     description: item.description ?? '',
     preview_image: item.preview_image ?? '',
+    field_schema: item.field_schema ?? [],
+    default_content: item.default_content ?? {},
     is_active: item.is_active ?? true,
   }
+  fieldSchemaJson.value = formatJson(item.field_schema, [])
+  defaultContentJson.value = formatJson(item.default_content, {})
   formError.value = ''
 }
 
@@ -115,6 +167,8 @@ const newWebsiteType = (): void => {
   itemKeyTouched.value = false
   websiteTypeForm.value = blankWebsiteType()
   catalogItemForm.value = blankCatalogItem()
+  fieldSchemaJson.value = '[]'
+  defaultContentJson.value = '{}'
   maintenanceStore.catalogItems = []
   formError.value = ''
 }
@@ -124,6 +178,8 @@ const newCatalogItem = (): void => {
   activeFormSection.value = 'template'
   itemKeyTouched.value = false
   catalogItemForm.value = blankCatalogItem()
+  fieldSchemaJson.value = '[]'
+  defaultContentJson.value = '{}'
   formError.value = ''
 }
 
@@ -168,8 +224,18 @@ const saveCatalogItem = async (): Promise<void> => {
   catalogItemForm.value.website_type_id = selectedWebsiteTypeId.value
   catalogItemForm.value.key = slugify(catalogItemForm.value.key || catalogItemForm.value.name)
 
+  const fieldSchema = parseSchemaJson()
+  if (fieldSchema === null) return
+
+  const defaultContent = parseDefaultContentJson()
+  if (defaultContent === null) return
+
   const saved = await maintenanceStore.saveCatalogItem(
-    { ...catalogItemForm.value },
+    {
+      ...catalogItemForm.value,
+      field_schema: fieldSchema,
+      default_content: defaultContent,
+    },
     selectedCatalogItemId.value
   )
 
@@ -360,6 +426,28 @@ watch(
                         id="catalog-preview"
                         v-model="catalogItemForm.preview_image"
                         :disabled="!selectedWebsiteType"
+                      />
+                    </Field>
+
+                    <Field>
+                      <FieldLabel for="catalog-field-schema">Field Schema JSON</FieldLabel>
+                      <Textarea
+                        id="catalog-field-schema"
+                        v-model="fieldSchemaJson"
+                        class="min-h-48 font-mono text-xs"
+                        :disabled="!selectedWebsiteType"
+                        spellcheck="false"
+                      />
+                    </Field>
+
+                    <Field>
+                      <FieldLabel for="catalog-default-content">Default Content JSON</FieldLabel>
+                      <Textarea
+                        id="catalog-default-content"
+                        v-model="defaultContentJson"
+                        class="min-h-48 font-mono text-xs"
+                        :disabled="!selectedWebsiteType"
+                        spellcheck="false"
                       />
                     </Field>
 

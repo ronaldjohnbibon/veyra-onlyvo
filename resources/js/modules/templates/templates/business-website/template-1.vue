@@ -6,8 +6,50 @@ const props = defineProps<{
   template: TemplateRecord
 }>()
 
-const services = ['Brand strategy', 'Website design', 'Growth consulting']
-const stats = ['12+ years', '240 projects', '98% client retention']
+const content = computed(() => props.template.content ?? {})
+
+const businessName = computed(() => {
+  return String(content.value.business_name ?? props.template.business_name)
+})
+
+const services = computed(() => {
+  const values = content.value.services
+
+  return Array.isArray(values) && values.length
+    ? values
+    : [
+        {
+          title: 'Brand strategy',
+          description: 'Clear positioning, strong visuals, and useful calls to action.',
+        },
+        {
+          title: 'Website design',
+          description: 'Clear positioning, strong visuals, and useful calls to action.',
+        },
+        {
+          title: 'Growth consulting',
+          description: 'Clear positioning, strong visuals, and useful calls to action.',
+        },
+      ]
+})
+
+const stats = computed(() => {
+  const values = content.value.stats
+
+  return Array.isArray(values) && values.length
+    ? values
+    : [
+        { value: '12+ years', label: 'Measured delivery for growing companies.' },
+        { value: '240 projects', label: 'Measured delivery for growing companies.' },
+        { value: '98% retention', label: 'Measured delivery for growing companies.' },
+      ]
+})
+
+const contact = computed(() => ({
+  email: String(content.value.contact_email ?? props.template.contact_info.email ?? ''),
+  phone: String(content.value.contact_phone ?? props.template.contact_info.phone ?? ''),
+  address: String(content.value.contact_address ?? props.template.contact_info.address ?? ''),
+}))
 
 const socialLinks = computed(() => {
   // Show social links only when the tenant has provided a URL.
@@ -20,12 +62,8 @@ const socialLinks = computed(() => {
     <header class="border-b border-black/10 bg-white/80 px-6 py-4 backdrop-blur">
       <div class="mx-auto flex max-w-6xl items-center justify-between gap-4">
         <a href="#top" class="flex items-center gap-3">
-          <img
-            :src="template.logo"
-            :alt="template.business_name"
-            class="size-10 rounded object-cover"
-          />
-          <span class="text-base font-semibold">{{ template.business_name }}</span>
+          <img :src="template.logo" :alt="businessName" class="size-10 rounded object-cover" />
+          <span class="text-base font-semibold">{{ businessName }}</span>
         </a>
         <nav class="hidden items-center gap-6 text-sm font-medium md:flex">
           <a href="#services" class="hover:text-[var(--template-primary)]">Services</a>
@@ -39,27 +77,32 @@ const socialLinks = computed(() => {
       <div class="mx-auto grid max-w-6xl gap-10 md:grid-cols-[1.1fr_0.9fr] md:items-center">
         <div>
           <p class="text-sm font-semibold uppercase text-[var(--template-primary)]">
-            Practical digital systems
+            {{ content.hero_eyebrow ?? 'Practical digital systems' }}
           </p>
           <h1 class="mt-4 max-w-3xl text-4xl font-bold leading-tight md:text-6xl">
-            A complete business website for teams ready to look sharper online.
+            {{
+              content.hero_title ??
+              'A complete business website for teams ready to look sharper online.'
+            }}
           </h1>
           <p class="mt-5 max-w-2xl text-lg leading-8 opacity-75">
-            {{ template.business_name }} helps customers understand what you do, why it matters, and
-            how to start a conversation.
+            {{
+              content.hero_text ??
+              `${businessName} helps customers understand what you do, why it matters, and how to start a conversation.`
+            }}
           </p>
           <div class="mt-8 flex flex-wrap gap-3">
             <a
               href="#contact"
               class="rounded bg-[var(--template-primary)] px-5 py-3 text-sm font-semibold text-white"
             >
-              Start a project
+              {{ content.primary_cta_label ?? 'Start a project' }}
             </a>
             <a
               href="#services"
               class="rounded border border-black/15 px-5 py-3 text-sm font-semibold"
             >
-              View services
+              {{ content.secondary_cta_label ?? 'View services' }}
             </a>
           </div>
         </div>
@@ -67,9 +110,13 @@ const socialLinks = computed(() => {
         <div class="rounded border border-black/10 bg-white p-6 shadow-sm">
           <p class="text-sm font-semibold text-[var(--template-primary)]">Trusted outcomes</p>
           <div class="mt-6 grid gap-4">
-            <div v-for="stat in stats" :key="stat" class="rounded border border-black/10 p-4">
-              <p class="text-2xl font-bold">{{ stat }}</p>
-              <p class="mt-1 text-sm opacity-70">Measured delivery for growing companies.</p>
+            <div
+              v-for="(stat, index) in stats"
+              :key="String(stat.value ?? index)"
+              class="rounded border border-black/10 p-4"
+            >
+              <p class="text-2xl font-bold">{{ stat.value }}</p>
+              <p class="mt-1 text-sm opacity-70">{{ stat.label }}</p>
             </div>
           </div>
         </div>
@@ -85,12 +132,12 @@ const socialLinks = computed(() => {
         <div class="mt-8 grid gap-4 md:grid-cols-3">
           <article
             v-for="service in services"
-            :key="service"
+            :key="service.title"
             class="rounded border border-black/10 bg-white p-5"
           >
-            <h3 class="text-lg font-semibold">{{ service }}</h3>
+            <h3 class="text-lg font-semibold">{{ service.title }}</h3>
             <p class="mt-3 text-sm leading-6 opacity-70">
-              Clear positioning, strong visuals, and useful calls to action across every page.
+              {{ service.description }}
             </p>
           </article>
         </div>
@@ -101,11 +148,15 @@ const socialLinks = computed(() => {
       <div class="mx-auto grid max-w-6xl gap-8 md:grid-cols-2 md:items-center">
         <div>
           <p class="text-sm font-semibold uppercase text-[var(--template-primary)]">Why it works</p>
-          <h2 class="mt-3 text-3xl font-bold">Built for quick scanning and confident decisions.</h2>
+          <h2 class="mt-3 text-3xl font-bold">
+            {{ content.proof_title ?? 'Built for quick scanning and confident decisions.' }}
+          </h2>
         </div>
         <p class="text-base leading-8 opacity-75">
-          This template gives your brand a complete structure: focused messaging, service cards,
-          credibility markers, and a direct contact area.
+          {{
+            content.proof_text ??
+            'This template gives your brand a complete structure: focused messaging, service cards, credibility markers, and a direct contact area.'
+          }}
         </p>
       </div>
     </section>
@@ -114,11 +165,11 @@ const socialLinks = computed(() => {
       <div class="mx-auto grid max-w-6xl gap-8 md:grid-cols-2">
         <div>
           <h2 class="text-3xl font-bold">Let us talk about your next step.</h2>
-          <p class="mt-4 opacity-80">{{ template.contact_info.address }}</p>
+          <p class="mt-4 opacity-80">{{ contact.address }}</p>
         </div>
         <div class="space-y-2 md:text-right">
-          <p>{{ template.contact_info.email }}</p>
-          <p>{{ template.contact_info.phone }}</p>
+          <p>{{ contact.email }}</p>
+          <p>{{ contact.phone }}</p>
           <div class="flex flex-wrap gap-3 md:justify-end">
             <a
               v-for="[name, url] in socialLinks"

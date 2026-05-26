@@ -21,6 +21,8 @@ class TemplateCatalogItemResource extends JsonResource
             'name'              => $this->name,
             'description'       => $this->description,
             'preview_image'     => $this->preview_image,
+            'field_schema'      => $this->field_schema    ?? [],
+            'default_content'   => $this->default_content ?? [],
             'is_active'         => (bool) $this->is_active,
             'created_at'        => $this->created_at,
             'updated_at'        => $this->updated_at,

@@ -25,6 +25,7 @@ const payloadFromTemplate = (
   logo: template.logo,
   contact_info: template.contact_info,
   social_links: template.social_links,
+  content: template.content,
   font_family: template.font_family,
   primary_color: template.primary_color,
   secondary_color: template.secondary_color,

@@ -56,6 +56,7 @@ class TemplateRequest extends FormRequest
             'logo'             => ['required', 'string'],
             'contact_info'     => ['required', 'array'],
             'social_links'     => ['required', 'array'],
+            'content'          => ['nullable', 'array'],
             'font_family'      => ['required', 'string', 'max:100'],
             'primary_color'    => ['required', 'string', 'max:20'],
             'secondary_color'  => ['required', 'string', 'max:20'],

@@ -26,6 +26,7 @@ class Template extends Model
         'logo',
         'contact_info',
         'social_links',
+        'content',
         'font_family',
         'primary_color',
         'secondary_color',
@@ -40,6 +41,7 @@ class Template extends Model
         return [
             'contact_info' => 'array',
             'social_links' => 'array',
+            'content'      => 'array',
             'is_default'   => 'boolean',
         ];
     }

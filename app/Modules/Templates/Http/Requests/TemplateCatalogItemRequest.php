@@ -36,10 +36,12 @@ class TemplateCatalogItemRequest extends FormRequest
                     ->ignore($itemId)
                     ->where(fn ($query) => $query->where('website_type_id', $this->input('website_type_id'))),
             ],
-            'name'          => ['required', 'string', 'max:150'],
-            'description'   => ['nullable', 'string'],
-            'preview_image' => ['nullable', 'string'],
-            'is_active'     => ['required', 'boolean'],
+            'name'            => ['required', 'string', 'max:150'],
+            'description'     => ['nullable', 'string'],
+            'preview_image'   => ['nullable', 'string'],
+            'field_schema'    => ['nullable', 'array'],
+            'default_content' => ['nullable', 'array'],
+            'is_active'       => ['required', 'boolean'],
         ];
     }
 

@@ -14,11 +14,14 @@ import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/u
 import { Field, FieldGroup, FieldLabel, FieldSet } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
+import DynamicTemplateFields from '@/modules/templates/components/DynamicTemplateFields.vue'
 import TemplatePreview from '@/modules/templates/components/TemplatePreview.vue'
 import { getTemplateCatalogItem } from '@/modules/templates/template-catalog'
 import { useTemplateStore } from '@/modules/templates/template-store'
 import type {
+  TemplateContent,
   TemplateCatalogItem,
+  TemplateFieldSchema,
   TemplatePayload,
   TemplateRecord,
   TemplateStatus,
@@ -74,6 +77,7 @@ const createBlankTemplate = (
       instagram: '',
       facebook: '',
     },
+    content: {},
     font_family: 'Inter',
     primary_color: '#14b8a6',
     secondary_color: '#0f766e',
@@ -90,6 +94,10 @@ const templateOptions = computed<TemplateCatalogItem[]>(() => templateStore.avai
 
 const selectedCatalogTemplate = computed<TemplateCatalogItem>(() => {
   return getTemplateCatalogItem(form.value.template_key, templateOptions.value)
+})
+
+const dynamicFieldSchema = computed<TemplateFieldSchema[]>(() => {
+  return selectedCatalogTemplate.value.field_schema ?? []
 })
 
 const hasSelectedCatalogTemplate = computed(() =>
@@ -112,6 +120,103 @@ const previewTemplate = computed<TemplateRecord>(() => ({
   website_type: selectedWebsiteType.value ?? undefined,
 }))
 
+const contentRecord = (value: unknown): TemplateContent => {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as TemplateContent)
+    : {}
+}
+
+const mergeTemplateContent = (
+  catalogTemplate: TemplateCatalogItem,
+  existingContent: TemplateContent = {}
+): TemplateContent => {
+  // Catalog defaults fill new schema fields without overwriting saved answers.
+  return {
+    ...(catalogTemplate.default_content ?? {}),
+    ...existingContent,
+  }
+}
+
+const stringContent = (content: TemplateContent, keys: string[], fallback = ''): string => {
+  for (const key of keys) {
+    const value = content[key]
+
+    if (typeof value === 'string' && value.trim()) return value
+  }
+
+  return fallback
+}
+
+const missingRequiredFields = (
+  schema: TemplateFieldSchema[],
+  content: TemplateContent,
+  prefix = ''
+): string[] => {
+  return schema.flatMap((field) => {
+    const value = content[field.key]
+
+    if (field.type === 'repeater') {
+      const rows = Array.isArray(value) ? value : []
+
+      if (field.required && rows.length === 0) return [`${prefix}${field.label}`]
+
+      return rows.flatMap((row, index) =>
+        missingRequiredFields(
+          field.fields ?? [],
+          contentRecord(row),
+          `${prefix}${field.label} ${index + 1} > `
+        )
+      )
+    }
+
+    if (!field.required) return []
+
+    const empty =
+      value === null ||
+      value === undefined ||
+      value === '' ||
+      (Array.isArray(value) && value.length === 0)
+
+    return empty ? [`${prefix}${field.label}`] : []
+  })
+}
+
+const payloadForSave = (status: TemplateStatus): TemplatePayload => {
+  const content = contentRecord(form.value.content)
+  const businessName = stringContent(
+    content,
+    ['business_name', 'display_name'],
+    form.value.business_name
+  )
+  const email = stringContent(content, ['contact_email', 'email'], form.value.contact_info.email)
+  const phone = stringContent(content, ['contact_phone', 'phone'], form.value.contact_info.phone)
+  const address = stringContent(
+    content,
+    ['contact_address', 'location', 'address'],
+    form.value.contact_info.address
+  )
+
+  return {
+    ...form.value,
+    business_name: businessName || form.value.name,
+    contact_info: {
+      email: email || 'hello@example.com',
+      phone: phone || '+1 555 0100',
+      address,
+    },
+    social_links: {
+      ...form.value.social_links,
+      website: stringContent(
+        content,
+        ['website_url', 'portfolio_url', 'reservation_link'],
+        form.value.social_links.website
+      ),
+    },
+    content,
+    status,
+  }
+}
+
 const searchTemplates = async (): Promise<void> => {
   await templateStore.index({
     page: 1,
@@ -133,6 +238,7 @@ const selectWebsiteType = async (websiteType: WebsiteType): Promise<void> => {
 
 const selectCatalogTemplate = (template: TemplateCatalogItem): void => {
   form.value.template_key = template.key
+  form.value.content = mergeTemplateContent(template, contentRecord(form.value.content))
 }
 
 const resetForm = (): void => {
@@ -169,6 +275,10 @@ const hydrateForm = (template: TemplateRecord): void => {
       instagram: template.social_links?.instagram ?? '',
       facebook: template.social_links?.facebook ?? '',
     },
+    content: mergeTemplateContent(
+      getTemplateCatalogItem(template.template_key, templateStore.availableTemplates),
+      contentRecord(template.content)
+    ),
     font_family: template.font_family,
     primary_color: template.primary_color,
     secondary_color: template.secondary_color,
@@ -200,16 +310,20 @@ const validate = (): boolean => {
     return false
   }
 
-  const required = [
-    form.value.name,
-    form.value.business_name,
-    form.value.logo,
-    form.value.contact_info.email,
-    form.value.contact_info.phone,
-  ]
+  const required = [form.value.name, form.value.logo]
 
   if (required.some((value) => !String(value).trim())) {
-    formError.value = 'Template, business name, logo, email, and phone are required.'
+    formError.value = 'Template name and logo are required.'
+    return false
+  }
+
+  const missingFields = missingRequiredFields(
+    dynamicFieldSchema.value,
+    contentRecord(form.value.content)
+  )
+
+  if (missingFields.length) {
+    formError.value = `Complete required content fields: ${missingFields.join(', ')}.`
     return false
   }
 
@@ -225,11 +339,11 @@ const validate = (): boolean => {
 const saveTemplate = async (status: TemplateStatus): Promise<void> => {
   if (!validate()) return
 
-  form.value.status = status
+  const payload = payloadForSave(status)
 
   const saved = selectedTemplateId.value
-    ? await templateStore.update(selectedTemplateId.value, { ...form.value })
-    : await templateStore.store({ ...form.value })
+    ? await templateStore.update(selectedTemplateId.value, payload)
+    : await templateStore.store(payload)
 
   hydrateForm(saved)
 }
@@ -425,7 +539,7 @@ watch(
 
           <Card v-if="canEditDetails" class="gap-4 py-4">
             <CardHeader class="px-4">
-              <CardTitle class="text-sm">Business Details</CardTitle>
+              <CardTitle class="text-sm">Site Details</CardTitle>
               <CardAction>
                 <Badge variant="outline">{{ form.status }}</Badge>
               </CardAction>
@@ -438,11 +552,6 @@ watch(
                     <Field>
                       <FieldLabel for="template-name">Template Name</FieldLabel>
                       <Input id="template-name" v-model="form.name" required />
-                    </Field>
-
-                    <Field>
-                      <FieldLabel for="business-name">Business Name</FieldLabel>
-                      <Input id="business-name" v-model="form.business_name" required />
                     </Field>
 
                     <Field>
@@ -471,44 +580,23 @@ watch(
                         @change="handleLogoUpload"
                       />
                     </Field>
-
-                    <Field>
-                      <FieldLabel for="contact-email">Email</FieldLabel>
-                      <Input id="contact-email" v-model="form.contact_info.email" required />
-                    </Field>
-
-                    <Field>
-                      <FieldLabel for="contact-phone">Phone</FieldLabel>
-                      <Input id="contact-phone" v-model="form.contact_info.phone" required />
-                    </Field>
-
-                    <Field class="md:col-span-2">
-                      <FieldLabel for="contact-address">Address</FieldLabel>
-                      <Input id="contact-address" v-model="form.contact_info.address" />
-                    </Field>
-
-                    <Field>
-                      <FieldLabel for="website-url">Website</FieldLabel>
-                      <Input id="website-url" v-model="form.social_links.website" />
-                    </Field>
-
-                    <Field>
-                      <FieldLabel for="linkedin-url">LinkedIn</FieldLabel>
-                      <Input id="linkedin-url" v-model="form.social_links.linkedin" />
-                    </Field>
-
-                    <Field>
-                      <FieldLabel for="instagram-url">Instagram</FieldLabel>
-                      <Input id="instagram-url" v-model="form.social_links.instagram" />
-                    </Field>
-
-                    <Field>
-                      <FieldLabel for="facebook-url">Facebook</FieldLabel>
-                      <Input id="facebook-url" v-model="form.social_links.facebook" />
-                    </Field>
                   </div>
                 </FieldSet>
               </FieldGroup>
+            </CardContent>
+          </Card>
+
+          <Card v-if="canEditDetails && dynamicFieldSchema.length" class="gap-4 py-4">
+            <CardHeader class="px-4">
+              <CardTitle class="text-sm">Template Content</CardTitle>
+            </CardHeader>
+
+            <CardContent class="px-4">
+              <DynamicTemplateFields
+                :schema="dynamicFieldSchema"
+                :model-value="form.content"
+                @update:model-value="form.content = $event"
+              />
             </CardContent>
           </Card>
 

@@ -1,5 +1,40 @@
 export type TemplateStatus = 'draft' | 'published'
 
+export type TemplateFieldType =
+  | 'text'
+  | 'textarea'
+  | 'url'
+  | 'email'
+  | 'phone'
+  | 'image'
+  | 'color'
+  | 'number'
+  | 'boolean'
+  | 'select'
+  | 'repeater'
+
+export interface TemplateFieldOption {
+  label: string
+  value: string | number | boolean
+}
+
+export interface TemplateFieldSchema {
+  key: string
+  label: string
+  type: TemplateFieldType
+  description?: string
+  placeholder?: string
+  required?: boolean
+  default?: unknown
+  min?: number
+  max?: number
+  step?: number
+  options?: TemplateFieldOption[]
+  fields?: TemplateFieldSchema[]
+}
+
+export type TemplateContent = Record<string, unknown>
+
 export interface TemplateContactInfo {
   email: string
   phone: string
@@ -32,6 +67,8 @@ export interface TemplateCatalogItem {
   name: string
   description?: string | null
   preview_image?: string | null
+  field_schema?: TemplateFieldSchema[]
+  default_content?: TemplateContent
   is_active?: boolean
   created_at?: string
   updated_at?: string
@@ -50,6 +87,8 @@ export interface TemplateCatalogPayload {
   name: string
   description: string
   preview_image: string
+  field_schema?: TemplateFieldSchema[] | null
+  default_content?: TemplateContent | null
   is_active: boolean
 }
 
@@ -65,6 +104,7 @@ export interface TemplateRecord {
   logo: string
   contact_info: TemplateContactInfo
   social_links: TemplateSocialLinks
+  content: TemplateContent
   font_family: string
   primary_color: string
   secondary_color: string
@@ -85,6 +125,7 @@ export interface TemplatePayload {
   logo: string
   contact_info: TemplateContactInfo
   social_links: TemplateSocialLinks
+  content: TemplateContent
   font_family: string
   primary_color: string
   secondary_color: string

@@ -17,13 +17,17 @@ class TemplateCatalogItem extends Model
         'name',
         'description',
         'preview_image',
+        'field_schema',
+        'default_content',
         'is_active',
     ];
 
     protected function casts(): array
     {
         return [
-            'is_active' => 'boolean',
+            'field_schema'    => 'array',
+            'default_content' => 'array',
+            'is_active'       => 'boolean',
         ];
     }
 

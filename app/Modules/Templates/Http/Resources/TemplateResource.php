@@ -24,6 +24,7 @@ class TemplateResource extends JsonResource
             'logo'             => $this->logo,
             'contact_info'     => $this->contact_info ?? [],
             'social_links'     => $this->social_links ?? [],
+            'content'          => $this->content      ?? [],
             'font_family'      => $this->font_family,
             'primary_color'    => $this->primary_color,
             'secondary_color'  => $this->secondary_color,
