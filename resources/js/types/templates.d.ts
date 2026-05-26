@@ -1,7 +1,5 @@
 export type TemplateStatus = 'draft' | 'published'
 
-export type TemplateFieldType = 'text' | 'textarea' | 'url' | 'list' | 'navigation'
-
 export type TemplateSectionType =
   | 'header'
   | 'hero'
@@ -40,14 +38,6 @@ export interface TemplateSocialLinks {
   facebook: string
 }
 
-export interface TemplateFieldConfig {
-  key: string
-  label: string
-  type: TemplateFieldType
-  defaultValue?: string | string[]
-  class?: string
-}
-
 export interface TemplateNavigationItem {
   label: string
   section_type: TemplateSectionType
@@ -78,38 +68,37 @@ export interface TemplateSection {
   content_json: TemplateSectionContent
 }
 
-export interface TemplateDesign {
+export interface WebsiteType {
   id: string
-  section_type: TemplateSectionType
-  section_label: string
   name: string
-  design_key: string
-  preview_image: string
-  fields_json: TemplateFieldConfig[]
-  default_content_json: TemplateSectionContent
-  default_enabled: boolean
-  default_sort_order: number
+  slug: string
+  description?: string | null
+  sort_order: number
   is_active: boolean
+  designs_count: number
+  templates_count: number
 }
 
-export interface TemplateDesignPayload {
-  section_type: string
-  section_label: string
+export interface TemplatePreset {
+  id?: string
+  website_type_id?: string
+  key: string
   name: string
-  design_key: string
-  preview_image: string
-  fields_json: TemplateFieldConfig[]
-  default_content_json: TemplateSectionContent
-  default_enabled: boolean
-  default_sort_order: number
-  is_active: boolean
+  description?: string | null
+  preview_image?: string | null
+  is_active?: boolean
+  sort_order?: number
+  sections?: TemplateSection[]
 }
 
 export interface TemplateRecord {
   id: string
   tenant_id?: string
+  website_type_id: string
+  website_type?: WebsiteType
   name: string
   slug: string
+  template_key: string | null
   business_name: string
   logo: string
   contact_info: TemplateContactInfo
@@ -121,7 +110,7 @@ export interface TemplateRecord {
   text_color: string
   status: TemplateStatus
   is_default: boolean
-  sections: TemplateSection[]
+  sections?: TemplateSection[]
   created_at?: string
   updated_at?: string
 }
@@ -129,6 +118,8 @@ export interface TemplateRecord {
 export interface TemplatePayload {
   name: string
   slug: string
+  website_type_id: string
+  template_key: string | null
   business_name: string
   logo: string
   contact_info: TemplateContactInfo
@@ -140,15 +131,13 @@ export interface TemplatePayload {
   text_color: string
   status: TemplateStatus
   is_default: boolean
-  sections: TemplateSection[]
 }
 
 export interface TemplateParams {
   direction?: 'asc' | 'desc'
   search?: string
+  website_type_id?: string
   page?: number
   pageSize?: number
   sort?: string
 }
-
-export type TemplateDesignParams = TemplateParams

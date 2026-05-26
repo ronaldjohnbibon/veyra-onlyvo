@@ -7,30 +7,32 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class TemplateSection extends Model
+class TemplateDesign extends Model
 {
     use HasFactory, HasUuids;
 
     protected $fillable = [
-        'template_id',
-        'section_type',
-        'design_key',
+        'website_type_id',
+        'key',
+        'name',
+        'description',
+        'preview_image',
+        'sections',
         'sort_order',
-        'is_enabled',
-        'content_json',
+        'is_active',
     ];
 
     protected function casts(): array
     {
         return [
-            'sort_order'   => 'integer',
-            'is_enabled'   => 'boolean',
-            'content_json' => 'array',
+            'sections'   => 'array',
+            'is_active'  => 'boolean',
+            'sort_order' => 'integer',
         ];
     }
 
-    public function template(): BelongsTo
+    public function websiteType(): BelongsTo
     {
-        return $this->belongsTo(Template::class);
+        return $this->belongsTo(WebsiteType::class);
     }
 }

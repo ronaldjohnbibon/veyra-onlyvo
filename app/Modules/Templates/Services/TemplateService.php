@@ -3,21 +3,19 @@
 namespace App\Modules\Templates\Services;
 
 use App\Modules\Templates\Models\Template;
-use App\Modules\Templates\Models\TemplateSectionDesign;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class TemplateService
 {
+    public function __construct(private readonly TemplatePresetService $presets) {}
+
     /**
      * @param  array<string, mixed>  $data
      */
     public function create(array $data): Template
     {
         return DB::transaction(function () use ($data): Template {
-            $sections = $data['sections'] ?? [];
-            unset($data['sections']);
-
             $data         = $this->normalizeTemplate($data);
             $data['slug'] = $this->slugForTemplate($data['tenant_id'], $data['slug'] ?? $data['name']);
 
@@ -25,10 +23,7 @@ class TemplateService
                 $this->clearTenantDefaults((string) $data['tenant_id']);
             }
 
-            $template = Template::create($data);
-            $this->syncSections($template, $sections);
-
-            return $template->fresh(['sections']);
+            return Template::create($data);
         });
     }
 
@@ -38,9 +33,6 @@ class TemplateService
     public function update(Template $template, array $data): Template
     {
         return DB::transaction(function () use ($template, $data): Template {
-            $sections = $data['sections'] ?? [];
-            unset($data['sections']);
-
             $data = $this->normalizeTemplate($data);
 
             if (! array_key_exists('slug', $data) || ! $data['slug']) {
@@ -54,9 +46,8 @@ class TemplateService
             }
 
             $template->update($data);
-            $this->syncSections($template, $sections);
 
-            return $template->fresh(['sections']);
+            return $template->fresh();
         });
     }
 
@@ -66,7 +57,7 @@ class TemplateService
      */
     private function normalizeTemplate(array $data): array
     {
-        foreach (['name', 'slug', 'business_name', 'logo', 'font_family'] as $field) {
+        foreach (['name', 'slug', 'template_key', 'business_name', 'logo', 'font_family'] as $field) {
             if (isset($data[$field])) {
                 $data[$field] = trim((string) $data[$field]);
             }
@@ -78,6 +69,14 @@ class TemplateService
 
         if (isset($data['is_default'])) {
             $data['is_default'] = (bool) $data['is_default'];
+        }
+
+        $templateKey = (string) ($data['template_key'] ?? '');
+
+        if ($templateKey === '') {
+            $data['template_key'] = null;
+        } elseif (! $this->presets->exists($templateKey, $data['website_type_id'] ?? null)) {
+            $data['template_key'] = null;
         }
 
         return $data;
@@ -116,76 +115,5 @@ class TemplateService
                 ->when($ignoreId, fn ($query) => $query->whereKeyNot($ignoreId))
                 ->update(['is_default' => false]);
         });
-    }
-
-    /**
-     * @param  array<int, array<string, mixed>>  $sections
-     */
-    private function syncSections(Template $template, array $sections): void
-    {
-        // Load active designs once so invalid design keys can fall back safely.
-        $activeDesigns = TemplateSectionDesign::query()
-            ->where('is_active', true)
-            ->get()
-            ->groupBy('section_type');
-        $sectionTypes = collect($sections)->pluck('section_type')->map(fn ($type) => (string) $type)->all();
-
-        foreach ($sections as $section) {
-            $sectionType = (string) $section['section_type'];
-            $designKey   = (string) $section['design_key'];
-            $designs     = $activeDesigns->get($sectionType);
-
-            if ($designs && ! $designs->contains('design_key', $designKey)) {
-                $designKey = (string) $designs->first()->design_key;
-            }
-
-            $template->sections()->updateOrCreate(
-                ['section_type' => $sectionType],
-                [
-                    'design_key'   => $designKey,
-                    'sort_order'   => (int) $section['sort_order'],
-                    'is_enabled'   => (bool) $section['is_enabled'],
-                    'content_json' => $this->normalizeSectionContent($section, $sectionTypes),
-                ],
-            );
-        }
-    }
-
-    /**
-     * @param  array<string, mixed>  $section
-     * @param  array<int, string>  $sectionTypes
-     * @return array<string, mixed>
-     */
-    private function normalizeSectionContent(array $section, array $sectionTypes): array
-    {
-        $content = is_array($section['content_json'] ?? null) ? $section['content_json'] : [];
-
-        if (($section['section_type'] ?? '') !== 'header') {
-            return $content;
-        }
-
-        unset($content['cta_label'], $content['button_link']);
-
-        $allowedSectionTypes = collect($sectionTypes)
-            ->reject(fn (string $type) => in_array($type, ['header', 'footer'], true))
-            ->values()
-            ->all();
-
-        $content['navigation_items'] = collect($content['navigation_items'] ?? [])
-            ->filter(fn ($item) => is_array($item))
-            ->map(function (array $item): array {
-                return [
-                    'label'        => trim((string) ($item['label'] ?? '')),
-                    'section_type' => trim((string) ($item['section_type'] ?? '')),
-                ];
-            })
-            ->filter(function (array $item) use ($allowedSectionTypes): bool {
-                return $item['label'] !== ''
-                    && in_array($item['section_type'], $allowedSectionTypes, true);
-            })
-            ->values()
-            ->all();
-
-        return $content;
     }
 }

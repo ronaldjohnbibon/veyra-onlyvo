@@ -18,8 +18,10 @@ class Template extends Model
 
     protected $fillable = [
         'tenant_id',
+        'website_type_id',
         'name',
         'slug',
+        'template_key',
         'business_name',
         'logo',
         'contact_info',
@@ -44,22 +46,31 @@ class Template extends Model
 
     public function scopeFilter($query, array $filters)
     {
-        return $query->when($filters['search'] ?? null, function ($query, string $search): void {
-            $query->where(function ($query) use ($search): void {
-                $query->where('name', 'like', '%'.$search.'%')
-                    ->orWhere('business_name', 'like', '%'.$search.'%');
+        return $query
+            ->when($filters['search'] ?? null, function ($query, string $search): void {
+                $query->where(function ($query) use ($search): void {
+                    $query->where('name', 'like', '%'.$search.'%')
+                        ->orWhere('business_name', 'like', '%'.$search.'%');
+                });
+            })
+            ->when($filters['website_type_id'] ?? null, function ($query, string $websiteTypeId): void {
+                $query->where('website_type_id', $websiteTypeId);
             });
-        });
-    }
-
-    public function sections(): HasMany
-    {
-        return $this->hasMany(TemplateSection::class)->orderBy('sort_order');
     }
 
     public function posts(): HasMany
     {
         return $this->hasMany(Post::class)->latest('published_at')->latest();
+    }
+
+    public function templateDesign(): BelongsTo
+    {
+        return $this->belongsTo(TemplateDesign::class, 'template_key', 'key');
+    }
+
+    public function websiteType(): BelongsTo
+    {
+        return $this->belongsTo(WebsiteType::class);
     }
 
     #[TenantRelation]

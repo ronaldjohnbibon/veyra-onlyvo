@@ -5,9 +5,10 @@ namespace App\Modules\Templates\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Modules\Templates\Http\Requests\TemplateRequest;
 use App\Modules\Templates\Http\Resources\TemplateResource;
-use App\Modules\Templates\Http\Resources\TemplateSectionDesignResource;
+use App\Modules\Templates\Http\Resources\WebsiteTypeResource;
 use App\Modules\Templates\Models\Template;
-use App\Modules\Templates\Models\TemplateSectionDesign;
+use App\Modules\Templates\Models\WebsiteType;
+use App\Modules\Templates\Services\TemplatePresetService;
 use App\Modules\Templates\Services\TemplateService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -18,9 +19,12 @@ class TemplateController extends Controller
     public function index(Request $request): JsonResponse
     {
         $templates = Template::query()
+            ->with(['websiteType', 'templateDesign'])
             ->where('tenant_id', $this->tenantId())
-            ->with('sections')
-            ->filter(['search' => $request->input('search')])
+            ->filter([
+                'search'          => $request->input('search'),
+                'website_type_id' => $request->input('website_type_id'),
+            ])
             ->latest()
             ->paginate(
                 (int) $request->input('pageSize', 15),
@@ -43,7 +47,7 @@ class TemplateController extends Controller
 
     public function show(string $template): JsonResponse
     {
-        $record = $this->queryForTenant()->with('sections')->find($template);
+        $record = $this->queryForTenant()->find($template);
 
         if (! $record) {
             return $this->error('Template not found.', 404);
@@ -80,23 +84,36 @@ class TemplateController extends Controller
         return $this->success(null, 'Template deleted.');
     }
 
-    public function designs(): JsonResponse
+    public function websiteTypes(): JsonResponse
     {
-        $designs = TemplateSectionDesign::query()
+        $types = WebsiteType::query()
             ->where('is_active', true)
-            ->orderBy('default_sort_order')
-            ->orderBy('section_type')
+            ->withCount(['templateDesigns', 'templates'])
+            ->orderBy('sort_order')
             ->orderBy('name')
             ->get();
 
-        return $this->success(TemplateSectionDesignResource::collection($designs), 'Template designs retrieved.');
+        return $this->success(WebsiteTypeResource::collection($types), 'Website types retrieved.');
+    }
+
+    public function designs(WebsiteType $websiteType, TemplatePresetService $presets): JsonResponse
+    {
+        if (! $websiteType->is_active) {
+            return $this->error('Website type not found.', 404);
+        }
+
+        return $this->success($presets->all($websiteType->id), 'Template designs retrieved.');
+    }
+
+    public function presets(Request $request, TemplatePresetService $presets): JsonResponse
+    {
+        return $this->success($presets->all($request->input('website_type_id')), 'Template presets retrieved.');
     }
 
     public function published(string $template): JsonResponse
     {
         $record = $this->queryForTenant()
             ->where('status', 'published')
-            ->with(['sections' => fn ($query) => $query->where('is_enabled', true)->orderBy('sort_order')])
             ->find($template);
 
         if (! $record) {
@@ -108,7 +125,9 @@ class TemplateController extends Controller
 
     private function queryForTenant()
     {
-        return Template::query()->where('tenant_id', $this->tenantId());
+        return Template::query()
+            ->with(['websiteType', 'templateDesign'])
+            ->where('tenant_id', $this->tenantId());
     }
 
     private function tenantId(): string

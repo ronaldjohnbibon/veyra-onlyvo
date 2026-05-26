@@ -1,11 +1,10 @@
 import http from '@/shared/api/http'
 import type {
-  TemplateDesign,
-  TemplateDesignParams,
-  TemplateDesignPayload,
   TemplateParams,
   TemplatePayload,
+  TemplatePreset,
   TemplateRecord,
+  WebsiteType,
 } from '@/types/templates'
 
 interface TemplateCollectionResponse {
@@ -19,19 +18,12 @@ interface TemplateResponse {
   data: TemplateRecord
 }
 
-interface DesignResponse {
-  data: TemplateDesign[]
+interface PresetResponse {
+  data: TemplatePreset[]
 }
 
-interface DesignCollectionResponse {
-  data: TemplateDesign[]
-  pagination?: {
-    total: number
-  }
-}
-
-interface TemplateDesignResponse {
-  data: TemplateDesign
+interface WebsiteTypeResponse {
+  data: WebsiteType[]
 }
 
 export const templateService = {
@@ -57,30 +49,24 @@ export const templateService = {
     return http.delete(`templates/${id}`).then((response) => response.data)
   },
 
-  designs() {
-    return http.get<DesignResponse>('templates/designs').then((response) => response.data)
-  },
-
-  designIndex(params: TemplateDesignParams = {}) {
+  websiteTypes() {
     return http
-      .get<DesignCollectionResponse>('template-section-designs', { params })
+      .get<WebsiteTypeResponse>('templates/website-types')
       .then((response) => response.data)
   },
 
-  designStore(payload: TemplateDesignPayload) {
+  presets(websiteTypeId?: string | null) {
     return http
-      .post<TemplateDesignResponse>('template-section-designs', payload)
+      .get<PresetResponse>('templates/presets', {
+        params: websiteTypeId ? { website_type_id: websiteTypeId } : {},
+      })
       .then((response) => response.data)
   },
 
-  designUpdate(id: string, payload: TemplateDesignPayload) {
+  designs(websiteTypeId: string) {
     return http
-      .put<TemplateDesignResponse>(`template-section-designs/${id}`, payload)
+      .get<PresetResponse>(`templates/website-types/${websiteTypeId}/designs`)
       .then((response) => response.data)
-  },
-
-  designDestroy(id: string) {
-    return http.delete(`template-section-designs/${id}`).then((response) => response.data)
   },
 
   publicShow(slug: string) {

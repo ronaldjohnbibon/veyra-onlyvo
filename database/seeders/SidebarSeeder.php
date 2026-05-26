@@ -51,7 +51,6 @@ class SidebarSeeder extends Seeder
                             'is_active'   => true,
                             'items'       => [
                                 ['title' => 'Sidebar', 'url' => 'sidebar', 'is_active' => true],
-                                ['title' => 'Designs', 'url' => 'designs', 'is_active' => true],
                             ],
                         ],
                     ],

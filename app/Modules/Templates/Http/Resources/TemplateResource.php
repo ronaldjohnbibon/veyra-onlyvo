@@ -15,8 +15,12 @@ class TemplateResource extends JsonResource
         return [
             'id'               => $this->id,
             'tenant_id'        => $this->tenant_id,
+            'website_type_id'  => $this->website_type_id,
+            'website_type'     => new WebsiteTypeResource($this->whenLoaded('websiteType')),
             'name'             => $this->name,
             'slug'             => $this->slug,
+            'template_key'     => $this->template_key,
+            'sections'         => $this->templateDesign?->sections ?? [],
             'business_name'    => $this->business_name,
             'logo'             => $this->logo,
             'contact_info'     => $this->contact_info ?? [],
@@ -28,7 +32,6 @@ class TemplateResource extends JsonResource
             'text_color'       => $this->text_color,
             'status'           => $this->status,
             'is_default'       => (bool) $this->is_default,
-            'sections'         => TemplateSectionResource::collection($this->whenLoaded('sections')),
             'created_at'       => $this->created_at,
             'updated_at'       => $this->updated_at,
         ];

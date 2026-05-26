@@ -17,8 +17,10 @@ const payloadFromTemplate = (
   template: TemplateRecord,
   status: TemplateStatus
 ): TemplatePayload => ({
+  website_type_id: template.website_type_id,
   name: template.name,
   slug: template.slug,
+  template_key: template.template_key,
   business_name: template.business_name,
   logo: template.logo,
   contact_info: template.contact_info,
@@ -30,7 +32,6 @@ const payloadFromTemplate = (
   text_color: template.text_color,
   status,
   is_default: template.is_default,
-  sections: template.sections,
 })
 
 const saveTemplate = async (status: TemplateStatus): Promise<void> => {

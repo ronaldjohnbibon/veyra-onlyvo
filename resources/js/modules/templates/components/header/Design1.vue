@@ -22,7 +22,7 @@ const sectionAnchorId = (sectionType: TemplateSectionType): string => {
 
 const navItems = computed(() => {
   const enabledSections = new Set(
-    props.template.sections
+    (props.template.sections ?? [])
       .filter((item) => item.is_enabled && !['header', 'footer'].includes(item.section_type))
       .map((item) => item.section_type)
   )

@@ -38,12 +38,12 @@ class PublicTemplateController extends Controller
 
     private function publishedQuery(string $tenantId)
     {
-        // Public visitors can only read enabled sections from published tenant sites.
+        // Public visitors can only read published tenant sites.
         return Template::withoutTenantRestrictions(function () use ($tenantId) {
             return Template::query()
+                ->with(['websiteType', 'templateDesign'])
                 ->where('tenant_id', $tenantId)
-                ->where('status', 'published')
-                ->with(['sections' => fn ($query) => $query->where('is_enabled', true)->orderBy('sort_order')]);
+                ->where('status', 'published');
         });
     }
 }

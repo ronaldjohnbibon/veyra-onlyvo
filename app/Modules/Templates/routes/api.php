@@ -2,7 +2,6 @@
 
 use App\Modules\Templates\Http\Controllers\PublicTemplateController;
 use App\Modules\Templates\Http\Controllers\TemplateController;
-use App\Modules\Templates\Http\Controllers\TemplateSectionDesignController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('public')->name('public.')->group(function (): void {
@@ -15,8 +14,9 @@ Route::prefix('public')->name('public.')->group(function (): void {
 Route::prefix('app')->name('app.')->group(function (): void {
     Route::tenanted(function (): void {
         Route::middleware('api.auth')->group(function (): void {
-            Route::get('templates/designs', [TemplateController::class, 'designs'])->name('templates.designs');
-            Route::apiResource('template-section-designs', TemplateSectionDesignController::class);
+            Route::get('templates/website-types', [TemplateController::class, 'websiteTypes'])->name('templates.website-types');
+            Route::get('templates/website-types/{websiteType}/designs', [TemplateController::class, 'designs'])->name('templates.website-types.designs');
+            Route::get('templates/presets', [TemplateController::class, 'presets'])->name('templates.presets');
             Route::get('templates/{template}/published', [TemplateController::class, 'published'])->name('templates.published');
             Route::apiResource('templates', TemplateController::class);
         });

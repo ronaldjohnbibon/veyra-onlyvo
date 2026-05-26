@@ -4,23 +4,12 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/templates',
     name: 'templates.index',
-    component: () => import('@/modules/templates/pages/TemplateAssemblerPage.vue'),
+    component: () => import('@/modules/templates/pages/TemplateSelectionPage.vue'),
     meta: {
       requiresAuth: true,
       layout: 'tenant',
       title: 'Templates',
-      description: 'Assemble and publish business website templates',
-    },
-  },
-  {
-    path: '/designs',
-    name: 'designs.index',
-    component: () => import('@/modules/templates/pages/TemplateSectionDesignsPage.vue'),
-    meta: {
-      requiresAuth: true,
-      layout: 'tenant',
-      title: 'Designs',
-      description: 'Manage template section designs',
+      description: 'Select website types and publish tenant templates',
     },
   },
   {

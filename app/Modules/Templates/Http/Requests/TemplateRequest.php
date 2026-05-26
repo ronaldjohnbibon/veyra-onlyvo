@@ -3,7 +3,6 @@
 namespace App\Modules\Templates\Http\Requests;
 
 use App\Modules\Templates\Models\Template;
-use App\Modules\Templates\Models\TemplateSectionDesign;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -24,11 +23,15 @@ class TemplateRequest extends FormRequest
         $routeParam = $this->route('template');
         $templateId = is_object($routeParam) ? $routeParam->id : $routeParam;
         $tenantId   = $this->input('tenant_id');
-        $sections   = implode(',', $this->sectionTypes());
 
         return [
-            'tenant_id' => ['nullable', 'uuid', Rule::exists('tenants', 'id')],
-            'name'      => [
+            'tenant_id'       => ['nullable', 'uuid', Rule::exists('tenants', 'id')],
+            'website_type_id' => [
+                'required',
+                'uuid',
+                Rule::exists('website_types', 'id')->where(fn ($query) => $query->where('is_active', true)),
+            ],
+            'name' => [
                 'required',
                 'string',
                 'max:150',
@@ -46,6 +49,7 @@ class TemplateRequest extends FormRequest
                     ->ignore($templateId)
                     ->where(fn ($query) => $query->where('tenant_id', $tenantId)),
             ],
+            'template_key'     => ['nullable', 'string', 'max:80'],
             'business_name'    => ['required', 'string', 'max:150'],
             'logo'             => ['required', 'string'],
             'contact_info'     => ['required', 'array'],
@@ -57,13 +61,6 @@ class TemplateRequest extends FormRequest
             'text_color'       => ['required', 'string', 'max:20'],
             'status'           => ['required', Rule::in(['draft', 'published'])],
             'is_default'       => ['required', 'boolean'],
-
-            'sections'                => ['required', 'array', 'min:1'],
-            'sections.*.section_type' => ['required', 'string', "in:$sections"],
-            'sections.*.design_key'   => ['required', 'string', 'max:80'],
-            'sections.*.sort_order'   => ['required', 'integer', 'min:0'],
-            'sections.*.is_enabled'   => ['required', 'boolean'],
-            'sections.*.content_json' => ['required', 'array'],
         ];
     }
 
@@ -76,10 +73,14 @@ class TemplateRequest extends FormRequest
             $this->merge(['tenant_id' => $tenantId]);
         }
 
-        foreach (['name', 'business_name', 'logo', 'font_family'] as $field) {
+        foreach (['name', 'template_key', 'business_name', 'logo', 'font_family'] as $field) {
             if ($this->has($field)) {
                 $this->merge([$field => trim((string) $this->input($field))]);
             }
+        }
+
+        if ($this->input('template_key') === '') {
+            $this->merge(['template_key' => null]);
         }
 
         $providedSlug = $this->has('slug') && trim((string) $this->input('slug')) !== '';
@@ -89,44 +90,6 @@ class TemplateRequest extends FormRequest
             'slug'       => $providedSlug ? Str::slug($slugSource) : $this->uniqueSlug($slugSource),
             'is_default' => $this->boolean('is_default'),
         ]);
-    }
-
-    /**
-     * @return array<int, string>
-     */
-    private function sectionTypes(): array
-    {
-        $sectionTypes = TemplateSectionDesign::query()
-            ->where('is_active', true)
-            ->distinct()
-            ->pluck('section_type')
-            ->all();
-
-        return $sectionTypes ?: [
-            'header',
-            'hero',
-            'about',
-            'services',
-            'products',
-            'portfolio',
-            'cta',
-            'testimonials',
-            'team',
-            'pricing',
-            'booking',
-            'clients',
-            'statistics',
-            'process',
-            'gallery',
-            'newsletter',
-            'location',
-            'social_links',
-            'features',
-            'mission_vision',
-            'faq',
-            'contact',
-            'footer',
-        ];
     }
 
     private function uniqueSlug(string $value): string
