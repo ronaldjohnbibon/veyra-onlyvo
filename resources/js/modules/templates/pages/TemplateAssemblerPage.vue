@@ -140,6 +140,13 @@ const fieldsForSection = (section: TemplateSection) => {
   return fieldsForDesign(templateStore.designs, section.section_type, section.design_key)
 }
 
+const activeDesignKeyForSection = (section: TemplateSection, fallbackKey: string): string => {
+  return (
+    designForSection(templateStore.designs, section.section_type, section.design_key)?.design_key ??
+    fallbackKey
+  )
+}
+
 const updateSortOrder = (sections: TemplateSection[]): void => {
   sections.forEach((section, index) => {
     section.sort_order = index + 1
@@ -264,14 +271,19 @@ const hydrateForm = (template: TemplateRecord): void => {
       (section) => section.section_type === defaultSection.section_type
     )
 
+    const designKey = existing
+      ? activeDesignKeyForSection(existing, defaultSection.design_key)
+      : defaultSection.design_key
+
     return existing
       ? {
           ...defaultSection,
           ...existing,
+          design_key: designKey,
           content_json: contentForDesign(
             templateStore.designs,
             defaultSection.section_type,
-            existing.design_key,
+            designKey,
             existing.content_json
           ),
         }

@@ -58,8 +58,6 @@ export interface TemplateSectionContent extends Record<string, any> {
   subtitle?: string
   body?: string
   image?: string
-  left_image?: string
-  right_image?: string
   tagline?: string
   cta_label?: string
   button_link?: string
