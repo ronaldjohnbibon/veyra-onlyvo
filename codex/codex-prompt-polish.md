@@ -1,37 +1,25 @@
-Inside Templates module, I want you to add these missing website sections:
-
-Sections to add:
-
-- Navigation / Navbar
-- Call To Action (CTA)
-- Testimonials / Reviews
-- Team / Our Team
-- Pricing / Plans
-- Booking / Appointment
-- Clients / Partners / Trusted By
-- Statistics / Achievements
-- Process / How It Works
-- Gallery
-- Newsletter / Subscribe
-- Location / Map
-- Social Links
-- Features / Why Choose Us
-- Mission / Vision
+I want you to polish the prompt below.
 
 Requirements:
 
-- Follow the existing project structure, coding style, and patterns.
-- Match the current Templates module architecture and UI design.
-- Keep the implementation simple, clean, and human-coded.
-- Avoid unnecessary abstraction, over-engineering, or unrelated refactoring.
-- Use existing shadcn UI components where suitable.
-- Each section should support dynamic content editing similar to the existing sections.
-- Follow the same create/edit/delete, ordering, visibility, and publish behavior used by existing template sections.
-- Add proper frontend and backend support if needed.
-- Add short and direct comments only for important logic.
-- Ensure the sections are responsive and work properly on desktop and mobile.
-- Keep the final implementation working and consistent with the current template system.
-- Do not create tests.
+- Make it one complete copy-paste format.
+- Keep it clear and direct.
+- Avoid nested code blocks so the output stays complete.
 
-Goal:
-Users should be able to add, customize, reorder, enable/disable, and publish these sections just like existing sections such as Hero, About, Services, Portfolio, Products, FAQ, Contact, and Footer.
+Prompt:
+
+Rules:
+
+- Read C:\Users\lenovo\Desktop\projects\veyra-onlyvo\codex\codex.md.
+- Follow the existing project structure, coding style, and patterns.
+- When changing frontend code, also check and update related backend code if needed.
+- When changing backend code, also check and update related frontend code if needed.
+- Use existing shadcn UI components for fields, buttons, dialogs, tables, cards, and other UI elements when suitable.
+- Keep the code simple, direct, and human-coded.
+- Avoid unnecessary abstraction, over engineering, or unrelated refactoring.
+- Make sure the final code is working.
+- Do not create tests.
+- Add short, direct comments for important logic and functions. Each comment should be simple and explain what the code does in one short sentence.
+
+Task:
+I want you to combine all the migrations that are connected, those migrations that should be on one migration only. Treat it like a fresh app that's will only run it's first migration.
