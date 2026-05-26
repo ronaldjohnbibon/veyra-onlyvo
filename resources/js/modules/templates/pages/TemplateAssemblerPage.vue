@@ -7,6 +7,7 @@ import {
 } from '@/modules/templates/field-registry'
 import { useTemplateStore } from '@/modules/templates/template-store'
 import type {
+  TemplateNavigationItem,
   TemplateSectionContent,
   TemplatePayload,
   TemplateRecord,
@@ -126,6 +127,15 @@ const sectionLabelFor = (sectionType: TemplateSectionType) => {
   )
 }
 
+const navigationSectionOptions = computed(() => {
+  return orderedSections.value
+    .filter((section) => !['header', 'footer'].includes(section.section_type))
+    .map((section) => ({
+      label: sectionLabelFor(section.section_type),
+      value: section.section_type,
+    }))
+})
+
 const fieldsForSection = (section: TemplateSection) => {
   return fieldsForDesign(templateStore.designs, section.section_type, section.design_key)
 }
@@ -161,6 +171,66 @@ const addListItem = (section: TemplateSection, key: string): void => {
 
 const removeListItem = (section: TemplateSection, key: string, index: number): void => {
   ensureList(section, key).splice(index, 1)
+}
+
+const navigationItemsFor = (section: TemplateSection, key: string): TemplateNavigationItem[] => {
+  if (!Array.isArray(section.content_json[key])) return []
+
+  return section.content_json[key].filter((item: unknown) => {
+    return item && typeof item === 'object'
+  }) as TemplateNavigationItem[]
+}
+
+const ensureNavigationItems = (section: TemplateSection, key: string): TemplateNavigationItem[] => {
+  section.content_json[key] = navigationItemsFor(section, key)
+
+  return section.content_json[key]
+}
+
+const addNavigationItem = (section: TemplateSection, key: string): void => {
+  const option =
+    navigationSectionOptions.value.find((item) => {
+      return !ensureNavigationItems(section, key).some(
+        (navItem) => navItem.section_type === item.value
+      )
+    }) ?? navigationSectionOptions.value[0]
+
+  if (!option) return
+
+  ensureNavigationItems(section, key).push({
+    label: option.label,
+    section_type: option.value,
+  })
+}
+
+const updateNavigationTarget = (item: TemplateNavigationItem, value: unknown): void => {
+  const sectionType = value as TemplateSectionType
+
+  if (!sectionType) return
+
+  const option = navigationSectionOptions.value.find((navOption) => navOption.value === sectionType)
+
+  item.section_type = sectionType
+  item.label = option?.label ?? item.label
+}
+
+const moveNavigationItem = (
+  section: TemplateSection,
+  key: string,
+  index: number,
+  direction: -1 | 1
+): void => {
+  const items = ensureNavigationItems(section, key)
+  const target = index + direction
+
+  if (target < 0 || target >= items.length) return
+
+  const [item] = items.splice(index, 1)
+  items.splice(target, 0, item)
+}
+
+const removeNavigationItem = (section: TemplateSection, key: string, index: number): void => {
+  ensureNavigationItems(section, key).splice(index, 1)
 }
 
 const selectDesign = (section: TemplateSection, designKey: string): void => {
@@ -269,6 +339,18 @@ const validate = (): boolean => {
 const cleanedContent = (section: TemplateSection): TemplateSectionContent => {
   return fieldsForSection(section).reduce<TemplateSectionContent>((content, field) => {
     const value = section.content_json[field.key]
+
+    if (field.type === 'navigation') {
+      const validSectionTypes = new Set(
+        navigationSectionOptions.value.map((option) => option.value)
+      )
+
+      content[field.key] = ensureNavigationItems(section, field.key).filter((item) => {
+        return item.label.trim() && validSectionTypes.has(item.section_type)
+      })
+
+      return content
+    }
 
     content[field.key] = Array.isArray(value) ? value.filter(Boolean) : (value ?? '')
 
@@ -597,6 +679,89 @@ watch(
                             :id="`section-${section.section_type}-${section.design_key}-${fieldConfig.key}`"
                             v-model="section.content_json[fieldConfig.key]"
                           />
+                        </template>
+
+                        <template v-else-if="fieldConfig.type === 'navigation'">
+                          <div class="flex items-center justify-between gap-3">
+                            <p class="text-sm font-medium">{{ fieldConfig.label }}</p>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              type="button"
+                              @click="addNavigationItem(section, fieldConfig.key)"
+                            >
+                              <Plus class="size-4" />
+                              Add
+                            </Button>
+                          </div>
+
+                          <div class="mt-3 space-y-2">
+                            <div
+                              v-for="(navItem, itemIndex) in navigationItemsFor(
+                                section,
+                                fieldConfig.key
+                              )"
+                              :key="`${fieldConfig.key}-${itemIndex}`"
+                              class="grid gap-2 rounded border bg-muted/20 p-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]"
+                            >
+                              <Input
+                                v-model="navItem.label"
+                                :aria-label="`Navigation label ${itemIndex + 1}`"
+                                placeholder="Label"
+                              />
+
+                              <NativeSelect
+                                :model-value="navItem.section_type"
+                                class="w-full"
+                                :aria-label="`Navigation section ${itemIndex + 1}`"
+                                @update:model-value="updateNavigationTarget(navItem, $event)"
+                              >
+                                <NativeSelectOption
+                                  v-for="option in navigationSectionOptions"
+                                  :key="option.value"
+                                  :value="option.value"
+                                >
+                                  {{ option.label }}
+                                </NativeSelectOption>
+                              </NativeSelect>
+
+                              <div class="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  :disabled="itemIndex === 0"
+                                  type="button"
+                                  @click="
+                                    moveNavigationItem(section, fieldConfig.key, itemIndex, -1)
+                                  "
+                                >
+                                  <ArrowUp class="size-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  :disabled="
+                                    itemIndex ===
+                                    navigationItemsFor(section, fieldConfig.key).length - 1
+                                  "
+                                  type="button"
+                                  @click="
+                                    moveNavigationItem(section, fieldConfig.key, itemIndex, 1)
+                                  "
+                                >
+                                  <ArrowDown class="size-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  type="button"
+                                  @click="removeNavigationItem(section, fieldConfig.key, itemIndex)"
+                                >
+                                  <Trash2 class="size-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
                         </template>
 
                         <template v-else-if="fieldConfig.type === 'list'">

@@ -1,5 +1,10 @@
 <script setup lang="ts">
-import type { TemplateRecord, TemplateSection, TemplateSectionType } from '@/types/templates'
+import type {
+  TemplateNavigationItem,
+  TemplateRecord,
+  TemplateSection,
+  TemplateSectionType,
+} from '@/types/templates'
 import { Menu, X } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
@@ -11,34 +16,22 @@ const props = defineProps<{
 const mobileOpen = ref(false)
 const activeAnchor = ref('')
 
-const labels: Partial<Record<TemplateSectionType, string>> = {
-  cta: 'Contact',
-  faq: 'FAQ',
-  mission_vision: 'Mission',
-  social_links: 'Social',
-}
-
 const sectionAnchorId = (sectionType: TemplateSectionType): string => {
   return `template-section-${sectionType.replaceAll('_', '-')}`
 }
 
-const sectionLabel = (section: TemplateSection): string => {
-  const title = section.content_json.title
-
-  return (
-    (typeof title === 'string' && title.trim()) ||
-    labels[section.section_type] ||
-    section.section_type.replace(/_/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase())
-  )
-}
-
 const navItems = computed(() => {
-  return [...props.template.sections]
-    .filter((item) => item.is_enabled && !['header', 'footer'].includes(item.section_type))
-    .sort((a, b) => a.sort_order - b.sort_order)
+  const enabledSections = new Set(
+    props.template.sections
+      .filter((item) => item.is_enabled && !['header', 'footer'].includes(item.section_type))
+      .map((item) => item.section_type)
+  )
+
+  return ((props.section.content_json.navigation_items ?? []) as TemplateNavigationItem[])
+    .filter((item) => item.label?.trim() && enabledSections.has(item.section_type))
     .map((item) => ({
       id: sectionAnchorId(item.section_type),
-      label: sectionLabel(item),
+      label: item.label.trim(),
     }))
 })
 
@@ -93,16 +86,7 @@ onBeforeUnmount(() => {
         </div>
       </div>
 
-      <div class="hidden flex-1 justify-end md:flex">
-        <a
-          v-if="section.content_json.cta_label"
-          :href="section.content_json.button_link || '#template-section-contact'"
-          class="rounded px-4 py-2 text-xs font-semibold text-white"
-          style="background: var(--template-primary)"
-        >
-          {{ section.content_json.cta_label }}
-        </a>
-      </div>
+      <div class="hidden flex-1 justify-end md:flex"></div>
 
       <button
         class="rounded border p-2 md:hidden"
@@ -126,15 +110,6 @@ onBeforeUnmount(() => {
         @click="closeMenu(item.id)"
       >
         {{ item.label }}
-      </a>
-      <a
-        v-if="section.content_json.cta_label"
-        :href="section.content_json.button_link || '#template-section-contact'"
-        class="rounded px-4 py-2 text-center text-xs font-semibold text-white"
-        style="background: var(--template-primary)"
-        @click="mobileOpen = false"
-      >
-        {{ section.content_json.cta_label }}
       </a>
     </nav>
   </header>

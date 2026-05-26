@@ -111,21 +111,17 @@ return new class extends Migration
         return [
             $this->design('header', 'Header', 'Header Design 1', 'header-1', 1, true, [
                 $this->field('tagline', 'Tagline'),
-                $this->field('cta_label', 'Button Label'),
-                $this->field('button_link', 'Button Link', 'url'),
+                $this->field('navigation_items', 'Navigation Items', 'navigation', 'md:col-span-2'),
             ], [
-                'tagline'     => 'Business website',
-                'cta_label'   => '',
-                'button_link' => '#template-section-contact',
+                'tagline'          => 'Business website',
+                'navigation_items' => $this->defaultNavigationItems(),
             ]),
             $this->design('header', 'Header', 'Header Design 2', 'header-2', 1, true, [
                 $this->field('tagline', 'Tagline'),
-                $this->field('cta_label', 'Button Label'),
-                $this->field('button_link', 'Button Link', 'url'),
+                $this->field('navigation_items', 'Navigation Items', 'navigation', 'md:col-span-2'),
             ], [
-                'tagline'     => 'Business website',
-                'cta_label'   => 'Contact us',
-                'button_link' => '#template-section-contact',
+                'tagline'          => 'Business website',
+                'navigation_items' => $this->defaultNavigationItems(),
             ]),
             $this->design('hero', 'Hero', 'Hero Design 1', 'hero-1', 2, true, [
                 $this->field('title', 'Title'),
@@ -469,6 +465,18 @@ return new class extends Migration
             .'</text></svg>';
 
         return 'data:image/svg+xml,'.rawurlencode($svg);
+    }
+
+    /**
+     * @return array<int, array<string, string>>
+     */
+    private function defaultNavigationItems(): array
+    {
+        return [
+            ['label' => 'Services', 'section_type' => 'services'],
+            ['label' => 'FAQ', 'section_type' => 'faq'],
+            ['label' => 'Contact', 'section_type' => 'contact'],
+        ];
     }
 
     /**

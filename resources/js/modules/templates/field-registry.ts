@@ -8,10 +8,16 @@ import type {
 
 export type { TemplateFieldConfig, TemplateFieldType }
 
-const fieldTypes: TemplateFieldType[] = ['text', 'textarea', 'url', 'list']
+const fieldTypes: TemplateFieldType[] = ['text', 'textarea', 'url', 'list', 'navigation']
 
-const cloneValue = (value: unknown): string | string[] => {
-  return Array.isArray(value) ? [...value].map(String) : String(value ?? '')
+const cloneValue = (value: unknown): string | unknown[] => {
+  if (!Array.isArray(value)) return String(value ?? '')
+
+  return value.map((item) => {
+    if (!item || typeof item !== 'object') return String(item ?? '')
+
+    return { ...(item as Record<string, unknown>) }
+  })
 }
 
 const cloneContent = (content: TemplateSectionContent = {}): TemplateSectionContent => {

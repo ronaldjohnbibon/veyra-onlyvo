@@ -128,6 +128,7 @@ class TemplateService
             ->where('is_active', true)
             ->get()
             ->groupBy('section_type');
+        $sectionTypes = collect($sections)->pluck('section_type')->map(fn ($type) => (string) $type)->all();
 
         foreach ($sections as $section) {
             $sectionType = (string) $section['section_type'];
@@ -144,9 +145,47 @@ class TemplateService
                     'design_key'   => $designKey,
                     'sort_order'   => (int) $section['sort_order'],
                     'is_enabled'   => (bool) $section['is_enabled'],
-                    'content_json' => $section['content_json'] ?? [],
+                    'content_json' => $this->normalizeSectionContent($section, $sectionTypes),
                 ],
             );
         }
+    }
+
+    /**
+     * @param  array<string, mixed>  $section
+     * @param  array<int, string>  $sectionTypes
+     * @return array<string, mixed>
+     */
+    private function normalizeSectionContent(array $section, array $sectionTypes): array
+    {
+        $content = is_array($section['content_json'] ?? null) ? $section['content_json'] : [];
+
+        if (($section['section_type'] ?? '') !== 'header') {
+            return $content;
+        }
+
+        unset($content['cta_label'], $content['button_link']);
+
+        $allowedSectionTypes = collect($sectionTypes)
+            ->reject(fn (string $type) => in_array($type, ['header', 'footer'], true))
+            ->values()
+            ->all();
+
+        $content['navigation_items'] = collect($content['navigation_items'] ?? [])
+            ->filter(fn ($item) => is_array($item))
+            ->map(function (array $item): array {
+                return [
+                    'label'        => trim((string) ($item['label'] ?? '')),
+                    'section_type' => trim((string) ($item['section_type'] ?? '')),
+                ];
+            })
+            ->filter(function (array $item) use ($allowedSectionTypes): bool {
+                return $item['label'] !== ''
+                    && in_array($item['section_type'], $allowedSectionTypes, true);
+            })
+            ->values()
+            ->all();
+
+        return $content;
     }
 }

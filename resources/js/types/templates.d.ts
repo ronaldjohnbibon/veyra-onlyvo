@@ -1,6 +1,6 @@
 export type TemplateStatus = 'draft' | 'published'
 
-export type TemplateFieldType = 'text' | 'textarea' | 'url' | 'list'
+export type TemplateFieldType = 'text' | 'textarea' | 'url' | 'list' | 'navigation'
 
 export type TemplateSectionType =
   | 'header'
@@ -48,6 +48,11 @@ export interface TemplateFieldConfig {
   class?: string
 }
 
+export interface TemplateNavigationItem {
+  label: string
+  section_type: TemplateSectionType
+}
+
 export interface TemplateSectionContent extends Record<string, any> {
   title?: string
   subtitle?: string
@@ -58,6 +63,7 @@ export interface TemplateSectionContent extends Record<string, any> {
   tagline?: string
   cta_label?: string
   button_link?: string
+  navigation_items?: TemplateNavigationItem[]
   email_placeholder?: string
   map_url?: string
   schedule?: string
