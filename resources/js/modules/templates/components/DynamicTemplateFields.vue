@@ -124,7 +124,10 @@ const removeRepeaterRow = (field: TemplateFieldSchema, rowIndex: number): void =
             </div>
           </Field>
 
-          <Field v-else-if="field.type === 'textarea'" class="md:col-span-2">
+          <Field
+            v-else-if="field.type === 'textarea' || field.type === 'rich_text'"
+            class="md:col-span-2"
+          >
             <FieldLabel :for="fieldId(field)">{{ field.label }}</FieldLabel>
             <Textarea
               :id="fieldId(field)"

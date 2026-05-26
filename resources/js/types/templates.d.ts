@@ -7,6 +7,7 @@ export type TemplateFieldType =
   | 'email'
   | 'phone'
   | 'image'
+  | 'rich_text'
   | 'color'
   | 'number'
   | 'boolean'
