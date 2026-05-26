@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { Button } from '@/components/ui/button'
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty'
-import { getTemplateSectionComponent } from '@/modules/templates/components/registry'
-import { getTemplatePreset } from '@/modules/templates/template-presets'
-import type { TemplateRecord, TemplateSectionType } from '@/types/templates'
+import { getWebsiteTemplateComponent } from '@/modules/templates/components/registry'
+import type { TemplateRecord } from '@/types/templates'
 import { Maximize2, Monitor, Smartphone, Tablet } from 'lucide-vue-next'
 import { computed, ref, type CSSProperties } from 'vue'
 
@@ -23,16 +22,8 @@ type PreviewSizeKey = (typeof previewSizes)[number]['key']
 
 const selectedPreviewSize = ref<PreviewSizeKey>('full')
 
-const renderTemplate = computed(() => ({
-  ...props.template,
-  sections:
-    props.template.sections ?? getTemplatePreset(props.template.template_key).sections ?? [],
-}))
-
-const enabledSections = computed(() => {
-  return [...renderTemplate.value.sections]
-    .filter((section) => section.is_enabled)
-    .sort((a, b) => a.sort_order - b.sort_order)
+const templateComponent = computed(() => {
+  return getWebsiteTemplateComponent(props.template.website_type?.slug, props.template.template_key)
 })
 
 const selectedPreview = computed(() => {
@@ -52,10 +43,6 @@ const previewStyle = computed<CSSProperties>(() => ({
 const previewFrameStyle = computed<CSSProperties>(() => ({
   width: selectedPreview.value.width,
 }))
-
-const sectionAnchorId = (sectionType: TemplateSectionType): string => {
-  return `template-section-${sectionType.replaceAll('_', '-')}`
-}
 </script>
 
 <template>
@@ -88,22 +75,12 @@ const sectionAnchorId = (sectionType: TemplateSectionType): string => {
         class="template-preview mx-auto min-h-full overflow-hidden rounded border bg-white transition-[width] duration-200"
         :style="[previewStyle, previewFrameStyle]"
       >
-        <div
-          v-for="section in enabledSections"
-          :key="`${section.section_type}-${section.design_key}`"
-          :id="sectionAnchorId(section.section_type)"
-        >
-          <component
-            :is="getTemplateSectionComponent(section.section_type, section.design_key)"
-            :template="renderTemplate"
-            :section="section"
-          />
-        </div>
-        <Empty v-if="!enabledSections.length" class="min-h-[320px] border-0">
+        <component :is="templateComponent" v-if="templateComponent" :template="props.template" />
+        <Empty v-else class="min-h-[320px] border-0">
           <EmptyHeader>
-            <EmptyTitle>No design sections available</EmptyTitle>
+            <EmptyTitle>No template selected</EmptyTitle>
             <EmptyDescription>
-              Select a website type and design when designs are added.
+              Select a website type and complete template to build a preview.
             </EmptyDescription>
           </EmptyHeader>
         </Empty>

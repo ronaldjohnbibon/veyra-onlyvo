@@ -15,17 +15,16 @@ import { Field, FieldGroup, FieldLabel, FieldSet } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import TemplatePreview from '@/modules/templates/components/TemplatePreview.vue'
-import { getTemplatePreset } from '@/modules/templates/template-presets'
+import { getTemplateCatalogItem } from '@/modules/templates/template-catalog'
 import { useTemplateStore } from '@/modules/templates/template-store'
 import type {
+  TemplateCatalogItem,
   TemplatePayload,
-  TemplatePreset,
   TemplateRecord,
-  TemplateSection,
   TemplateStatus,
   WebsiteType,
 } from '@/types/templates'
-import { Check, ExternalLink, Layers3, Plus, Save, Send } from 'lucide-vue-next'
+import { Check, ExternalLink, LayoutTemplate, Plus, Save, Send } from 'lucide-vue-next'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -33,7 +32,6 @@ const templateStore = useTemplateStore()
 const router = useRouter()
 const selectedWebsiteTypeId = ref<string | null>(null)
 const selectedTemplateId = ref<string | null>(null)
-const selectedTemplateSections = ref<TemplateSection[] | undefined>(undefined)
 const formError = ref('')
 const slugTouched = ref(false)
 
@@ -62,7 +60,7 @@ const createBlankTemplate = (
     website_type_id: websiteType?.id ?? '',
     name: templateName,
     slug: slugify(templateName),
-    template_key: null,
+    template_key: '',
     business_name: 'Onlyvo Studio',
     logo: 'https://dummyimage.com/120x120/14b8a6/ffffff.png&text=OV',
     contact_info: {
@@ -88,22 +86,22 @@ const createBlankTemplate = (
 
 const form = ref<TemplatePayload>(createBlankTemplate())
 
-const presetOptions = computed<TemplatePreset[]>(() => templateStore.presets)
+const templateOptions = computed<TemplateCatalogItem[]>(() => templateStore.availableTemplates)
 
-const selectedPreset = computed<TemplatePreset>(() => {
-  return getTemplatePreset(form.value.template_key, presetOptions.value)
+const selectedCatalogTemplate = computed<TemplateCatalogItem>(() => {
+  return getTemplateCatalogItem(form.value.template_key, templateOptions.value)
 })
 
-const hasSelectedDesign = computed(() =>
-  Boolean(form.value.template_key && selectedPreset.value.key)
+const hasSelectedCatalogTemplate = computed(() =>
+  Boolean(form.value.template_key && selectedCatalogTemplate.value.key)
 )
 
-const canEditDetails = computed(() => Boolean(selectedTemplateId.value || hasSelectedDesign.value))
+const canEditDetails = computed(() =>
+  Boolean(selectedTemplateId.value || hasSelectedCatalogTemplate.value)
+)
 
 const canSave = computed(() => {
-  return Boolean(
-    form.value.website_type_id && (selectedTemplateId.value || form.value.template_key)
-  )
+  return Boolean(form.value.website_type_id && form.value.template_key)
 })
 
 const previewTemplate = computed<TemplateRecord>(() => ({
@@ -112,7 +110,6 @@ const previewTemplate = computed<TemplateRecord>(() => ({
   ...form.value,
   website_type_id: form.value.website_type_id,
   website_type: selectedWebsiteType.value ?? undefined,
-  sections: selectedTemplateSections.value ?? selectedPreset.value.sections ?? [],
 }))
 
 const searchTemplates = async (): Promise<void> => {
@@ -126,23 +123,20 @@ const searchTemplates = async (): Promise<void> => {
 const selectWebsiteType = async (websiteType: WebsiteType): Promise<void> => {
   selectedWebsiteTypeId.value = websiteType.id
   selectedTemplateId.value = null
-  selectedTemplateSections.value = undefined
   slugTouched.value = false
   form.value = createBlankTemplate(websiteType)
   formError.value = ''
 
-  await templateStore.loadPresets(websiteType.id)
+  await templateStore.loadAvailableTemplates(websiteType.id)
   await templateStore.index({ page: 1, website_type_id: websiteType.id })
 }
 
-const selectPreset = (preset: TemplatePreset): void => {
-  form.value.template_key = preset.key
-  selectedTemplateSections.value = preset.sections ?? []
+const selectCatalogTemplate = (template: TemplateCatalogItem): void => {
+  form.value.template_key = template.key
 }
 
 const resetForm = (): void => {
   selectedTemplateId.value = null
-  selectedTemplateSections.value = undefined
   slugTouched.value = false
   form.value = createBlankTemplate(selectedWebsiteType.value)
   formError.value = ''
@@ -156,7 +150,6 @@ const updateSlug = (): void => {
 const hydrateForm = (template: TemplateRecord): void => {
   selectedTemplateId.value = template.id
   selectedWebsiteTypeId.value = template.website_type_id
-  selectedTemplateSections.value = template.sections ?? []
   slugTouched.value = true
   form.value = {
     website_type_id: template.website_type_id,
@@ -190,7 +183,7 @@ const hydrateForm = (template: TemplateRecord): void => {
 const openTemplate = async (template: TemplateRecord): Promise<void> => {
   if (selectedWebsiteTypeId.value !== template.website_type_id) {
     selectedWebsiteTypeId.value = template.website_type_id
-    await templateStore.loadPresets(template.website_type_id)
+    await templateStore.loadAvailableTemplates(template.website_type_id)
   }
 
   hydrateForm(template)
@@ -202,8 +195,8 @@ const validate = (): boolean => {
     return false
   }
 
-  if (!selectedTemplateId.value && !form.value.template_key) {
-    formError.value = 'Choose a design before saving a new template.'
+  if (!form.value.template_key) {
+    formError.value = 'Choose a complete template before saving.'
     return false
   }
 
@@ -276,7 +269,7 @@ watch(
         <div>
           <h2 class="module-container-title">Templates</h2>
           <p class="module-container-description">
-            Select a website type first, then choose an available design under that type.
+            Select a website type first, then choose a complete website template.
           </p>
         </div>
       </div>
@@ -318,7 +311,7 @@ watch(
             <EmptyHeader>
               <EmptyTitle class="text-sm">No saved templates</EmptyTitle>
               <EmptyDescription>
-                Saved tenant templates will appear here after designs are added.
+                Saved tenant templates will appear here after publishing or saving drafts.
               </EmptyDescription>
             </EmptyHeader>
           </Empty>
@@ -328,7 +321,7 @@ watch(
           <Card class="gap-4 py-4">
             <CardHeader class="px-4">
               <CardTitle class="text-sm">Website Type</CardTitle>
-              <CardDescription>Choose the site category before viewing designs.</CardDescription>
+              <CardDescription>Choose the site category before viewing templates.</CardDescription>
             </CardHeader>
 
             <CardContent class="px-4">
@@ -348,7 +341,7 @@ watch(
                     <span>
                       <span class="block text-sm font-semibold">{{ websiteType.name }}</span>
                       <span class="mt-1 block text-xs leading-5 text-muted-foreground">
-                        {{ websiteType.designs_count }} designs available
+                        {{ websiteType.available_templates_count }} templates available
                       </span>
                     </span>
                     <Check
@@ -363,7 +356,7 @@ watch(
 
           <Card class="gap-4 py-4">
             <CardHeader class="px-4">
-              <CardTitle class="text-sm">Available Designs</CardTitle>
+              <CardTitle class="text-sm">Available Templates</CardTitle>
               <CardAction>
                 <Badge v-if="selectedWebsiteType" variant="outline">
                   {{ selectedWebsiteType.name }}
@@ -376,51 +369,52 @@ watch(
                 <EmptyHeader>
                   <EmptyTitle>Select a website type</EmptyTitle>
                   <EmptyDescription>
-                    Designs are organized by website type and appear after a type is selected.
+                    Complete templates are grouped by website type.
                   </EmptyDescription>
                 </EmptyHeader>
               </Empty>
 
-              <Empty v-else-if="!presetOptions.length" class="min-h-[220px]">
+              <Empty v-else-if="!templateOptions.length" class="min-h-[220px]">
                 <EmptyHeader>
-                  <EmptyTitle>No designs available yet</EmptyTitle>
+                  <EmptyTitle>No templates available yet</EmptyTitle>
                   <EmptyDescription>
-                    {{ selectedWebsiteType.name }} is ready for future designs.
+                    {{ selectedWebsiteType.name }} is ready for future templates.
                   </EmptyDescription>
                 </EmptyHeader>
               </Empty>
 
               <div v-else class="grid gap-3 md:grid-cols-3">
                 <button
-                  v-for="preset in presetOptions"
-                  :key="preset.key"
+                  v-for="templateOption in templateOptions"
+                  :key="templateOption.key"
                   type="button"
                   class="group rounded border bg-background p-2 text-left transition hover:border-primary hover:shadow-sm"
                   :class="{
-                    'border-primary ring-2 ring-primary/20': form.template_key === preset.key,
+                    'border-primary ring-2 ring-primary/20':
+                      form.template_key === templateOption.key,
                   }"
-                  @click="selectPreset(preset)"
+                  @click="selectCatalogTemplate(templateOption)"
                 >
                   <div
                     class="flex aspect-video w-full items-center justify-center rounded bg-muted text-muted-foreground"
                   >
                     <img
-                      v-if="preset.preview_image"
-                      :src="preset.preview_image"
-                      :alt="preset.name"
+                      v-if="templateOption.preview_image"
+                      :src="templateOption.preview_image"
+                      :alt="templateOption.name"
                       class="h-full w-full rounded object-cover"
                     />
-                    <Layers3 v-else class="size-6" />
+                    <LayoutTemplate v-else class="size-6" />
                   </div>
                   <span class="mt-3 flex items-center justify-between gap-2">
                     <span>
-                      <span class="block text-sm font-semibold">{{ preset.name }}</span>
+                      <span class="block text-sm font-semibold">{{ templateOption.name }}</span>
                       <span class="mt-1 block text-xs leading-5 text-muted-foreground">
-                        {{ preset.description }}
+                        {{ templateOption.description }}
                       </span>
                     </span>
                     <Check
-                      v-if="form.template_key === preset.key"
+                      v-if="form.template_key === templateOption.key"
                       class="size-4 shrink-0 text-primary"
                     />
                   </span>
@@ -456,8 +450,6 @@ watch(
                       <Input
                         id="site-slug"
                         v-model="form.slug"
-                        readonly
-                        class="cursor-not-allowed"
                         maxlength="120"
                         required
                         @input="updateSlug"

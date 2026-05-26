@@ -20,7 +20,7 @@ const routes: RouteRecordRaw[] = [
       requiresAuth: true,
       layout: 'empty',
       title: 'Template',
-      description: 'View and manage business website templates',
+      description: 'View and manage complete website templates',
     },
   },
 ]

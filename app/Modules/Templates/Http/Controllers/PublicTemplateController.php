@@ -41,7 +41,7 @@ class PublicTemplateController extends Controller
         // Public visitors can only read published tenant sites.
         return Template::withoutTenantRestrictions(function () use ($tenantId) {
             return Template::query()
-                ->with(['websiteType', 'templateDesign'])
+                ->with('websiteType')
                 ->where('tenant_id', $tenantId)
                 ->where('status', 'published');
         });

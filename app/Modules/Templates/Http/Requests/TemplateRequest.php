@@ -3,6 +3,7 @@
 namespace App\Modules\Templates\Http\Requests;
 
 use App\Modules\Templates\Models\Template;
+use App\Modules\Templates\Services\TemplateCatalogService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -20,9 +21,10 @@ class TemplateRequest extends FormRequest
      */
     public function rules(): array
     {
-        $routeParam = $this->route('template');
-        $templateId = is_object($routeParam) ? $routeParam->id : $routeParam;
-        $tenantId   = $this->input('tenant_id');
+        $routeParam   = $this->route('template');
+        $templateId   = is_object($routeParam) ? $routeParam->id : $routeParam;
+        $tenantId     = $this->input('tenant_id');
+        $templateKeys = app(TemplateCatalogService::class)->keys($this->input('website_type_id'));
 
         return [
             'tenant_id'       => ['nullable', 'uuid', Rule::exists('tenants', 'id')],
@@ -49,7 +51,7 @@ class TemplateRequest extends FormRequest
                     ->ignore($templateId)
                     ->where(fn ($query) => $query->where('tenant_id', $tenantId)),
             ],
-            'template_key'     => ['nullable', 'string', 'max:80'],
+            'template_key'     => ['required', 'string', 'max:80', Rule::in($templateKeys)],
             'business_name'    => ['required', 'string', 'max:150'],
             'logo'             => ['required', 'string'],
             'contact_info'     => ['required', 'array'],
@@ -77,10 +79,6 @@ class TemplateRequest extends FormRequest
             if ($this->has($field)) {
                 $this->merge([$field => trim((string) $this->input($field))]);
             }
-        }
-
-        if ($this->input('template_key') === '') {
-            $this->merge(['template_key' => null]);
         }
 
         $providedSlug = $this->has('slug') && trim((string) $this->input('slug')) !== '';

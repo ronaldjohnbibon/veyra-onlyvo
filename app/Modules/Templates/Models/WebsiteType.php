@@ -15,21 +15,14 @@ class WebsiteType extends Model
         'name',
         'slug',
         'description',
-        'sort_order',
         'is_active',
     ];
 
     protected function casts(): array
     {
         return [
-            'is_active'  => 'boolean',
-            'sort_order' => 'integer',
+            'is_active' => 'boolean',
         ];
-    }
-
-    public function templateDesigns(): HasMany
-    {
-        return $this->hasMany(TemplateDesign::class);
     }
 
     public function templates(): HasMany

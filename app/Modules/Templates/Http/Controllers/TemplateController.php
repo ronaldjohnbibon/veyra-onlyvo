@@ -8,7 +8,7 @@ use App\Modules\Templates\Http\Resources\TemplateResource;
 use App\Modules\Templates\Http\Resources\WebsiteTypeResource;
 use App\Modules\Templates\Models\Template;
 use App\Modules\Templates\Models\WebsiteType;
-use App\Modules\Templates\Services\TemplatePresetService;
+use App\Modules\Templates\Services\TemplateCatalogService;
 use App\Modules\Templates\Services\TemplateService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -19,7 +19,7 @@ class TemplateController extends Controller
     public function index(Request $request): JsonResponse
     {
         $templates = Template::query()
-            ->with(['websiteType', 'templateDesign'])
+            ->with('websiteType')
             ->where('tenant_id', $this->tenantId())
             ->filter([
                 'search'          => $request->input('search'),
@@ -84,30 +84,27 @@ class TemplateController extends Controller
         return $this->success(null, 'Template deleted.');
     }
 
-    public function websiteTypes(): JsonResponse
+    public function websiteTypes(TemplateCatalogService $catalog): JsonResponse
     {
         $types = WebsiteType::query()
             ->where('is_active', true)
-            ->withCount(['templateDesigns', 'templates'])
-            ->orderBy('sort_order')
+            ->withCount('templates')
             ->orderBy('name')
-            ->get();
+            ->get()
+            ->each(function (WebsiteType $type) use ($catalog): void {
+                $type->available_templates_count = count($catalog->forWebsiteType($type));
+            });
 
         return $this->success(WebsiteTypeResource::collection($types), 'Website types retrieved.');
     }
 
-    public function designs(WebsiteType $websiteType, TemplatePresetService $presets): JsonResponse
+    public function websiteTypeTemplates(WebsiteType $websiteType, TemplateCatalogService $catalog): JsonResponse
     {
         if (! $websiteType->is_active) {
             return $this->error('Website type not found.', 404);
         }
 
-        return $this->success($presets->all($websiteType->id), 'Template designs retrieved.');
-    }
-
-    public function presets(Request $request, TemplatePresetService $presets): JsonResponse
-    {
-        return $this->success($presets->all($request->input('website_type_id')), 'Template presets retrieved.');
+        return $this->success($catalog->forWebsiteType($websiteType), 'Website templates retrieved.');
     }
 
     public function published(string $template): JsonResponse
@@ -126,7 +123,7 @@ class TemplateController extends Controller
     private function queryForTenant()
     {
         return Template::query()
-            ->with(['websiteType', 'templateDesign'])
+            ->with('websiteType')
             ->where('tenant_id', $this->tenantId());
     }
 

@@ -1,36 +1,15 @@
-import type { TemplateSectionType } from '@/types/templates'
 import type { Component } from 'vue'
 
-const sectionComponents = import.meta.glob('./*/Design*.vue', {
+const templateComponents = import.meta.glob('../templates/*/*.vue', {
   eager: true,
   import: 'default',
 }) as Record<string, Component>
 
-const designNumberFor = (sectionType: TemplateSectionType, designKey: string): string | null => {
-  if (designKey === `${sectionType}-default`) {
-    return '1'
-  }
-
-  const sectionMatch = designKey.match(new RegExp(`^${sectionType}-(\\d+)$`))
-
-  if (sectionMatch?.[1]) {
-    return sectionMatch[1]
-  }
-
-  const componentMatch = designKey.match(/^Design(\d+)$/)
-
-  return componentMatch?.[1] ?? null
-}
-
-export const getTemplateSectionComponent = (
-  sectionType: TemplateSectionType,
-  designKey: string
+export const getWebsiteTemplateComponent = (
+  websiteTypeSlug?: string | null,
+  templateKey?: string | null
 ): Component | null => {
-  const designNumber = designNumberFor(sectionType, designKey)
+  if (!websiteTypeSlug || !templateKey) return null
 
-  return (
-    (designNumber ? sectionComponents[`./${sectionType}/Design${designNumber}.vue`] : null) ??
-    sectionComponents[`./${sectionType}/Design1.vue`] ??
-    null
-  )
+  return templateComponents[`../templates/${websiteTypeSlug}/${templateKey}.vue`] ?? null
 }

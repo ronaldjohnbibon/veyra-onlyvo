@@ -10,7 +10,7 @@ return new class extends Migration
     {
         if (Schema::hasTable('templates') && ! Schema::hasColumn('templates', 'template_key')) {
             Schema::table('templates', function (Blueprint $table): void {
-                $table->string('template_key', 80)->default('business-classic')->after('slug');
+                $table->string('template_key', 80)->default('template-1')->after('slug');
                 $table->index('template_key');
             });
         }

@@ -5,10 +5,11 @@ namespace App\Modules\Templates\Services;
 use App\Modules\Templates\Models\Template;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class TemplateService
 {
-    public function __construct(private readonly TemplatePresetService $presets) {}
+    public function __construct(private readonly TemplateCatalogService $catalog) {}
 
     /**
      * @param  array<string, mixed>  $data
@@ -73,10 +74,10 @@ class TemplateService
 
         $templateKey = (string) ($data['template_key'] ?? '');
 
-        if ($templateKey === '') {
-            $data['template_key'] = null;
-        } elseif (! $this->presets->exists($templateKey, $data['website_type_id'] ?? null)) {
-            $data['template_key'] = null;
+        if ($templateKey === '' || ! $this->catalog->exists($templateKey, $data['website_type_id'] ?? null)) {
+            throw ValidationException::withMessages([
+                'template_key' => 'Select an available website template.',
+            ]);
         }
 
         return $data;

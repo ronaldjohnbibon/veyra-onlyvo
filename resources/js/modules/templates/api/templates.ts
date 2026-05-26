@@ -1,8 +1,8 @@
 import http from '@/shared/api/http'
 import type {
+  TemplateCatalogItem,
   TemplateParams,
   TemplatePayload,
-  TemplatePreset,
   TemplateRecord,
   WebsiteType,
 } from '@/types/templates'
@@ -18,8 +18,8 @@ interface TemplateResponse {
   data: TemplateRecord
 }
 
-interface PresetResponse {
-  data: TemplatePreset[]
+interface CatalogResponse {
+  data: TemplateCatalogItem[]
 }
 
 interface WebsiteTypeResponse {
@@ -55,17 +55,9 @@ export const templateService = {
       .then((response) => response.data)
   },
 
-  presets(websiteTypeId?: string | null) {
+  websiteTypeTemplates(websiteTypeId: string) {
     return http
-      .get<PresetResponse>('templates/presets', {
-        params: websiteTypeId ? { website_type_id: websiteTypeId } : {},
-      })
-      .then((response) => response.data)
-  },
-
-  designs(websiteTypeId: string) {
-    return http
-      .get<PresetResponse>(`templates/website-types/${websiteTypeId}/designs`)
+      .get<CatalogResponse>(`templates/website-types/${websiteTypeId}/templates`)
       .then((response) => response.data)
   },
 

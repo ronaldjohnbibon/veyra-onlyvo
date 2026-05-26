@@ -20,7 +20,6 @@ class TemplateResource extends JsonResource
             'name'             => $this->name,
             'slug'             => $this->slug,
             'template_key'     => $this->template_key,
-            'sections'         => $this->templateDesign?->sections ?? [],
             'business_name'    => $this->business_name,
             'logo'             => $this->logo,
             'contact_info'     => $this->contact_info ?? [],

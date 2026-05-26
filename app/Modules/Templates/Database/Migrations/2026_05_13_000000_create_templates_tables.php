@@ -13,7 +13,7 @@ return new class extends Migration
             $table->foreignUuid('tenant_id')->constrained('tenants')->restrictOnDelete();
             $table->string('name');
             $table->string('slug', 120)->nullable();
-            $table->string('template_key', 80)->nullable()->default(null);
+            $table->string('template_key', 80)->default('template-1');
             $table->string('business_name');
             $table->text('logo');
             $table->json('contact_info');

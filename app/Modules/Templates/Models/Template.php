@@ -63,11 +63,6 @@ class Template extends Model
         return $this->hasMany(Post::class)->latest('published_at')->latest();
     }
 
-    public function templateDesign(): BelongsTo
-    {
-        return $this->belongsTo(TemplateDesign::class, 'template_key', 'key');
-    }
-
     public function websiteType(): BelongsTo
     {
         return $this->belongsTo(WebsiteType::class);

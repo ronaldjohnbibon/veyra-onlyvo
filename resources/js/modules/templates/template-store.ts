@@ -2,9 +2,9 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { templateService } from './api/templates'
 import type {
+  TemplateCatalogItem,
   TemplateParams,
   TemplatePayload,
-  TemplatePreset,
   TemplateRecord,
   WebsiteType,
 } from '@/types/templates'
@@ -13,7 +13,7 @@ export const useTemplateStore = defineStore('tenant-templates', () => {
   const templates = ref<TemplateRecord[]>([])
   const template = ref<TemplateRecord | null>(null)
   const websiteTypes = ref<WebsiteType[]>([])
-  const presets = ref<TemplatePreset[]>([])
+  const availableTemplates = ref<TemplateCatalogItem[]>([])
   const loading = ref(false)
   const total = ref(0)
   const params = ref<TemplateParams>({
@@ -44,11 +44,11 @@ export const useTemplateStore = defineStore('tenant-templates', () => {
     }
   }
 
-  const loadPresets = async (websiteTypeId?: string | null): Promise<void> => {
+  const loadAvailableTemplates = async (websiteTypeId?: string | null): Promise<void> => {
     try {
       loading.value = true
-      presets.value = websiteTypeId
-        ? ((await templateService.designs(websiteTypeId)).data ?? [])
+      availableTemplates.value = websiteTypeId
+        ? ((await templateService.websiteTypeTemplates(websiteTypeId)).data ?? [])
         : []
     } finally {
       loading.value = false
@@ -99,12 +99,12 @@ export const useTemplateStore = defineStore('tenant-templates', () => {
 
   return {
     destroy,
+    availableTemplates,
     index,
-    loadPresets,
+    loadAvailableTemplates,
     loadWebsiteTypes,
     loading,
     params,
-    presets,
     show,
     store,
     template,
