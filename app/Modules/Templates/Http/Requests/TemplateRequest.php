@@ -102,7 +102,31 @@ class TemplateRequest extends FormRequest
             ->pluck('section_type')
             ->all();
 
-        return $sectionTypes ?: ['header', 'hero', 'about', 'services', 'products', 'portfolio', 'faq', 'contact', 'footer'];
+        return $sectionTypes ?: [
+            'header',
+            'hero',
+            'about',
+            'services',
+            'products',
+            'portfolio',
+            'cta',
+            'testimonials',
+            'team',
+            'pricing',
+            'booking',
+            'clients',
+            'statistics',
+            'process',
+            'gallery',
+            'newsletter',
+            'location',
+            'social_links',
+            'features',
+            'mission_vision',
+            'faq',
+            'contact',
+            'footer',
+        ];
     }
 
     private function uniqueSlug(string $value): string

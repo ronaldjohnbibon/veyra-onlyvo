@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Button } from '@/components/ui/button'
 import { getTemplateSectionComponent } from '@/modules/templates/components/registry'
-import type { TemplateRecord } from '@/types/templates'
+import type { TemplateRecord, TemplateSectionType } from '@/types/templates'
 import { Maximize2, Monitor, Smartphone, Tablet } from 'lucide-vue-next'
 import { computed, ref, type CSSProperties } from 'vue'
 
@@ -44,6 +44,10 @@ const previewStyle = computed<CSSProperties>(() => ({
 const previewFrameStyle = computed<CSSProperties>(() => ({
   width: selectedPreview.value.width,
 }))
+
+const sectionAnchorId = (sectionType: TemplateSectionType): string => {
+  return `template-section-${sectionType.replaceAll('_', '-')}`
+}
 </script>
 
 <template>
@@ -76,13 +80,17 @@ const previewFrameStyle = computed<CSSProperties>(() => ({
         class="template-preview mx-auto min-h-full overflow-hidden rounded border bg-white transition-[width] duration-200"
         :style="[previewStyle, previewFrameStyle]"
       >
-        <component
-          :is="getTemplateSectionComponent(section.section_type, section.design_key)"
+        <div
           v-for="section in enabledSections"
           :key="`${section.section_type}-${section.design_key}`"
-          :template="template"
-          :section="section"
-        />
+          :id="sectionAnchorId(section.section_type)"
+        >
+          <component
+            :is="getTemplateSectionComponent(section.section_type, section.design_key)"
+            :template="template"
+            :section="section"
+          />
+        </div>
       </article>
     </div>
   </div>

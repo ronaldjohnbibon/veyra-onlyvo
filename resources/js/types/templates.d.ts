@@ -9,6 +9,20 @@ export type TemplateSectionType =
   | 'services'
   | 'products'
   | 'portfolio'
+  | 'cta'
+  | 'testimonials'
+  | 'team'
+  | 'pricing'
+  | 'booking'
+  | 'clients'
+  | 'statistics'
+  | 'process'
+  | 'gallery'
+  | 'newsletter'
+  | 'location'
+  | 'social_links'
+  | 'features'
+  | 'mission_vision'
   | 'faq'
   | 'contact'
   | 'footer'
@@ -44,6 +58,9 @@ export interface TemplateSectionContent extends Record<string, any> {
   tagline?: string
   cta_label?: string
   button_link?: string
+  email_placeholder?: string
+  map_url?: string
+  schedule?: string
   items?: string[]
   stats?: string[]
 }
