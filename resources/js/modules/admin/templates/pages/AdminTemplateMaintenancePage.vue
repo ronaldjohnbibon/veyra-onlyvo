@@ -23,6 +23,8 @@ const selectedCatalogItemId = ref<string | null>(null)
 const formError = ref('')
 const typeSlugTouched = ref(false)
 const itemKeyTouched = ref(false)
+// Tracks which details card should show the active edit border.
+const activeFormSection = ref<'websiteType' | 'template'>('websiteType')
 
 const slugify = (value: string): string => {
   return (
@@ -75,6 +77,7 @@ const renderPath = computed(() => {
 const selectWebsiteType = async (websiteType: WebsiteType): Promise<void> => {
   selectedWebsiteTypeId.value = websiteType.id
   selectedCatalogItemId.value = null
+  activeFormSection.value = 'websiteType'
   typeSlugTouched.value = true
   itemKeyTouched.value = false
   websiteTypeForm.value = {
@@ -91,6 +94,7 @@ const selectWebsiteType = async (websiteType: WebsiteType): Promise<void> => {
 
 const selectCatalogItem = (item: TemplateCatalogItem): void => {
   selectedCatalogItemId.value = item.id ?? null
+  activeFormSection.value = 'template'
   itemKeyTouched.value = true
   catalogItemForm.value = {
     website_type_id: item.website_type_id ?? selectedWebsiteTypeId.value ?? '',
@@ -106,6 +110,7 @@ const selectCatalogItem = (item: TemplateCatalogItem): void => {
 const newWebsiteType = (): void => {
   selectedWebsiteTypeId.value = null
   selectedCatalogItemId.value = null
+  activeFormSection.value = 'websiteType'
   typeSlugTouched.value = false
   itemKeyTouched.value = false
   websiteTypeForm.value = blankWebsiteType()
@@ -116,12 +121,15 @@ const newWebsiteType = (): void => {
 
 const newCatalogItem = (): void => {
   selectedCatalogItemId.value = null
+  activeFormSection.value = 'template'
   itemKeyTouched.value = false
   catalogItemForm.value = blankCatalogItem()
   formError.value = ''
 }
 
 const saveWebsiteType = async (): Promise<void> => {
+  activeFormSection.value = 'websiteType'
+
   if (!websiteTypeForm.value.name.trim()) {
     formError.value = 'Website type name is required.'
     return
@@ -145,6 +153,8 @@ const deleteWebsiteType = async (): Promise<void> => {
 }
 
 const saveCatalogItem = async (): Promise<void> => {
+  activeFormSection.value = 'template'
+
   if (!selectedWebsiteTypeId.value) {
     formError.value = 'Select a website type before saving a template.'
     return
@@ -257,7 +267,13 @@ watch(
 
         <main class="grid gap-4 2xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
           <section class="space-y-4">
-            <Card class="gap-4 py-4">
+            <Card
+              class="gap-4 py-4 transition"
+              :class="{
+                'border-primary ring-2 ring-primary/20': activeFormSection === 'websiteType',
+              }"
+              @focusin="activeFormSection = 'websiteType'"
+            >
               <CardHeader class="px-4">
                 <CardTitle class="text-sm">Website Type Details</CardTitle>
               </CardHeader>
@@ -296,7 +312,13 @@ watch(
               </CardContent>
             </Card>
 
-            <Card class="gap-4 py-4">
+            <Card
+              class="gap-4 py-4 transition"
+              :class="{
+                'border-primary ring-2 ring-primary/20': activeFormSection === 'template',
+              }"
+              @focusin="activeFormSection = 'template'"
+            >
               <CardHeader class="px-4">
                 <CardTitle class="text-sm">Template Details</CardTitle>
               </CardHeader>
