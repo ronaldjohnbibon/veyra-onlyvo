@@ -29,6 +29,7 @@ Rules:
 - Make sure the final code is working.
 - Do not create tests.
 - Add short, direct comments for important logic and functions. Each comment should be simple and explain what the code does in one short sentence.
+- Before creating a migration, check existing migrations first. If a related migration already exists, modify and extend it instead of creating a duplicate migration.
 
 Task:
 [Describe the task here]
@@ -57,6 +58,7 @@ Rules:
 - Make sure the final code is working.
 - Do not create tests.
 - Add short, direct comments for important logic and functions. Each comment should be simple and explain what the code does in one short sentence.
+- Before creating a migration, check existing migrations first. If a related migration already exists, modify and extend it instead of creating a duplicate migration.
 
 Task:
 [Describe the task here]
