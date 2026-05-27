@@ -409,10 +409,6 @@ const saveSchemaFieldDialog = (): void => {
     }
   }
 
-  if (target.fields === schemaFields.value && target.index === null) {
-    openSchemaFieldSections.value = [schemaFieldSectionValue(target.fields.length - 1)]
-  }
-
   syncDefaultContent()
   schemaFieldDialogOpen.value = false
 }
@@ -606,7 +602,7 @@ const selectCatalogItem = (item: TemplateCatalogItem): void => {
     is_active: item.is_active ?? true,
   }
   schemaFields.value = normalizeLoadedSchema(item.field_schema)
-  openSchemaFieldSections.value = schemaFields.value.length ? [schemaFieldSectionValue(0)] : []
+  openSchemaFieldSections.value = []
   defaultContent.value = contentForSchema(schemaFields.value, item.default_content ?? {})
   formError.value = ''
 }
@@ -859,11 +855,7 @@ watch(
                   <CardContent class="px-4">
                     <FieldGroup>
                       <FieldSet>
-                        <Accordion
-                          type="multiple"
-                          :default-value="['website-type-basics']"
-                          class="space-y-2"
-                        >
+                        <Accordion type="multiple" :default-value="[]" class="space-y-2">
                           <AccordionItem
                             value="website-type-basics"
                             class="rounded border bg-background px-3 last:border-b"
@@ -984,50 +976,52 @@ watch(
                   <CardContent class="px-4">
                     <FieldGroup>
                       <FieldSet>
-                        <div class="space-y-3 rounded border bg-muted/20 p-3">
-                          <div>
-                            <h4 class="text-sm font-semibold">Template Basics</h4>
-                            <p class="mt-1 text-xs text-muted-foreground">
-                              The fields used most often when creating or finding a template.
-                            </p>
-                          </div>
+                        <Accordion type="multiple" :default-value="[]" class="space-y-2">
+                          <AccordionItem
+                            value="template-basics"
+                            class="rounded border bg-background px-3 last:border-b"
+                          >
+                            <AccordionTrigger class="py-3 hover:no-underline">
+                              <span>
+                                <span class="block text-sm font-semibold">Template Basics</span>
+                                <span class="mt-1 block text-xs text-muted-foreground">
+                                  Name, catalog key, and active state.
+                                </span>
+                              </span>
+                            </AccordionTrigger>
+                            <AccordionContent class="space-y-3 pb-3">
+                              <div class="grid gap-3 md:grid-cols-2">
+                                <Field>
+                                  <FieldLabel for="catalog-name">Name</FieldLabel>
+                                  <Input
+                                    id="catalog-name"
+                                    v-model="catalogItemForm.name"
+                                    :disabled="!selectedWebsiteType"
+                                  />
+                                </Field>
 
-                          <div class="grid gap-3 md:grid-cols-2">
-                            <Field>
-                              <FieldLabel for="catalog-name">Name</FieldLabel>
-                              <Input
-                                id="catalog-name"
-                                v-model="catalogItemForm.name"
-                                :disabled="!selectedWebsiteType"
-                              />
-                            </Field>
+                                <Field>
+                                  <FieldLabel for="catalog-key">Template Key</FieldLabel>
+                                  <Input
+                                    id="catalog-key"
+                                    v-model="catalogItemForm.key"
+                                    :disabled="!selectedWebsiteType"
+                                    @input="itemKeyTouched = true"
+                                  />
+                                </Field>
+                              </div>
 
-                            <Field>
-                              <FieldLabel for="catalog-key">Template Key</FieldLabel>
-                              <Input
-                                id="catalog-key"
-                                v-model="catalogItemForm.key"
-                                :disabled="!selectedWebsiteType"
-                                @input="itemKeyTouched = true"
-                              />
-                            </Field>
-                          </div>
+                              <Field orientation="horizontal" class="items-center gap-3">
+                                <Checkbox
+                                  id="catalog-active"
+                                  v-model="catalogItemForm.is_active"
+                                  :disabled="!selectedWebsiteType"
+                                />
+                                <FieldLabel for="catalog-active">Active</FieldLabel>
+                              </Field>
+                            </AccordionContent>
+                          </AccordionItem>
 
-                          <Field orientation="horizontal" class="items-center gap-3">
-                            <Checkbox
-                              id="catalog-active"
-                              v-model="catalogItemForm.is_active"
-                              :disabled="!selectedWebsiteType"
-                            />
-                            <FieldLabel for="catalog-active">Active</FieldLabel>
-                          </Field>
-                        </div>
-
-                        <Accordion
-                          type="multiple"
-                          :default-value="['template-field-schema']"
-                          class="space-y-2"
-                        >
                           <AccordionItem
                             value="template-metadata"
                             class="rounded border bg-background px-3 last:border-b"
@@ -1276,259 +1270,66 @@ watch(
                   </DialogDescription>
                 </DialogHeader>
 
-                <div v-if="schemaFieldDraft" class="space-y-4">
-                  <div class="grid gap-3 md:grid-cols-2">
-                    <Field>
-                      <FieldLabel for="schema-dialog-label">Field label</FieldLabel>
-                      <Input
-                        id="schema-dialog-label"
-                        :model-value="schemaFieldDraft.label"
-                        @update:model-value="
-                          updateDraftFieldLabel(schemaFieldDraft, String($event))
-                        "
-                      />
-                    </Field>
-
-                    <Field>
-                      <FieldLabel for="schema-dialog-key">Field key/name</FieldLabel>
-                      <Input
-                        id="schema-dialog-key"
-                        :model-value="schemaFieldDraft.key"
-                        @update:model-value="updateDraftFieldKey(schemaFieldDraft, String($event))"
-                      />
-                      <FieldDescription
-                        >Use lowercase letters, numbers, and underscores.</FieldDescription
-                      >
-                    </Field>
-
-                    <Field>
-                      <FieldLabel for="schema-dialog-type">Field type</FieldLabel>
-                      <NativeSelect
-                        id="schema-dialog-type"
-                        class="w-full"
-                        :model-value="schemaFieldDraft.type"
-                        @update:model-value="
-                          updateDraftFieldType(
-                            schemaFieldDraft,
-                            String($event) as TemplateFieldType
-                          )
-                        "
-                      >
-                        <NativeSelectOption
-                          v-for="fieldType in schemaFieldTypeOptions"
-                          :key="fieldType.value"
-                          :value="fieldType.value"
-                        >
-                          {{ fieldType.label }}
-                        </NativeSelectOption>
-                      </NativeSelect>
-                    </Field>
-
-                    <Field
-                      v-if="
-                        schemaFieldDraft.type !== 'boolean' && schemaFieldDraft.type !== 'repeater'
-                      "
-                    >
-                      <FieldLabel for="schema-dialog-placeholder">Placeholder</FieldLabel>
-                      <Input
-                        id="schema-dialog-placeholder"
-                        v-model="schemaFieldDraft.placeholder"
-                      />
-                    </Field>
-
-                    <Field
-                      v-if="schemaFieldDraft.type === 'boolean'"
-                      orientation="horizontal"
-                      class="items-center gap-3 self-end"
-                    >
-                      <Checkbox
-                        id="schema-dialog-default"
-                        :model-value="Boolean(schemaFieldDraft.default)"
-                        @update:model-value="
-                          updateDraftFieldDefault(schemaFieldDraft, Boolean($event))
-                        "
-                      />
-                      <FieldLabel for="schema-dialog-default">Default checked</FieldLabel>
-                    </Field>
-
-                    <Field v-else-if="schemaFieldDraft.type !== 'repeater'">
-                      <FieldLabel for="schema-dialog-default">Default value</FieldLabel>
-                      <Textarea
-                        v-if="
-                          schemaFieldDraft.type === 'textarea' ||
-                          schemaFieldDraft.type === 'rich_text'
-                        "
-                        id="schema-dialog-default"
-                        :model-value="String(schemaFieldDraft.default ?? '')"
-                        class="min-h-20"
-                        @update:model-value="updateDraftFieldDefault(schemaFieldDraft, $event)"
-                      />
-                      <Input
-                        v-else
-                        id="schema-dialog-default"
-                        :type="schemaFieldDraft.type === 'number' ? 'number' : 'text'"
-                        :model-value="String(schemaFieldDraft.default ?? '')"
-                        @update:model-value="updateDraftFieldDefault(schemaFieldDraft, $event)"
-                      />
-                    </Field>
-
-                    <Field orientation="horizontal" class="items-center gap-3 self-end">
-                      <Checkbox id="schema-dialog-required" v-model="schemaFieldDraft.required" />
-                      <FieldLabel for="schema-dialog-required">Required</FieldLabel>
-                    </Field>
-                  </div>
-
-                  <div
-                    v-if="schemaFieldDraft.type === 'select'"
-                    class="space-y-2 rounded border bg-muted/20 p-3"
+                <Accordion
+                  v-if="schemaFieldDraft"
+                  type="multiple"
+                  :default-value="[]"
+                  class="space-y-2"
+                >
+                  <AccordionItem
+                    value="field-basics"
+                    class="rounded border bg-background px-3 last:border-b"
                   >
-                    <div class="flex items-center justify-between gap-3">
-                      <p class="text-xs font-semibold text-muted-foreground">Select options</p>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        type="button"
-                        @click="addDraftSelectOption(schemaFieldDraft)"
-                      >
-                        <Plus class="size-4" />
-                        Option
-                      </Button>
-                    </div>
-
-                    <div
-                      v-for="(option, optionIndex) in schemaFieldDraft.options ?? []"
-                      :key="optionIndex"
-                      class="grid gap-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]"
-                    >
-                      <Input
-                        :model-value="String(option.label ?? '')"
-                        placeholder="Label"
-                        @update:model-value="updateSelectOptionLabel(option, String($event))"
-                      />
-                      <Input
-                        :model-value="String(option.value ?? '')"
-                        placeholder="Value"
-                        @update:model-value="updateSelectOptionValue(option, String($event))"
-                      />
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        type="button"
-                        @click="removeDraftSelectOption(schemaFieldDraft, optionIndex)"
-                      >
-                        <Trash2 class="size-4" />
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div
-                    v-if="schemaFieldDraft.type === 'repeater'"
-                    class="space-y-3 rounded border bg-muted/20 p-3"
-                  >
-                    <div class="flex items-center justify-between gap-3">
-                      <div>
-                        <p class="text-xs font-semibold text-muted-foreground">List fields</p>
-                        <p class="mt-1 text-xs text-muted-foreground">
-                          Define the fields each list item should contain.
-                        </p>
-                      </div>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        type="button"
-                        @click="addDraftListField(schemaFieldDraft)"
-                      >
-                        <Plus class="size-4" />
-                        Field
-                      </Button>
-                    </div>
-
-                    <Empty
-                      v-if="!schemaFieldDraft.fields?.length"
-                      class="min-h-[120px] bg-background"
-                    >
-                      <EmptyHeader>
-                        <EmptyTitle>No list fields</EmptyTitle>
-                        <EmptyDescription>Add fields for each list item.</EmptyDescription>
-                      </EmptyHeader>
-                    </Empty>
-
-                    <div
-                      v-for="(nestedField, nestedIndex) in schemaFieldDraft.fields ?? []"
-                      :key="nestedIndex"
-                      class="space-y-3 rounded border bg-background p-3"
-                    >
-                      <div class="flex items-center justify-between gap-3">
-                        <p class="text-sm font-semibold">
-                          {{ nestedField.label || `List field ${nestedIndex + 1}` }}
-                        </p>
-                        <div class="flex items-center gap-1">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            type="button"
-                            :disabled="nestedIndex === 0"
-                            @click="moveDraftListField(schemaFieldDraft, nestedIndex, -1)"
-                          >
-                            <ArrowUp class="size-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            type="button"
-                            :disabled="nestedIndex === (schemaFieldDraft.fields ?? []).length - 1"
-                            @click="moveDraftListField(schemaFieldDraft, nestedIndex, 1)"
-                          >
-                            <ArrowDown class="size-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            type="button"
-                            @click="removeDraftListField(schemaFieldDraft, nestedIndex)"
-                          >
-                            <Trash2 class="size-4" />
-                          </Button>
-                        </div>
-                      </div>
-
+                    <AccordionTrigger class="py-3 hover:no-underline">
+                      <span>
+                        <span class="block text-sm font-semibold">Field Basics</span>
+                        <span class="mt-1 block text-xs text-muted-foreground">
+                          Label, key, type, default value, and required state.
+                        </span>
+                      </span>
+                    </AccordionTrigger>
+                    <AccordionContent class="pb-3">
                       <div class="grid gap-3 md:grid-cols-2">
                         <Field>
-                          <FieldLabel :for="`schema-dialog-nested-label-${nestedIndex}`">
-                            Field label
-                          </FieldLabel>
+                          <FieldLabel for="schema-dialog-label">Field label</FieldLabel>
                           <Input
-                            :id="`schema-dialog-nested-label-${nestedIndex}`"
-                            :model-value="nestedField.label"
-                            @update:model-value="updateDraftFieldLabel(nestedField, String($event))"
-                          />
-                        </Field>
-
-                        <Field>
-                          <FieldLabel :for="`schema-dialog-nested-key-${nestedIndex}`">
-                            Field key/name
-                          </FieldLabel>
-                          <Input
-                            :id="`schema-dialog-nested-key-${nestedIndex}`"
-                            :model-value="nestedField.key"
-                            @update:model-value="updateDraftFieldKey(nestedField, String($event))"
-                          />
-                        </Field>
-
-                        <Field>
-                          <FieldLabel :for="`schema-dialog-nested-type-${nestedIndex}`">
-                            Field type
-                          </FieldLabel>
-                          <NativeSelect
-                            :id="`schema-dialog-nested-type-${nestedIndex}`"
-                            class="w-full"
-                            :model-value="nestedField.type"
+                            id="schema-dialog-label"
+                            :model-value="schemaFieldDraft.label"
                             @update:model-value="
-                              updateDraftFieldType(nestedField, String($event) as TemplateFieldType)
+                              updateDraftFieldLabel(schemaFieldDraft, String($event))
+                            "
+                          />
+                        </Field>
+
+                        <Field>
+                          <FieldLabel for="schema-dialog-key">Field key/name</FieldLabel>
+                          <Input
+                            id="schema-dialog-key"
+                            :model-value="schemaFieldDraft.key"
+                            @update:model-value="
+                              updateDraftFieldKey(schemaFieldDraft, String($event))
+                            "
+                          />
+                          <FieldDescription
+                            >Use lowercase letters, numbers, and underscores.</FieldDescription
+                          >
+                        </Field>
+
+                        <Field>
+                          <FieldLabel for="schema-dialog-type">Field type</FieldLabel>
+                          <NativeSelect
+                            id="schema-dialog-type"
+                            class="w-full"
+                            :model-value="schemaFieldDraft.type"
+                            @update:model-value="
+                              updateDraftFieldType(
+                                schemaFieldDraft,
+                                String($event) as TemplateFieldType
+                              )
                             "
                           >
                             <NativeSelectOption
-                              v-for="fieldType in nestedFieldTypes"
+                              v-for="fieldType in schemaFieldTypeOptions"
                               :key="fieldType.value"
                               :value="fieldType.value"
                             >
@@ -1537,115 +1338,356 @@ watch(
                           </NativeSelect>
                         </Field>
 
-                        <Field v-if="nestedField.type !== 'boolean'">
-                          <FieldLabel :for="`schema-dialog-nested-placeholder-${nestedIndex}`">
-                            Placeholder
-                          </FieldLabel>
+                        <Field
+                          v-if="
+                            schemaFieldDraft.type !== 'boolean' &&
+                            schemaFieldDraft.type !== 'repeater'
+                          "
+                        >
+                          <FieldLabel for="schema-dialog-placeholder">Placeholder</FieldLabel>
                           <Input
-                            :id="`schema-dialog-nested-placeholder-${nestedIndex}`"
-                            v-model="nestedField.placeholder"
+                            id="schema-dialog-placeholder"
+                            v-model="schemaFieldDraft.placeholder"
                           />
                         </Field>
 
                         <Field
-                          v-if="nestedField.type === 'boolean'"
+                          v-if="schemaFieldDraft.type === 'boolean'"
                           orientation="horizontal"
                           class="items-center gap-3 self-end"
                         >
                           <Checkbox
-                            :id="`schema-dialog-nested-default-${nestedIndex}`"
-                            :model-value="Boolean(nestedField.default)"
+                            id="schema-dialog-default"
+                            :model-value="Boolean(schemaFieldDraft.default)"
                             @update:model-value="
-                              updateDraftFieldDefault(nestedField, Boolean($event))
+                              updateDraftFieldDefault(schemaFieldDraft, Boolean($event))
                             "
                           />
-                          <FieldLabel :for="`schema-dialog-nested-default-${nestedIndex}`">
-                            Default checked
-                          </FieldLabel>
+                          <FieldLabel for="schema-dialog-default">Default checked</FieldLabel>
                         </Field>
 
-                        <Field v-else>
-                          <FieldLabel :for="`schema-dialog-nested-default-${nestedIndex}`">
-                            Default value
-                          </FieldLabel>
+                        <Field v-else-if="schemaFieldDraft.type !== 'repeater'">
+                          <FieldLabel for="schema-dialog-default">Default value</FieldLabel>
                           <Textarea
                             v-if="
-                              nestedField.type === 'textarea' || nestedField.type === 'rich_text'
+                              schemaFieldDraft.type === 'textarea' ||
+                              schemaFieldDraft.type === 'rich_text'
                             "
-                            :id="`schema-dialog-nested-default-${nestedIndex}`"
-                            :model-value="String(nestedField.default ?? '')"
+                            id="schema-dialog-default"
+                            :model-value="String(schemaFieldDraft.default ?? '')"
                             class="min-h-20"
-                            @update:model-value="updateDraftFieldDefault(nestedField, $event)"
+                            @update:model-value="updateDraftFieldDefault(schemaFieldDraft, $event)"
                           />
                           <Input
                             v-else
-                            :id="`schema-dialog-nested-default-${nestedIndex}`"
-                            :type="nestedField.type === 'number' ? 'number' : 'text'"
-                            :model-value="String(nestedField.default ?? '')"
-                            @update:model-value="updateDraftFieldDefault(nestedField, $event)"
+                            id="schema-dialog-default"
+                            :type="schemaFieldDraft.type === 'number' ? 'number' : 'text'"
+                            :model-value="String(schemaFieldDraft.default ?? '')"
+                            @update:model-value="updateDraftFieldDefault(schemaFieldDraft, $event)"
                           />
                         </Field>
 
                         <Field orientation="horizontal" class="items-center gap-3 self-end">
                           <Checkbox
-                            :id="`schema-dialog-nested-required-${nestedIndex}`"
-                            v-model="nestedField.required"
+                            id="schema-dialog-required"
+                            v-model="schemaFieldDraft.required"
                           />
-                          <FieldLabel :for="`schema-dialog-nested-required-${nestedIndex}`">
-                            Required
-                          </FieldLabel>
+                          <FieldLabel for="schema-dialog-required">Required</FieldLabel>
                         </Field>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+
+                  <AccordionItem
+                    v-if="schemaFieldDraft.type === 'select'"
+                    value="field-select-options"
+                    class="rounded border bg-background px-3 last:border-b"
+                  >
+                    <AccordionTrigger class="py-3 hover:no-underline">
+                      <span>
+                        <span class="block text-sm font-semibold">Select Options</span>
+                        <span class="mt-1 block text-xs text-muted-foreground">
+                          Choices users can pick from this field.
+                        </span>
+                      </span>
+                    </AccordionTrigger>
+                    <AccordionContent class="space-y-2 pb-3">
+                      <div class="flex items-center justify-end gap-3">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          type="button"
+                          @click="addDraftSelectOption(schemaFieldDraft)"
+                        >
+                          <Plus class="size-4" />
+                          Option
+                        </Button>
                       </div>
 
                       <div
-                        v-if="nestedField.type === 'select'"
-                        class="space-y-2 rounded border bg-muted/20 p-3"
+                        v-for="(option, optionIndex) in schemaFieldDraft.options ?? []"
+                        :key="optionIndex"
+                        class="grid gap-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]"
+                      >
+                        <Input
+                          :model-value="String(option.label ?? '')"
+                          placeholder="Label"
+                          @update:model-value="updateSelectOptionLabel(option, String($event))"
+                        />
+                        <Input
+                          :model-value="String(option.value ?? '')"
+                          placeholder="Value"
+                          @update:model-value="updateSelectOptionValue(option, String($event))"
+                        />
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          type="button"
+                          @click="removeDraftSelectOption(schemaFieldDraft, optionIndex)"
+                        >
+                          <Trash2 class="size-4" />
+                        </Button>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+
+                  <AccordionItem
+                    v-if="schemaFieldDraft.type === 'repeater'"
+                    value="field-list-fields"
+                    class="rounded border bg-background px-3 last:border-b"
+                  >
+                    <AccordionTrigger class="py-3 hover:no-underline">
+                      <span>
+                        <span class="block text-sm font-semibold">List Fields</span>
+                        <span class="mt-1 block text-xs text-muted-foreground">
+                          Define the fields each list item should contain.
+                        </span>
+                      </span>
+                    </AccordionTrigger>
+                    <AccordionContent class="space-y-3 pb-3">
+                      <div class="flex items-center justify-end gap-3">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          type="button"
+                          @click="addDraftListField(schemaFieldDraft)"
+                        >
+                          <Plus class="size-4" />
+                          Field
+                        </Button>
+                      </div>
+
+                      <Empty
+                        v-if="!schemaFieldDraft.fields?.length"
+                        class="min-h-[120px] bg-background"
+                      >
+                        <EmptyHeader>
+                          <EmptyTitle>No list fields</EmptyTitle>
+                          <EmptyDescription>Add fields for each list item.</EmptyDescription>
+                        </EmptyHeader>
+                      </Empty>
+
+                      <div
+                        v-for="(nestedField, nestedIndex) in schemaFieldDraft.fields ?? []"
+                        :key="nestedIndex"
+                        class="space-y-3 rounded border bg-background p-3"
                       >
                         <div class="flex items-center justify-between gap-3">
-                          <p class="text-xs font-semibold text-muted-foreground">Select options</p>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            type="button"
-                            @click="addDraftSelectOption(nestedField)"
+                          <p class="text-sm font-semibold">
+                            {{ nestedField.label || `List field ${nestedIndex + 1}` }}
+                          </p>
+                          <div class="flex items-center gap-1">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              type="button"
+                              :disabled="nestedIndex === 0"
+                              @click="moveDraftListField(schemaFieldDraft, nestedIndex, -1)"
+                            >
+                              <ArrowUp class="size-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              type="button"
+                              :disabled="nestedIndex === (schemaFieldDraft.fields ?? []).length - 1"
+                              @click="moveDraftListField(schemaFieldDraft, nestedIndex, 1)"
+                            >
+                              <ArrowDown class="size-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              type="button"
+                              @click="removeDraftListField(schemaFieldDraft, nestedIndex)"
+                            >
+                              <Trash2 class="size-4" />
+                            </Button>
+                          </div>
+                        </div>
+
+                        <div class="grid gap-3 md:grid-cols-2">
+                          <Field>
+                            <FieldLabel :for="`schema-dialog-nested-label-${nestedIndex}`">
+                              Field label
+                            </FieldLabel>
+                            <Input
+                              :id="`schema-dialog-nested-label-${nestedIndex}`"
+                              :model-value="nestedField.label"
+                              @update:model-value="
+                                updateDraftFieldLabel(nestedField, String($event))
+                              "
+                            />
+                          </Field>
+
+                          <Field>
+                            <FieldLabel :for="`schema-dialog-nested-key-${nestedIndex}`">
+                              Field key/name
+                            </FieldLabel>
+                            <Input
+                              :id="`schema-dialog-nested-key-${nestedIndex}`"
+                              :model-value="nestedField.key"
+                              @update:model-value="updateDraftFieldKey(nestedField, String($event))"
+                            />
+                          </Field>
+
+                          <Field>
+                            <FieldLabel :for="`schema-dialog-nested-type-${nestedIndex}`">
+                              Field type
+                            </FieldLabel>
+                            <NativeSelect
+                              :id="`schema-dialog-nested-type-${nestedIndex}`"
+                              class="w-full"
+                              :model-value="nestedField.type"
+                              @update:model-value="
+                                updateDraftFieldType(
+                                  nestedField,
+                                  String($event) as TemplateFieldType
+                                )
+                              "
+                            >
+                              <NativeSelectOption
+                                v-for="fieldType in nestedFieldTypes"
+                                :key="fieldType.value"
+                                :value="fieldType.value"
+                              >
+                                {{ fieldType.label }}
+                              </NativeSelectOption>
+                            </NativeSelect>
+                          </Field>
+
+                          <Field v-if="nestedField.type !== 'boolean'">
+                            <FieldLabel :for="`schema-dialog-nested-placeholder-${nestedIndex}`">
+                              Placeholder
+                            </FieldLabel>
+                            <Input
+                              :id="`schema-dialog-nested-placeholder-${nestedIndex}`"
+                              v-model="nestedField.placeholder"
+                            />
+                          </Field>
+
+                          <Field
+                            v-if="nestedField.type === 'boolean'"
+                            orientation="horizontal"
+                            class="items-center gap-3 self-end"
                           >
-                            <Plus class="size-4" />
-                            Option
-                          </Button>
+                            <Checkbox
+                              :id="`schema-dialog-nested-default-${nestedIndex}`"
+                              :model-value="Boolean(nestedField.default)"
+                              @update:model-value="
+                                updateDraftFieldDefault(nestedField, Boolean($event))
+                              "
+                            />
+                            <FieldLabel :for="`schema-dialog-nested-default-${nestedIndex}`">
+                              Default checked
+                            </FieldLabel>
+                          </Field>
+
+                          <Field v-else>
+                            <FieldLabel :for="`schema-dialog-nested-default-${nestedIndex}`">
+                              Default value
+                            </FieldLabel>
+                            <Textarea
+                              v-if="
+                                nestedField.type === 'textarea' || nestedField.type === 'rich_text'
+                              "
+                              :id="`schema-dialog-nested-default-${nestedIndex}`"
+                              :model-value="String(nestedField.default ?? '')"
+                              class="min-h-20"
+                              @update:model-value="updateDraftFieldDefault(nestedField, $event)"
+                            />
+                            <Input
+                              v-else
+                              :id="`schema-dialog-nested-default-${nestedIndex}`"
+                              :type="nestedField.type === 'number' ? 'number' : 'text'"
+                              :model-value="String(nestedField.default ?? '')"
+                              @update:model-value="updateDraftFieldDefault(nestedField, $event)"
+                            />
+                          </Field>
+
+                          <Field orientation="horizontal" class="items-center gap-3 self-end">
+                            <Checkbox
+                              :id="`schema-dialog-nested-required-${nestedIndex}`"
+                              v-model="nestedField.required"
+                            />
+                            <FieldLabel :for="`schema-dialog-nested-required-${nestedIndex}`">
+                              Required
+                            </FieldLabel>
+                          </Field>
                         </div>
 
                         <div
-                          v-for="(option, optionIndex) in nestedField.options ?? []"
-                          :key="optionIndex"
-                          class="grid gap-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]"
+                          v-if="nestedField.type === 'select'"
+                          class="space-y-2 rounded border bg-muted/20 p-3"
                         >
-                          <Input
-                            :model-value="String(option.label ?? '')"
-                            placeholder="Label"
-                            @update:model-value="updateSelectOptionLabel(option, String($event))"
-                          />
-                          <Input
-                            :model-value="String(option.value ?? '')"
-                            placeholder="Value"
-                            @update:model-value="updateSelectOptionValue(option, String($event))"
-                          />
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            type="button"
-                            @click="removeDraftSelectOption(nestedField, optionIndex)"
+                          <div class="flex items-center justify-between gap-3">
+                            <p class="text-xs font-semibold text-muted-foreground">
+                              Select options
+                            </p>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              type="button"
+                              @click="addDraftSelectOption(nestedField)"
+                            >
+                              <Plus class="size-4" />
+                              Option
+                            </Button>
+                          </div>
+
+                          <div
+                            v-for="(option, optionIndex) in nestedField.options ?? []"
+                            :key="optionIndex"
+                            class="grid gap-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]"
                           >
-                            <Trash2 class="size-4" />
-                          </Button>
+                            <Input
+                              :model-value="String(option.label ?? '')"
+                              placeholder="Label"
+                              @update:model-value="updateSelectOptionLabel(option, String($event))"
+                            />
+                            <Input
+                              :model-value="String(option.value ?? '')"
+                              placeholder="Value"
+                              @update:model-value="updateSelectOptionValue(option, String($event))"
+                            />
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              type="button"
+                              @click="removeDraftSelectOption(nestedField, optionIndex)"
+                            >
+                              <Trash2 class="size-4" />
+                            </Button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </div>
+                    </AccordionContent>
+                  </AccordionItem>
 
                   <p v-if="schemaFieldError" class="text-sm font-medium text-destructive">
                     {{ schemaFieldError }}
                   </p>
-                </div>
+                </Accordion>
 
                 <DialogFooter>
                   <Button variant="outline" type="button" @click="schemaFieldDialogOpen = false">

@@ -473,17 +473,7 @@ watch(
                 </CardHeader>
 
                 <CardContent class="px-4">
-                  <Accordion
-                    type="multiple"
-                    :default-value="[
-                      'website-type',
-                      'available-templates',
-                      'site-details',
-                      'template-content',
-                      'global-styles',
-                    ]"
-                    class="space-y-2"
-                  >
+                  <Accordion type="multiple" :default-value="[]" class="space-y-2">
                     <AccordionItem
                       value="website-type"
                       class="rounded border bg-background px-3 last:border-b"
