@@ -369,6 +369,7 @@ const saveTemplate = async (status: TemplateStatus): Promise<void> => {
     : await templateStore.store(payload)
 
   hydrateForm(saved)
+  templateDialogOpen.value = false
 }
 
 const handleLogoUpload = (event: Event): void => {

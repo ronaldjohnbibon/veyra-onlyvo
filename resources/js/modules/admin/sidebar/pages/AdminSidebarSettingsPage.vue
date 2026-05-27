@@ -41,6 +41,7 @@ const saveSidebar = async () => {
     editorValue.value = sidebar.value
       ? JSON.stringify(sidebar.value.data, null, 2)
       : editorValue.value
+    editorOpen.value = false
   } catch (error) {
     errorMessage.value =
       error instanceof SyntaxError ? 'Sidebar JSON is invalid.' : 'Unable to save sidebar.'

@@ -680,6 +680,7 @@ const saveWebsiteType = async (): Promise<void> => {
   )
 
   await selectWebsiteType(saved)
+  websiteTypeDialogOpen.value = false
 }
 
 const deleteWebsiteType = async (): Promise<void> => {
@@ -719,6 +720,7 @@ const saveCatalogItem = async (): Promise<void> => {
   )
 
   selectCatalogItem(saved)
+  catalogDialogOpen.value = false
 }
 
 const deleteCatalogItem = async (): Promise<void> => {
