@@ -3,7 +3,9 @@
 namespace App\Modules\Templates\Services;
 
 use App\Modules\Templates\Models\Template;
+use App\Modules\Templates\Models\TemplateCatalogItem;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -19,6 +21,7 @@ class TemplateService
         return DB::transaction(function () use ($data): Template {
             $data         = $this->normalizeTemplate($data);
             $data['slug'] = $this->slugForTemplate($data['tenant_id'], $data['slug'] ?? $data['name']);
+            $data         = $this->storeUploadedImages($data);
 
             if (! empty($data['is_default'])) {
                 $this->clearTenantDefaults((string) $data['tenant_id']);
@@ -41,6 +44,7 @@ class TemplateService
             }
 
             $data['slug'] = $this->slugForTemplate($data['tenant_id'], $data['slug'], $template->id);
+            $data         = $this->storeUploadedImages($data, $template);
 
             if (! empty($data['is_default'])) {
                 $this->clearTenantDefaults((string) $data['tenant_id'], $template->id);
@@ -81,6 +85,90 @@ class TemplateService
         }
 
         return $data;
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function storeUploadedImages(array $data, ?Template $template = null): array
+    {
+        $folder = 'templates/'.(string) $data['tenant_id'].'/'.($template?->id ?? 'shared').'/images';
+
+        if (isset($data['logo'])) {
+            $data['logo'] = $this->storeDataUrlImage((string) $data['logo'], $folder);
+        }
+
+        $catalogItem = TemplateCatalogItem::query()
+            ->where('website_type_id', $data['website_type_id'] ?? null)
+            ->where('key', $data['template_key'] ?? null)
+            ->first();
+        $schema = $catalogItem?->field_schema ?? [];
+
+        if (isset($data['content']) && is_array($data['content'])) {
+            $data['content'] = $this->storeContentImages($data['content'], $schema, $folder);
+        }
+
+        return $data;
+    }
+
+    /**
+     * @param  array<string, mixed>  $content
+     * @param  array<int, array<string, mixed>>  $schema
+     * @return array<string, mixed>
+     */
+    private function storeContentImages(array $content, array $schema, string $folder): array
+    {
+        foreach ($schema as $field) {
+            $key = (string) ($field['key'] ?? '');
+
+            if ($key === '' || ! array_key_exists($key, $content)) {
+                continue;
+            }
+
+            if (($field['type'] ?? null) === 'image' && is_string($content[$key])) {
+                $content[$key] = $this->storeDataUrlImage($content[$key], $folder);
+
+                continue;
+            }
+
+            if (($field['type'] ?? null) === 'repeater' && is_array($content[$key])) {
+                $nestedSchema  = is_array($field['fields'] ?? null) ? $field['fields'] : [];
+                $content[$key] = array_map(function ($row) use ($nestedSchema, $folder) {
+                    return is_array($row) ? $this->storeContentImages($row, $nestedSchema, $folder) : $row;
+                }, $content[$key]);
+            }
+        }
+
+        return $content;
+    }
+
+    private function storeDataUrlImage(string $value, string $folder): string
+    {
+        if (! str_starts_with($value, 'data:image/')) {
+            return $value;
+        }
+
+        if (! preg_match('/^data:image\/(png|jpe?g|webp|gif);base64,(.+)$/i', $value, $matches)) {
+            throw ValidationException::withMessages([
+                'content' => 'Template image uploads must be PNG, JPG, WebP, or GIF files.',
+            ]);
+        }
+
+        $binary = base64_decode($matches[2], true);
+
+        if ($binary === false || strlen($binary) > 4 * 1024 * 1024) {
+            throw ValidationException::withMessages([
+                'content' => 'Template image uploads must be valid image files under 4 MB.',
+            ]);
+        }
+
+        $extension = strtolower($matches[1]) === 'jpeg' ? 'jpg' : strtolower($matches[1]);
+        $path      = $folder.'/'.Str::uuid().'.'.$extension;
+
+        Storage::disk('public')->put($path, $binary);
+
+        return '/storage/'.$path;
     }
 
     private function slugForTemplate(string $tenantId, string $value, ?string $ignoreId = null): string

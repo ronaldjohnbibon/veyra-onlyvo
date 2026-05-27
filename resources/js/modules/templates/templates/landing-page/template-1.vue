@@ -43,13 +43,17 @@ const stringValue = (value: unknown, fallback = ''): string => {
 }
 
 const contentString = (key: string, fallback = ''): string => {
+  if (Object.prototype.hasOwnProperty.call(content.value, key)) {
+    return stringValue(content.value[key])
+  }
+
   return stringValue(content.value[key], fallback)
 }
 
 const rowsFor = (key: string, fallback: ContentRow[]): ContentRow[] => {
   const value = content.value[key]
 
-  return Array.isArray(value) && value.length ? (value as ContentRow[]) : fallback
+  return Array.isArray(value) ? (value as ContentRow[]) : fallback
 }
 
 const businessName = computed(() => {
