@@ -29,6 +29,7 @@ Route::prefix('app')->name('app.')->group(function (): void {
             Route::get('templates/website-types', [TemplateController::class, 'websiteTypes'])->name('templates.website-types');
             Route::get('templates/website-types/{websiteType}/templates', [TemplateController::class, 'websiteTypeTemplates'])->name('templates.website-types.templates');
             Route::get('templates/{template}/published', [TemplateController::class, 'published'])->name('templates.published');
+            Route::post('templates/{template}/reset-default', [TemplateController::class, 'resetDefault'])->name('templates.reset-default');
             Route::apiResource('templates', TemplateController::class);
         });
     });

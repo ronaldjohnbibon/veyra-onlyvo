@@ -104,6 +104,23 @@ export const useTemplateStore = defineStore('tenant-templates', () => {
     }
   }
 
+  const resetDefault = async (id: string): Promise<TemplateRecord> => {
+    try {
+      loading.value = true
+      errors.value = {}
+      template.value = (await templateService.resetDefault(id)).data
+      await index()
+      return template.value
+    } catch (err) {
+      const axiosError = err as AxiosError<ApiErrorResponse>
+      // Keep Laravel validation errors keyed by field for the form.
+      errors.value = axiosError.response?.data?.errors ?? {}
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   const destroy = async (id: string): Promise<void> => {
     try {
       loading.value = true
@@ -124,6 +141,7 @@ export const useTemplateStore = defineStore('tenant-templates', () => {
     loadWebsiteTypes,
     loading,
     params,
+    resetDefault,
     show,
     store,
     template,

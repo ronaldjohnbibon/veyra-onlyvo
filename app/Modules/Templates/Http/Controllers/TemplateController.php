@@ -71,6 +71,19 @@ class TemplateController extends Controller
         return $this->success(new TemplateResource($updated), 'Template saved.');
     }
 
+    public function resetDefault(string $template, TemplateService $service): JsonResponse
+    {
+        $record = $this->queryForTenant()->find($template);
+
+        if (! $record) {
+            return $this->error('Template not found.', 404);
+        }
+
+        $updated = $service->resetToDefault($record);
+
+        return $this->success(new TemplateResource($updated), 'Template restored to default design.');
+    }
+
     public function destroy(string $template): JsonResponse
     {
         $record = $this->queryForTenant()->find($template);

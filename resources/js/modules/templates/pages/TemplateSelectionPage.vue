@@ -26,6 +26,8 @@ import DynamicTemplateFields from '@/modules/templates/components/DynamicTemplat
 import TemplatePreview from '@/modules/templates/components/TemplatePreview.vue'
 import { getTemplateCatalogItem } from '@/modules/templates/template-catalog'
 import { useTemplateStore } from '@/modules/templates/template-store'
+import { useConfirmStore } from '@/store/confirm-store'
+import { useToastStore } from '@/store/toast-store'
 import type {
   TemplateContent,
   TemplateCatalogItem,
@@ -35,11 +37,13 @@ import type {
   TemplateStatus,
   WebsiteType,
 } from '@/types/templates'
-import { Check, ExternalLink, LayoutTemplate, Plus, Save, Send } from 'lucide-vue-next'
+import { Check, ExternalLink, LayoutTemplate, Plus, RotateCcw, Save, Send } from 'lucide-vue-next'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 const templateStore = useTemplateStore()
+const confirmStore = useConfirmStore()
+const toastStore = useToastStore()
 const router = useRouter()
 const selectedWebsiteTypeId = ref<string | null>(null)
 const selectedTemplateId = ref<string | null>(null)
@@ -307,6 +311,26 @@ const saveTemplate = async (status: TemplateStatus): Promise<void> => {
     templateDialogOpen.value = false
   } catch {
     formError.value = 'Please check the form and try again.'
+  }
+}
+
+const resetTemplateDefault = async (): Promise<void> => {
+  if (!selectedTemplateId.value) return
+
+  const confirmed = await confirmStore.confirm(
+    'Restore this template to its original default design? This will replace customized content, images, contact details, and style settings.'
+  )
+
+  if (!confirmed) return
+
+  formError.value = ''
+
+  try {
+    const reset = await templateStore.resetDefault(selectedTemplateId.value)
+    hydrateForm(reset)
+    toastStore.addAlert('success', 'Template restored', 'The default design has been restored.')
+  } catch {
+    formError.value = 'Unable to restore the default design.'
   }
 }
 
@@ -751,25 +775,37 @@ watch(
               </p>
             </form>
 
-            <DialogFooter>
+            <DialogFooter class="gap-2 sm:justify-between">
               <Button
-                variant="update"
+                variant="outline"
                 type="button"
-                :disabled="templateStore.loading || !canSave"
-                @click="saveTemplate('draft')"
+                :disabled="templateStore.loading || !selectedTemplateId"
+                @click="resetTemplateDefault"
               >
-                <Save class="size-4" />
-                Draft
+                <RotateCcw class="size-4" />
+                Reset to Default
               </Button>
-              <Button
-                variant="create"
-                type="button"
-                :disabled="templateStore.loading || !canSave"
-                @click="saveTemplate('published')"
-              >
-                <Send class="size-4" />
-                Publish
-              </Button>
+
+              <div class="flex flex-col-reverse gap-2 sm:flex-row">
+                <Button
+                  variant="update"
+                  type="button"
+                  :disabled="templateStore.loading || !canSave"
+                  @click="saveTemplate('draft')"
+                >
+                  <Save class="size-4" />
+                  Draft
+                </Button>
+                <Button
+                  variant="create"
+                  type="button"
+                  :disabled="templateStore.loading || !canSave"
+                  @click="saveTemplate('published')"
+                >
+                  <Send class="size-4" />
+                  Publish
+                </Button>
+              </div>
             </DialogFooter>
           </DialogScrollContent>
         </Dialog>

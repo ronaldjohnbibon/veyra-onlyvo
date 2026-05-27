@@ -52,6 +52,12 @@ export const templateService = {
     return http.put<TemplateResponse>(`templates/${id}`, payload).then((response) => response.data)
   },
 
+  resetDefault(id: string) {
+    return http
+      .post<TemplateResponse>(`templates/${id}/reset-default`)
+      .then((response) => response.data)
+  },
+
   destroy(id: string) {
     return http.delete(`templates/${id}`).then((response) => response.data)
   },
