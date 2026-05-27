@@ -156,6 +156,7 @@ export interface TemplateRecord {
   website_type?: WebsiteType
   name: string
   slug: string
+  public_url?: string
   template_key: string
   business_name: string
   logo: string

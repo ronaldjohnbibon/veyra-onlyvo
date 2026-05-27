@@ -387,16 +387,32 @@ watch(
             <Button
               v-for="template in templateStore.templates"
               :key="template.id"
+              as="div"
               variant="outline"
-              class="h-auto w-full flex-col items-start justify-start gap-1 whitespace-normal border bg-background p-3 text-left hover:border-primary"
+              role="button"
+              tabindex="0"
+              class="h-auto w-full cursor-pointer flex-col items-start justify-start gap-1 whitespace-normal border bg-background p-3 text-left hover:border-primary"
               :class="{
                 'border-primary ring-2 ring-primary/20': selectedTemplateId === template.id,
               }"
-              type="button"
               @click="openTemplate(template)"
+              @keydown.enter="openTemplate(template)"
+              @keydown.space.prevent="openTemplate(template)"
             >
               <span class="block font-semibold">{{ template.name }}</span>
               <span class="block text-muted-foreground">{{ template.business_name }}</span>
+              <a
+                v-if="template.public_url"
+                :href="template.public_url"
+                target="_blank"
+                rel="noreferrer"
+                class="mt-1 flex max-w-full items-center gap-1 rounded bg-muted px-2 py-1 text-xs font-normal text-muted-foreground underline-offset-4 hover:text-primary hover:underline"
+                @click.stop
+                @keydown.stop
+              >
+                <ExternalLink class="size-3 shrink-0" />
+                <span class="truncate">{{ template.public_url }}</span>
+              </a>
               <span class="mt-2 flex flex-wrap gap-2">
                 <Badge variant="outline">{{ template.status }}</Badge>
                 <Badge v-if="template.website_type" variant="outline">

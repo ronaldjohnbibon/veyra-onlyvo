@@ -19,6 +19,7 @@ class TemplateResource extends JsonResource
             'website_type'     => new WebsiteTypeResource($this->whenLoaded('websiteType')),
             'name'             => $this->name,
             'slug'             => $this->slug,
+            'public_url'       => $this->publicUrl($request),
             'template_key'     => $this->template_key,
             'business_name'    => $this->business_name,
             'logo'             => $this->logo,
@@ -35,5 +36,11 @@ class TemplateResource extends JsonResource
             'created_at'       => $this->created_at,
             'updated_at'       => $this->updated_at,
         ];
+    }
+
+    private function publicUrl(Request $request): string
+    {
+        // Build the public site URL for the current tenant host.
+        return rtrim($request->getSchemeAndHttpHost(), '/').'/'.$this->slug;
     }
 }
