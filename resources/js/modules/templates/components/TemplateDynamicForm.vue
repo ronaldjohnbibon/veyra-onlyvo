@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { templateService } from '@/modules/templates/api/templates'
+import { useLoadingStore } from '@/store/loading-store'
 import type { TemplateCtaConfig, TemplateCtaField } from '@/types/templates'
 import { computed, ref } from 'vue'
 
@@ -57,6 +58,7 @@ defineSlots<{
 }>()
 
 const loading = ref(false)
+const loadingStore = useLoadingStore()
 const success = ref(false)
 const error = ref('')
 const payload = ref<Record<string, unknown>>({})
@@ -92,7 +94,9 @@ const submit = async (): Promise<void> => {
     error.value = ''
     success.value = false
 
-    await templateService.submitCta(props.templateId, props.cta, payload.value)
+    await loadingStore.run(() =>
+      templateService.submitCta(props.templateId, props.cta, payload.value)
+    )
     success.value = true
     emit('submitted', payload.value)
 

@@ -2,6 +2,7 @@
 import TemplatePreview from '@/modules/templates/components/TemplatePreview.vue'
 import { templateService } from '@/modules/templates/api/templates'
 import { postService } from '@/modules/posts/api/posts'
+import { useLoadingStore } from '@/store/loading-store'
 import type { PostRecord } from '@/types/posts'
 import type { TemplateRecord } from '@/types/templates'
 import { AxiosError } from 'axios'
@@ -9,6 +10,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 
 const route = useRoute()
+const loadingStore = useLoadingStore()
 const loading = ref(true)
 const notFound = ref(false)
 const template = ref<TemplateRecord | null>(null)
@@ -25,14 +27,16 @@ const loadSite = async (): Promise<void> => {
     loading.value = true
     notFound.value = false
 
-    const response = siteSlug.value
-      ? await templateService.publicShow(siteSlug.value)
-      : await templateService.publicDefault()
+    await loadingStore.run(async () => {
+      const response = siteSlug.value
+        ? await templateService.publicShow(siteSlug.value)
+        : await templateService.publicDefault()
 
-    template.value = response.data
-    posts.value = template.value?.slug
-      ? (await postService.publicIndex(template.value.slug)).data
-      : []
+      template.value = response.data
+      posts.value = template.value?.slug
+        ? (await postService.publicIndex(template.value.slug)).data
+        : []
+    })
   } catch (error) {
     template.value = null
     posts.value = []

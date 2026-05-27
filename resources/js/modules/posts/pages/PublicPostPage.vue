@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { postService } from '@/modules/posts/api/posts'
+import { useLoadingStore } from '@/store/loading-store'
 import type { PostRecord } from '@/types/posts'
 import { AxiosError } from 'axios'
 import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 
 const route = useRoute()
+const loadingStore = useLoadingStore()
 const loading = ref(true)
 const notFound = ref(false)
 const post = ref<PostRecord | null>(null)
@@ -17,7 +19,9 @@ const loadPost = async (): Promise<void> => {
   try {
     loading.value = true
     notFound.value = false
-    post.value = (await postService.publicShow(siteSlug.value, postSlug.value)).data
+    post.value = (
+      await loadingStore.run(() => postService.publicShow(siteSlug.value, postSlug.value))
+    ).data
   } catch (error) {
     post.value = null
     notFound.value = error instanceof AxiosError && error.response?.status === 404

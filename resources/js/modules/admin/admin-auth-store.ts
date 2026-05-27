@@ -54,14 +54,18 @@ export const useAdminAuthStore = defineStore('admin-auth', () => {
     }
   }
 
+  // Loads the current admin user when a token exists.
   const fetchUser = async (): Promise<void> => {
     if (!token.value) return
 
     try {
+      loading.value = true
       user.value = await adminAuthService.fetchUser()
     } catch {
       setToken(null)
       user.value = null
+    } finally {
+      loading.value = false
     }
   }
 

@@ -113,14 +113,18 @@ export const useAuthStore = defineStore('tenant-auth', () => {
     }
   }
 
+  // Loads the current tenant user when a token exists.
   const fetchUser = async (): Promise<void> => {
     if (!token.value) return
 
     try {
+      loading.value = true
       user.value = await authService.fetchUser()
     } catch {
       setToken(null)
       user.value = null
+    } finally {
+      loading.value = false
     }
   }
 
