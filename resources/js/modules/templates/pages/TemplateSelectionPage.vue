@@ -37,7 +37,16 @@ import type {
   TemplateStatus,
   WebsiteType,
 } from '@/types/templates'
-import { Check, ExternalLink, LayoutTemplate, Plus, RotateCcw, Save, Send } from 'lucide-vue-next'
+import {
+  Check,
+  ExternalLink,
+  LayoutTemplate,
+  Plus,
+  RotateCcw,
+  Save,
+  Send,
+  Trash2,
+} from 'lucide-vue-next'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -293,7 +302,7 @@ const openTemplate = async (template: TemplateRecord): Promise<void> => {
   }
 
   hydrateForm(template)
-  templateDialogOpen.value = true
+  // templateDialogOpen.value = true
 }
 
 const saveTemplate = async (status: TemplateStatus): Promise<void> => {
@@ -312,6 +321,18 @@ const saveTemplate = async (status: TemplateStatus): Promise<void> => {
   } catch {
     formError.value = 'Please check the form and try again.'
   }
+}
+
+const deleteTemplate = async (): Promise<void> => {
+  if (!selectedTemplateId.value) return
+
+  await templateStore.destroy(selectedTemplateId.value)
+  selectedTemplateId.value = null
+  slugTouched.value = false
+  form.value = createBlankTemplate(selectedWebsiteType.value)
+  formError.value = ''
+  templateStore.errors = {}
+  templateDialogOpen.value = false
 }
 
 const resetTemplateDefault = async (): Promise<void> => {
@@ -792,15 +813,27 @@ watch(
             </form>
 
             <DialogFooter class="gap-2 sm:justify-between">
-              <Button
-                variant="outline"
-                type="button"
-                :disabled="templateStore.loading || !selectedTemplateId"
-                @click="resetTemplateDefault"
-              >
-                <RotateCcw class="size-4" />
-                Reset to Default
-              </Button>
+              <div class="flex flex-col gap-2 sm:flex-row">
+                <Button
+                  variant="outline"
+                  type="button"
+                  :disabled="templateStore.loading || !selectedTemplateId"
+                  @click="resetTemplateDefault"
+                >
+                  <RotateCcw class="size-4" />
+                  Reset to Default
+                </Button>
+                <Button
+                  v-if="selectedTemplateId"
+                  variant="delete"
+                  type="button"
+                  :disabled="templateStore.loading"
+                  @click="deleteTemplate"
+                >
+                  <Trash2 class="size-4" />
+                  Delete
+                </Button>
+              </div>
 
               <div class="flex flex-col-reverse gap-2 sm:flex-row">
                 <Button
