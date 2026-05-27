@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import { AxiosError } from 'axios'
 import { templateService } from './api/templates'
 import type {
   TemplateCatalogItem,
@@ -9,12 +10,17 @@ import type {
   WebsiteType,
 } from '@/types/templates'
 
+interface ApiErrorResponse {
+  errors?: Record<string, string[]>
+}
+
 export const useTemplateStore = defineStore('tenant-templates', () => {
   const templates = ref<TemplateRecord[]>([])
   const template = ref<TemplateRecord | null>(null)
   const websiteTypes = ref<WebsiteType[]>([])
   const availableTemplates = ref<TemplateCatalogItem[]>([])
   const loading = ref(false)
+  const errors = ref<Record<string, string[]>>({})
   const total = ref(0)
   const params = ref<TemplateParams>({
     page: 1,
@@ -67,9 +73,15 @@ export const useTemplateStore = defineStore('tenant-templates', () => {
   const store = async (payload: TemplatePayload): Promise<TemplateRecord> => {
     try {
       loading.value = true
+      errors.value = {}
       template.value = (await templateService.store(payload)).data
       await index()
       return template.value
+    } catch (err) {
+      const axiosError = err as AxiosError<ApiErrorResponse>
+      // Keep Laravel validation errors keyed by field for the form.
+      errors.value = axiosError.response?.data?.errors ?? {}
+      throw err
     } finally {
       loading.value = false
     }
@@ -78,9 +90,15 @@ export const useTemplateStore = defineStore('tenant-templates', () => {
   const update = async (id: string, payload: TemplatePayload): Promise<TemplateRecord> => {
     try {
       loading.value = true
+      errors.value = {}
       template.value = (await templateService.update(id, payload)).data
       await index()
       return template.value
+    } catch (err) {
+      const axiosError = err as AxiosError<ApiErrorResponse>
+      // Keep Laravel validation errors keyed by field for the form.
+      errors.value = axiosError.response?.data?.errors ?? {}
+      throw err
     } finally {
       loading.value = false
     }
@@ -100,6 +118,7 @@ export const useTemplateStore = defineStore('tenant-templates', () => {
   return {
     destroy,
     availableTemplates,
+    errors,
     index,
     loadAvailableTemplates,
     loadWebsiteTypes,

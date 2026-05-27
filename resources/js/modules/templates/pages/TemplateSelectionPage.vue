@@ -20,6 +20,7 @@ import {
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty'
 import { Field, FieldGroup, FieldLabel, FieldSet } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import DynamicTemplateFields from '@/modules/templates/components/DynamicTemplateFields.vue'
 import TemplatePreview from '@/modules/templates/components/TemplatePreview.vue'
@@ -167,40 +168,6 @@ const stringContent = (content: TemplateContent, keys: string[], fallback = ''):
   return fallback
 }
 
-const missingRequiredFields = (
-  schema: TemplateFieldSchema[],
-  content: TemplateContent,
-  prefix = ''
-): string[] => {
-  return schema.flatMap((field) => {
-    const value = content[field.key]
-
-    if (field.type === 'repeater') {
-      const rows = Array.isArray(value) ? value : []
-
-      if (field.required && rows.length === 0) return [`${prefix}${field.label}`]
-
-      return rows.flatMap((row, index) =>
-        missingRequiredFields(
-          field.fields ?? [],
-          contentRecord(row),
-          `${prefix}${field.label} ${index + 1} > `
-        )
-      )
-    }
-
-    if (!field.required) return []
-
-    const empty =
-      value === null ||
-      value === undefined ||
-      value === '' ||
-      (Array.isArray(value) && value.length === 0)
-
-    return empty ? [`${prefix}${field.label}`] : []
-  })
-}
-
 const payloadForSave = (status: TemplateStatus): TemplatePayload => {
   const content = contentRecord(form.value.content)
   const businessName = stringContent(
@@ -251,6 +218,7 @@ const selectWebsiteType = async (websiteType: WebsiteType): Promise<void> => {
   slugTouched.value = false
   form.value = createBlankTemplate(websiteType)
   formError.value = ''
+  templateStore.errors = {}
 
   await templateStore.loadAvailableTemplates(websiteType.id)
   await templateStore.index({ page: 1, website_type_id: websiteType.id })
@@ -267,6 +235,7 @@ const resetForm = (): void => {
   slugTouched.value = false
   form.value = createBlankTemplate(selectedWebsiteType.value)
   formError.value = ''
+  templateStore.errors = {}
   templateDialogOpen.value = true
 }
 
@@ -310,6 +279,7 @@ const hydrateForm = (template: TemplateRecord): void => {
     is_default: template.is_default,
   }
   formError.value = ''
+  templateStore.errors = {}
 }
 
 const openTemplate = async (template: TemplateRecord): Promise<void> => {
@@ -322,54 +292,22 @@ const openTemplate = async (template: TemplateRecord): Promise<void> => {
   templateDialogOpen.value = true
 }
 
-const validate = (): boolean => {
-  if (!form.value.website_type_id) {
-    formError.value = 'Select a website type first.'
-    return false
-  }
-
-  if (!form.value.template_key) {
-    formError.value = 'Choose a complete template before saving.'
-    return false
-  }
-
-  const required = [form.value.name, form.value.logo]
-
-  if (required.some((value) => !String(value).trim())) {
-    formError.value = 'Template name and logo are required.'
-    return false
-  }
-
-  const missingFields = missingRequiredFields(
-    dynamicFieldSchema.value,
-    contentRecord(form.value.content)
-  )
-
-  if (missingFields.length) {
-    formError.value = `Complete required content fields: ${missingFields.join(', ')}.`
-    return false
-  }
-
-  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(form.value.slug) || form.value.slug.length > 120) {
-    formError.value = 'Site slug must use lowercase letters, numbers, and hyphens only.'
-    return false
-  }
-
-  formError.value = ''
-  return true
-}
-
 const saveTemplate = async (status: TemplateStatus): Promise<void> => {
-  if (!validate()) return
+  if (!canSave.value) return
 
   const payload = payloadForSave(status)
+  formError.value = ''
 
-  const saved = selectedTemplateId.value
-    ? await templateStore.update(selectedTemplateId.value, payload)
-    : await templateStore.store(payload)
+  try {
+    const saved = selectedTemplateId.value
+      ? await templateStore.update(selectedTemplateId.value, payload)
+      : await templateStore.store(payload)
 
-  hydrateForm(saved)
-  templateDialogOpen.value = false
+    hydrateForm(saved)
+    templateDialogOpen.value = false
+  } catch {
+    formError.value = 'Please check the form and try again.'
+  }
 }
 
 const handleLogoUpload = (event: Event): void => {
@@ -618,7 +556,13 @@ watch(
                             <div class="grid gap-4 md:grid-cols-2">
                               <Field>
                                 <FieldLabel for="template-name">Template Name</FieldLabel>
-                                <Input id="template-name" v-model="form.name" required />
+                                <Input id="template-name" v-model="form.name" />
+                                <Label
+                                  v-if="templateStore.errors.name"
+                                  class="text-destructive text-xs"
+                                >
+                                  {{ templateStore.errors.name[0] }}
+                                </Label>
                               </Field>
 
                               <Field>
@@ -627,19 +571,36 @@ watch(
                                   id="site-slug"
                                   v-model="form.slug"
                                   maxlength="120"
-                                  required
                                   @input="updateSlug"
                                 />
+                                <Label
+                                  v-if="templateStore.errors.slug"
+                                  class="text-destructive text-xs"
+                                >
+                                  {{ templateStore.errors.slug[0] }}
+                                </Label>
                               </Field>
 
                               <Field orientation="horizontal" class="items-center gap-3 self-end">
                                 <Checkbox id="default-site" v-model="form.is_default" />
                                 <FieldLabel for="default-site">Default public site</FieldLabel>
+                                <Label
+                                  v-if="templateStore.errors.is_default"
+                                  class="text-destructive text-xs"
+                                >
+                                  {{ templateStore.errors.is_default[0] }}
+                                </Label>
                               </Field>
 
                               <Field class="md:col-span-2">
                                 <FieldLabel for="logo-url">Logo URL</FieldLabel>
-                                <Input id="logo-url" v-model="form.logo" required />
+                                <Input id="logo-url" v-model="form.logo" />
+                                <Label
+                                  v-if="templateStore.errors.logo"
+                                  class="text-destructive text-xs"
+                                >
+                                  {{ templateStore.errors.logo[0] }}
+                                </Label>
                                 <Input
                                   type="file"
                                   accept="image/*"
@@ -672,6 +633,9 @@ watch(
                           :model-value="form.content"
                           @update:model-value="form.content = $event"
                         />
+                        <Label v-if="templateStore.errors.content" class="text-destructive text-xs">
+                          {{ templateStore.errors.content[0] }}
+                        </Label>
                       </AccordionContent>
                     </AccordionItem>
 
@@ -707,6 +671,12 @@ watch(
                                     {{ font }}
                                   </NativeSelectOption>
                                 </NativeSelect>
+                                <Label
+                                  v-if="templateStore.errors.font_family"
+                                  class="text-destructive text-xs"
+                                >
+                                  {{ templateStore.errors.font_family[0] }}
+                                </Label>
                               </Field>
 
                               <Field>
@@ -716,6 +686,12 @@ watch(
                                   v-model="form.primary_color"
                                   type="color"
                                 />
+                                <Label
+                                  v-if="templateStore.errors.primary_color"
+                                  class="text-destructive text-xs"
+                                >
+                                  {{ templateStore.errors.primary_color[0] }}
+                                </Label>
                               </Field>
 
                               <Field>
@@ -725,6 +701,12 @@ watch(
                                   v-model="form.secondary_color"
                                   type="color"
                                 />
+                                <Label
+                                  v-if="templateStore.errors.secondary_color"
+                                  class="text-destructive text-xs"
+                                >
+                                  {{ templateStore.errors.secondary_color[0] }}
+                                </Label>
                               </Field>
 
                               <Field>
@@ -734,11 +716,23 @@ watch(
                                   v-model="form.background_color"
                                   type="color"
                                 />
+                                <Label
+                                  v-if="templateStore.errors.background_color"
+                                  class="text-destructive text-xs"
+                                >
+                                  {{ templateStore.errors.background_color[0] }}
+                                </Label>
                               </Field>
 
                               <Field>
                                 <FieldLabel for="text-color">Text Color</FieldLabel>
                                 <Input id="text-color" v-model="form.text_color" type="color" />
+                                <Label
+                                  v-if="templateStore.errors.text_color"
+                                  class="text-destructive text-xs"
+                                >
+                                  {{ templateStore.errors.text_color[0] }}
+                                </Label>
                               </Field>
                             </div>
                           </FieldSet>

@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/dialog'
 import { Field, FieldGroup, FieldLabel, FieldSet } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { usePostStore } from '@/modules/posts/post-store'
 import type { PostPayload, PostRecord, PostStatus } from '@/types/posts'
@@ -44,6 +45,7 @@ const dialogTitle = computed(() => (isEditing.value ? 'Edit Post' : 'Create Post
 const resetForm = (): void => {
   // Seed the dialog from the selected post or a clean draft.
   formError.value = ''
+  postStore.errors = {}
   form.value = {
     title: props.post?.title ?? '',
     content: props.post?.content ?? '',
@@ -52,28 +54,23 @@ const resetForm = (): void => {
   }
 }
 
-const validate = (): boolean => {
-  if (!form.value.title.trim() || !form.value.content.trim()) {
-    formError.value = 'Title and content are required.'
-    return false
-  }
-
-  formError.value = ''
-  return true
-}
-
 const savePost = async (status: PostStatus): Promise<void> => {
-  if (!props.templateId || !validate()) return
+  if (!props.templateId) return
 
   // Reuse the existing store flow for create and update submissions.
   form.value.status = status
+  formError.value = ''
 
-  const saved = props.post?.id
-    ? await postStore.update(props.templateId, props.post.id, form.value)
-    : await postStore.store(props.templateId, form.value)
+  try {
+    const saved = props.post?.id
+      ? await postStore.update(props.templateId, props.post.id, form.value)
+      : await postStore.store(props.templateId, form.value)
 
-  emit('saved', saved)
-  emit('update:open', false)
+    emit('saved', saved)
+    emit('update:open', false)
+  } catch {
+    formError.value = 'Please check the form and try again.'
+  }
 }
 
 const handleImageUpload = async (event: Event): Promise<void> => {
@@ -119,12 +116,18 @@ watch(
           <FieldSet>
             <Field>
               <FieldLabel for="post-title">Title</FieldLabel>
-              <Input id="post-title" v-model="form.title" required />
+              <Input id="post-title" v-model="form.title" />
+              <Label v-if="postStore.errors.title" class="text-destructive text-xs">
+                {{ postStore.errors.title[0] }}
+              </Label>
             </Field>
 
             <Field>
               <FieldLabel for="featured-image">Featured Image</FieldLabel>
               <Input id="featured-image" v-model="form.featured_image" />
+              <Label v-if="postStore.errors.featured_image" class="text-destructive text-xs">
+                {{ postStore.errors.featured_image[0] }}
+              </Label>
               <Input
                 type="file"
                 accept="image/*"
@@ -144,7 +147,13 @@ watch(
 
             <Field>
               <FieldLabel for="post-content">Content</FieldLabel>
-              <Textarea id="post-content" v-model="form.content" class="min-h-72" required />
+              <Textarea id="post-content" v-model="form.content" class="min-h-72" />
+              <Label v-if="postStore.errors.content" class="text-destructive text-xs">
+                {{ postStore.errors.content[0] }}
+              </Label>
+              <Label v-if="postStore.errors.status" class="text-destructive text-xs">
+                {{ postStore.errors.status[0] }}
+              </Label>
             </Field>
           </FieldSet>
         </FieldGroup>

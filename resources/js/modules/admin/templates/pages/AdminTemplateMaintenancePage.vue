@@ -20,6 +20,7 @@ import {
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty'
 import { Field, FieldDescription, FieldGroup, FieldLabel, FieldSet } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Textarea } from '@/components/ui/textarea'
 import { useTemplateMaintenanceStore } from '@/modules/admin/templates/template-maintenance-store'
@@ -583,6 +584,7 @@ const selectWebsiteType = async (websiteType: WebsiteType): Promise<void> => {
   openSchemaFieldSections.value = []
   defaultContent.value = {}
   formError.value = ''
+  maintenanceStore.errors = {}
 
   await maintenanceStore.loadCatalogItems(websiteType.id)
 }
@@ -605,6 +607,7 @@ const selectCatalogItem = (item: TemplateCatalogItem): void => {
   openSchemaFieldSections.value = []
   defaultContent.value = contentForSchema(schemaFields.value, item.default_content ?? {})
   formError.value = ''
+  maintenanceStore.errors = {}
 }
 
 const newWebsiteType = (): void => {
@@ -620,6 +623,7 @@ const newWebsiteType = (): void => {
   defaultContent.value = {}
   maintenanceStore.catalogItems = []
   formError.value = ''
+  maintenanceStore.errors = {}
 }
 
 const newCatalogItem = (): void => {
@@ -631,6 +635,7 @@ const newCatalogItem = (): void => {
   openSchemaFieldSections.value = []
   defaultContent.value = {}
   formError.value = ''
+  maintenanceStore.errors = {}
 }
 
 const createWebsiteType = (): void => {
@@ -663,20 +668,19 @@ const editCatalogItem = (item: TemplateCatalogItem): void => {
 const saveWebsiteType = async (): Promise<void> => {
   activeFormSection.value = 'websiteType'
 
-  if (!websiteTypeForm.value.name.trim()) {
-    formError.value = 'Website type name is required.'
-    return
-  }
-
   websiteTypeForm.value.slug = slugify(websiteTypeForm.value.slug || websiteTypeForm.value.name)
 
-  const saved = await maintenanceStore.saveWebsiteType(
-    { ...websiteTypeForm.value },
-    selectedWebsiteTypeId.value
-  )
+  try {
+    const saved = await maintenanceStore.saveWebsiteType(
+      { ...websiteTypeForm.value },
+      selectedWebsiteTypeId.value
+    )
 
-  await selectWebsiteType(saved)
-  websiteTypeDialogOpen.value = false
+    await selectWebsiteType(saved)
+    websiteTypeDialogOpen.value = false
+  } catch {
+    formError.value = 'Please check the website type fields and try again.'
+  }
 }
 
 const deleteWebsiteType = async (): Promise<void> => {
@@ -695,28 +699,27 @@ const saveCatalogItem = async (): Promise<void> => {
     return
   }
 
-  if (!catalogItemForm.value.name.trim()) {
-    formError.value = 'Template name is required.'
-    return
-  }
-
   catalogItemForm.value.website_type_id = selectedWebsiteTypeId.value
   catalogItemForm.value.key = slugify(catalogItemForm.value.key || catalogItemForm.value.name)
 
   const fieldSchema = buildSchemaForSave(schemaFields.value)
   if (fieldSchema === null) return
 
-  const saved = await maintenanceStore.saveCatalogItem(
-    {
-      ...catalogItemForm.value,
-      field_schema: fieldSchema,
-      default_content: contentForSchema(fieldSchema, defaultContent.value),
-    },
-    selectedCatalogItemId.value
-  )
+  try {
+    const saved = await maintenanceStore.saveCatalogItem(
+      {
+        ...catalogItemForm.value,
+        field_schema: fieldSchema,
+        default_content: contentForSchema(fieldSchema, defaultContent.value),
+      },
+      selectedCatalogItemId.value
+    )
 
-  selectCatalogItem(saved)
-  catalogDialogOpen.value = false
+    selectCatalogItem(saved)
+    catalogDialogOpen.value = false
+  } catch {
+    formError.value = 'Please check the template fields and try again.'
+  }
 }
 
 const deleteCatalogItem = async (): Promise<void> => {
@@ -872,6 +875,12 @@ watch(
                               <Field>
                                 <FieldLabel for="website-type-name">Name</FieldLabel>
                                 <Input id="website-type-name" v-model="websiteTypeForm.name" />
+                                <Label
+                                  v-if="maintenanceStore.errors.name"
+                                  class="text-destructive text-xs"
+                                >
+                                  {{ maintenanceStore.errors.name[0] }}
+                                </Label>
                               </Field>
 
                               <Field>
@@ -881,6 +890,12 @@ watch(
                                   v-model="websiteTypeForm.slug"
                                   @input="typeSlugTouched = true"
                                 />
+                                <Label
+                                  v-if="maintenanceStore.errors.slug"
+                                  class="text-destructive text-xs"
+                                >
+                                  {{ maintenanceStore.errors.slug[0] }}
+                                </Label>
                               </Field>
 
                               <Field orientation="horizontal" class="items-center gap-3">
@@ -889,6 +904,12 @@ watch(
                                   v-model="websiteTypeForm.is_active"
                                 />
                                 <FieldLabel for="website-type-active">Active</FieldLabel>
+                                <Label
+                                  v-if="maintenanceStore.errors.is_active"
+                                  class="text-destructive text-xs"
+                                >
+                                  {{ maintenanceStore.errors.is_active[0] }}
+                                </Label>
                               </Field>
                             </AccordionContent>
                           </AccordionItem>
@@ -913,6 +934,12 @@ watch(
                                   v-model="websiteTypeForm.description"
                                   class="min-h-24"
                                 />
+                                <Label
+                                  v-if="maintenanceStore.errors.description"
+                                  class="text-destructive text-xs"
+                                >
+                                  {{ maintenanceStore.errors.description[0] }}
+                                </Label>
                               </Field>
                             </AccordionContent>
                           </AccordionItem>
@@ -998,6 +1025,12 @@ watch(
                                     v-model="catalogItemForm.name"
                                     :disabled="!selectedWebsiteType"
                                   />
+                                  <Label
+                                    v-if="maintenanceStore.errors.name"
+                                    class="text-destructive text-xs"
+                                  >
+                                    {{ maintenanceStore.errors.name[0] }}
+                                  </Label>
                                 </Field>
 
                                 <Field>
@@ -1008,6 +1041,12 @@ watch(
                                     :disabled="!selectedWebsiteType"
                                     @input="itemKeyTouched = true"
                                   />
+                                  <Label
+                                    v-if="maintenanceStore.errors.key"
+                                    class="text-destructive text-xs"
+                                  >
+                                    {{ maintenanceStore.errors.key[0] }}
+                                  </Label>
                                 </Field>
                               </div>
 
@@ -1018,6 +1057,12 @@ watch(
                                   :disabled="!selectedWebsiteType"
                                 />
                                 <FieldLabel for="catalog-active">Active</FieldLabel>
+                                <Label
+                                  v-if="maintenanceStore.errors.is_active"
+                                  class="text-destructive text-xs"
+                                >
+                                  {{ maintenanceStore.errors.is_active[0] }}
+                                </Label>
                               </Field>
                             </AccordionContent>
                           </AccordionItem>
@@ -1043,6 +1088,12 @@ watch(
                                   class="min-h-24"
                                   :disabled="!selectedWebsiteType"
                                 />
+                                <Label
+                                  v-if="maintenanceStore.errors.description"
+                                  class="text-destructive text-xs"
+                                >
+                                  {{ maintenanceStore.errors.description[0] }}
+                                </Label>
                               </Field>
 
                               <Field>
@@ -1052,6 +1103,12 @@ watch(
                                   v-model="catalogItemForm.preview_image"
                                   :disabled="!selectedWebsiteType"
                                 />
+                                <Label
+                                  v-if="maintenanceStore.errors.preview_image"
+                                  class="text-destructive text-xs"
+                                >
+                                  {{ maintenanceStore.errors.preview_image[0] }}
+                                </Label>
                               </Field>
                             </AccordionContent>
                           </AccordionItem>
@@ -1179,6 +1236,12 @@ watch(
                                   </AccordionContent>
                                 </AccordionItem>
                               </Accordion>
+                              <Label
+                                v-if="maintenanceStore.errors.field_schema"
+                                class="text-destructive text-xs"
+                              >
+                                {{ maintenanceStore.errors.field_schema[0] }}
+                              </Label>
                             </AccordionContent>
                           </AccordionItem>
 
@@ -1213,6 +1276,12 @@ watch(
                                 :model-value="defaultContent"
                                 @update:model-value="defaultContent = $event"
                               />
+                              <Label
+                                v-if="maintenanceStore.errors.default_content"
+                                class="text-destructive text-xs"
+                              >
+                                {{ maintenanceStore.errors.default_content[0] }}
+                              </Label>
                             </AccordionContent>
                           </AccordionItem>
                         </Accordion>

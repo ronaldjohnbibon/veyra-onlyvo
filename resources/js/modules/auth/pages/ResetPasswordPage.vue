@@ -44,7 +44,6 @@ onMounted(() => {
                     id="email"
                     type="email"
                     autocomplete="email"
-                    required
                   />
                   <span v-if="authStore.errors.email" class="text-destructive text-[12px]">
                     {{ authStore.errors.email[0] }}
@@ -57,7 +56,6 @@ onMounted(() => {
                     id="password"
                     type="password"
                     autocomplete="new-password"
-                    required
                   />
                   <span v-if="authStore.errors.password" class="text-destructive text-[12px]">
                     {{ authStore.errors.password[0] }}
@@ -70,7 +68,6 @@ onMounted(() => {
                     id="confirm-password"
                     type="password"
                     autocomplete="new-password"
-                    required
                   />
                   <span
                     v-if="authStore.errors.password_confirmation"

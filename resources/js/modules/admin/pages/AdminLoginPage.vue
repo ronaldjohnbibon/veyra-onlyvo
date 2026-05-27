@@ -37,7 +37,6 @@ const adminAuthStore = useAdminAuthStore()
                     type="email"
                     placeholder="admin@example.com"
                     autocomplete="email"
-                    required
                   />
                   <span v-if="adminAuthStore.errors.email" class="text-destructive text-[12px]">
                     {{ adminAuthStore.errors.email[0] }}
@@ -50,7 +49,6 @@ const adminAuthStore = useAdminAuthStore()
                     id="admin-password"
                     type="password"
                     autocomplete="current-password"
-                    required
                   />
                   <span v-if="adminAuthStore.errors.password" class="text-destructive text-[12px]">
                     {{ adminAuthStore.errors.password[0] }}

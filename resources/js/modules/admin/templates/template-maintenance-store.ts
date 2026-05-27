@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import { AxiosError } from 'axios'
 import { adminTemplateService } from './api/templates'
 import type {
   TemplateCatalogItem,
@@ -9,10 +10,15 @@ import type {
   WebsiteTypePayload,
 } from '@/types/templates'
 
+interface ApiErrorResponse {
+  errors?: Record<string, string[]>
+}
+
 export const useTemplateMaintenanceStore = defineStore('admin-template-maintenance', () => {
   const websiteTypes = ref<WebsiteType[]>([])
   const catalogItems = ref<TemplateCatalogItem[]>([])
   const loading = ref(false)
+  const errors = ref<Record<string, string[]>>({})
   const websiteTypeTotal = ref(0)
   const catalogItemTotal = ref(0)
   const params = ref<TemplateParams>({
@@ -56,6 +62,7 @@ export const useTemplateMaintenanceStore = defineStore('admin-template-maintenan
   ): Promise<WebsiteType> => {
     try {
       loading.value = true
+      errors.value = {}
       const response = id
         ? await adminTemplateService.updateWebsiteType(id, payload)
         : await adminTemplateService.storeWebsiteType(payload)
@@ -63,6 +70,11 @@ export const useTemplateMaintenanceStore = defineStore('admin-template-maintenan
       await loadWebsiteTypes()
 
       return response.data
+    } catch (err) {
+      const axiosError = err as AxiosError<ApiErrorResponse>
+      // Keep Laravel validation errors keyed by field for the form.
+      errors.value = axiosError.response?.data?.errors ?? {}
+      throw err
     } finally {
       loading.value = false
     }
@@ -84,6 +96,7 @@ export const useTemplateMaintenanceStore = defineStore('admin-template-maintenan
   ): Promise<TemplateCatalogItem> => {
     try {
       loading.value = true
+      errors.value = {}
       const response = id
         ? await adminTemplateService.updateCatalogItem(id, payload)
         : await adminTemplateService.storeCatalogItem(payload)
@@ -92,6 +105,11 @@ export const useTemplateMaintenanceStore = defineStore('admin-template-maintenan
       await loadWebsiteTypes()
 
       return response.data
+    } catch (err) {
+      const axiosError = err as AxiosError<ApiErrorResponse>
+      // Keep Laravel validation errors keyed by field for the form.
+      errors.value = axiosError.response?.data?.errors ?? {}
+      throw err
     } finally {
       loading.value = false
     }
@@ -113,6 +131,7 @@ export const useTemplateMaintenanceStore = defineStore('admin-template-maintenan
     catalogItemTotal,
     deleteCatalogItem,
     deleteWebsiteType,
+    errors,
     loadCatalogItems,
     loadWebsiteTypes,
     loading,

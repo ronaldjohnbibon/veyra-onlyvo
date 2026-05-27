@@ -37,7 +37,6 @@ const authStore = useAuthStore()
                     type="email"
                     placeholder="m@example.com"
                     autocomplete="email"
-                    required
                   />
                   <span v-if="authStore.errors.email" class="text-destructive text-[12px]">
                     {{ authStore.errors.email[0] }}
@@ -58,7 +57,6 @@ const authStore = useAuthStore()
                     id="password"
                     type="password"
                     autocomplete="current-password"
-                    required
                   />
                   <span v-if="authStore.errors.password" class="text-destructive text-[12px]">
                     {{ authStore.errors.password[0] }}

@@ -37,7 +37,6 @@ const authStore = useAuthStore()
                     type="email"
                     placeholder="m@example.com"
                     autocomplete="email"
-                    required
                   />
                   <span v-if="authStore.errors.email" class="text-destructive text-[12px]">
                     {{ authStore.errors.email[0] }}

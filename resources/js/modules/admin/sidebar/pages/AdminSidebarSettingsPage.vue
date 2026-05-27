@@ -8,6 +8,7 @@ import {
   DialogScrollContent,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { useAdminSidebarStore } from '@/modules/admin/sidebar/sidebar-store'
 import type { SidebarData } from '@/types/sidebar'
@@ -19,6 +20,9 @@ const errorMessage = ref('')
 const editorOpen = ref(false)
 
 const sidebar = computed(() => sidebarStore.sidebars[0] ?? null)
+const sidebarDataError = computed(() => {
+  return Object.entries(sidebarStore.errors).find(([field]) => field.startsWith('data'))?.[1]?.[0]
+})
 
 const loadSidebar = async () => {
   await sidebarStore.index()
@@ -99,6 +103,9 @@ onMounted(loadSidebar)
               class="min-h-[60vh] resize-y bg-background p-4 font-mono"
               spellcheck="false"
             />
+            <Label v-if="sidebarDataError" class="text-destructive text-xs">
+              {{ sidebarDataError }}
+            </Label>
 
             <p v-if="errorMessage" class="text-sm font-medium text-destructive">
               {{ errorMessage }}

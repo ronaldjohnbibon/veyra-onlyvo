@@ -58,7 +58,6 @@ const authStore = useAuthStore()
                     id="phone"
                     type="tel"
                     inputmode="numeric"
-                    pattern="[0-9]*"
                     placeholder="09xxxxxxxxx"
                     maxlength="11"
                     autocomplete="tel"
