@@ -53,24 +53,26 @@ const ToastIcon = computed(() => typeMap[props.type].icon)
 </script>
 
 <template>
-  <div class="toast-container" :class="toastVariant">
-    <div class="toast-icon-wrapper">
-      <component :is="ToastIcon" class="toast-icon" />
-    </div>
-
-    <div class="toast-content">
-      <div class="toast-header">
-        <span class="toast-title">{{ title }}</span>
+  <Teleport to="body">
+    <div class="toast-container" :class="toastVariant">
+      <div class="toast-icon-wrapper">
+        <component :is="ToastIcon" class="toast-icon" />
       </div>
-      <p class="toast-message">{{ message }}</p>
-    </div>
 
-    <div
-      v-if="showProgress"
-      class="toast-progress-bar"
-      :style="{ animationDuration: `${duration}ms` }"
-    />
-  </div>
+      <div class="toast-content">
+        <div class="toast-header">
+          <span class="toast-title">{{ title }}</span>
+        </div>
+        <p class="toast-message">{{ message }}</p>
+      </div>
+
+      <div
+        v-if="showProgress"
+        class="toast-progress-bar"
+        :style="{ animationDuration: `${duration}ms` }"
+      />
+    </div>
+  </Teleport>
 </template>
 
 <style scoped>
@@ -89,7 +91,7 @@ const ToastIcon = computed(() => typeMap[props.type].icon)
     0 10px 15px -3px rgb(0 0 0 / 0.1),
     0 4px 6px -4px rgb(0 0 0 / 0.1),
     0 0 0 1px rgb(0 0 0 / 0.05);
-  z-index: 50;
+  z-index: 80;
   animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   backdrop-filter: blur(8px);
 }

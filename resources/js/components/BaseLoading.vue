@@ -5,25 +5,27 @@ const loadingStore = useLoadingStore()
 </script>
 
 <template>
-  <Transition
-    enter-active-class="transition-opacity duration-200 ease-out"
-    leave-active-class="transition-opacity duration-150 ease-in"
-    enter-from-class="opacity-0"
-    enter-to-class="opacity-100"
-    leave-from-class="opacity-100"
-    leave-to-class="opacity-0"
-  >
-    <div
-      v-if="loadingStore.anyLoading"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm"
+  <Teleport to="body">
+    <Transition
+      enter-active-class="transition-opacity duration-200 ease-out"
+      leave-active-class="transition-opacity duration-150 ease-in"
+      enter-from-class="opacity-0"
+      enter-to-class="opacity-100"
+      leave-from-class="opacity-100"
+      leave-to-class="opacity-0"
     >
-      <div class="dot-loader text-primary" aria-label="Loading" role="status">
-        <span class="dot"></span>
-        <span class="dot"></span>
-        <span class="dot"></span>
+      <div
+        v-if="loadingStore.anyLoading"
+        class="fixed inset-0 z-[100] flex items-center justify-center bg-black/20 backdrop-blur-sm"
+      >
+        <div class="dot-loader text-primary" aria-label="Loading" role="status">
+          <span class="dot"></span>
+          <span class="dot"></span>
+          <span class="dot"></span>
+        </div>
       </div>
-    </div>
-  </Transition>
+    </Transition>
+  </Teleport>
 </template>
 
 <style scoped>
