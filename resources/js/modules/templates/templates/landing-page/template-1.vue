@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import type { TemplateRecord } from '@/types/templates'
+import { defaultTemplateCta } from '@/modules/templates/cta-presets'
+import TemplateCta from '@/modules/templates/components/TemplateCta.vue'
+import type { TemplateCtaConfig, TemplateCtaField, TemplateRecord } from '@/types/templates'
 import {
   BarChart3,
   ChevronDown,
@@ -54,6 +56,36 @@ const rowsFor = (key: string, fallback: ContentRow[]): ContentRow[] => {
   const value = content.value[key]
 
   return Array.isArray(value) ? (value as ContentRow[]) : fallback
+}
+
+const ctaConfigFor = (value: unknown): TemplateCtaConfig => {
+  const fallback = {
+    ...defaultTemplateCta('contact_message'),
+    title: contentString('contact_title', 'Contact Us'),
+    description: contentString(
+      'contact_text',
+      'Invite visitors to start a conversation, request details, or send a message from the page.'
+    ),
+    submit_label: contentString('submit_label', 'Submit'),
+  }
+  const record =
+    value && typeof value === 'object' && !Array.isArray(value) ? (value as ContentRow) : {}
+
+  return {
+    ...fallback,
+    ...record,
+    fields: Array.isArray(record.fields) ? (record.fields as TemplateCtaField[]) : fallback.fields,
+  } as TemplateCtaConfig
+}
+
+const ctaFieldPlaceholder = (field: TemplateCtaField): string => {
+  const originalPlaceholders: Record<string, string> = {
+    name: 'Your Name',
+    email: 'Your Email',
+    message: 'Message',
+  }
+
+  return originalPlaceholders[field.key] ?? stringValue(field.placeholder, field.label)
 }
 
 const businessName = computed(() => {
@@ -193,6 +225,8 @@ const contact = computed(() => ({
   chatLabel: contentString('chat_label', 'Chat Online'),
   chatUrl: contentString('chat_url', props.template.social_links.website),
 }))
+
+const primaryCta = computed(() => ctaConfigFor(content.value.primary_cta))
 
 const iconFor = (name: unknown) => {
   const key = stringValue(name, 'analytics') as keyof typeof iconComponents
@@ -383,27 +417,89 @@ onBeforeUnmount(() => {
       <div class="mx-auto max-w-[1063px]">
         <div class="mx-auto max-w-3xl text-center">
           <h2 class="tm-section-title text-white">
-            {{ contentString('contact_title', 'Contact Us') }}
+            {{ primaryCta.title }}
           </h2>
           <p class="mt-5 leading-8">
-            {{
-              contentString(
-                'contact_text',
-                'Invite visitors to start a conversation, request details, or send a message from the page.'
-              )
-            }}
+            {{ primaryCta.description }}
           </p>
         </div>
 
         <div class="mt-14 grid gap-10 md:grid-cols-2">
-          <form class="space-y-5" @submit.prevent>
-            <input class="tm-input" type="text" placeholder="Your Name" />
-            <input class="tm-input" type="email" placeholder="Your Email" />
-            <textarea class="tm-input min-h-44" placeholder="Message"></textarea>
-            <button class="tm-btn-submit" type="submit">
-              {{ contentString('submit_label', 'Submit') }}
+          <TemplateCta
+            :template-id="props.template.id"
+            :cta="primaryCta"
+            class="contents"
+            form-class="space-y-5"
+            v-slot="{
+              fields,
+              payload,
+              loading,
+              success,
+              error,
+              submitLabel,
+              successMessage,
+              updateField,
+              updateFileField,
+              inputTypeFor,
+            }"
+          >
+            <template v-for="field in fields" :key="field.key">
+              <textarea
+                v-if="field.type === 'textarea'"
+                class="tm-input min-h-44"
+                :placeholder="ctaFieldPlaceholder(field)"
+                :required="field.required"
+                :value="String(payload[field.key] ?? '')"
+                @input="updateField(field, ($event.target as HTMLTextAreaElement).value)"
+              />
+              <select
+                v-else-if="field.type === 'select'"
+                class="tm-input"
+                :required="field.required"
+                :value="String(payload[field.key] ?? '')"
+                @change="updateField(field, ($event.target as HTMLSelectElement).value)"
+              >
+                <option value="">{{ ctaFieldPlaceholder(field) }}</option>
+                <option
+                  v-for="option in field.options ?? []"
+                  :key="String(option.value)"
+                  :value="String(option.value)"
+                >
+                  {{ option.label }}
+                </option>
+              </select>
+              <label v-else-if="field.type === 'checkbox'" class="tm-checkbox">
+                <input
+                  type="checkbox"
+                  :required="field.required"
+                  :checked="Boolean(payload[field.key])"
+                  @change="updateField(field, ($event.target as HTMLInputElement).checked)"
+                />
+                <span>{{ field.label }}</span>
+              </label>
+              <input
+                v-else-if="field.type === 'file'"
+                class="tm-input"
+                type="file"
+                :required="field.required"
+                @change="updateFileField(field, $event)"
+              />
+              <input
+                v-else
+                class="tm-input"
+                :type="inputTypeFor(field)"
+                :placeholder="ctaFieldPlaceholder(field)"
+                :required="field.required"
+                :value="String(payload[field.key] ?? '')"
+                @input="updateField(field, ($event.target as HTMLInputElement).value)"
+              />
+            </template>
+            <button class="tm-btn-submit" type="submit" :disabled="loading">
+              {{ loading ? 'Sending...' : submitLabel }}
             </button>
-          </form>
+            <p v-if="success" class="tm-form-status" role="status">{{ successMessage }}</p>
+            <p v-if="error" class="tm-form-status" role="alert">{{ error }}</p>
+          </TemplateCta>
 
           <div class="space-y-8">
             <a :href="contact.chatUrl || '#contact'" class="contact-item">
@@ -714,6 +810,15 @@ onBeforeUnmount(() => {
   opacity: 1;
 }
 
+.tm-checkbox {
+  display: flex;
+  width: 90%;
+  align-items: center;
+  gap: 0.75rem;
+  color: white;
+  font-size: 0.9em;
+}
+
 .tm-btn-submit {
   width: min(260px, 90%);
   background-color: var(--template-secondary, #369);
@@ -725,6 +830,12 @@ onBeforeUnmount(() => {
 
 .tm-btn-submit:hover {
   background-color: var(--template-primary, #38b);
+}
+
+.tm-form-status {
+  width: 90%;
+  color: white;
+  font-size: 0.8em;
 }
 
 .contact-item {

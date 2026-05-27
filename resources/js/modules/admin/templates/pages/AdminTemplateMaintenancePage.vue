@@ -23,6 +23,7 @@ import { Input } from '@/components/ui/input'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Textarea } from '@/components/ui/textarea'
 import { useTemplateMaintenanceStore } from '@/modules/admin/templates/template-maintenance-store'
+import { defaultTemplateCta } from '@/modules/templates/cta-presets'
 import DynamicTemplateFields from '@/modules/templates/components/DynamicTemplateFields.vue'
 import type {
   TemplateContent,
@@ -60,10 +61,13 @@ const fieldTypes: { label: string; value: TemplateFieldType }[] = [
   { label: 'Rich Text', value: 'rich_text' },
   { label: 'Boolean', value: 'boolean' },
   { label: 'Select', value: 'select' },
+  { label: 'CTA', value: 'cta' },
   { label: 'Repeater/List', value: 'repeater' },
 ]
 
-const nestedFieldTypes = computed(() => fieldTypes.filter((type) => type.value !== 'repeater'))
+const nestedFieldTypes = computed(() =>
+  fieldTypes.filter((type) => !['cta', 'repeater'].includes(type.value))
+)
 
 const slugify = (value: string): string => {
   return (
@@ -167,6 +171,7 @@ const schemaFieldTypeOptions = computed(() => {
 const defaultValueFor = (field: TemplateFieldSchema): unknown => {
   if (field.type === 'boolean') return false
   if (field.type === 'number') return null
+  if (field.type === 'cta') return defaultTemplateCta()
   if (field.type === 'repeater') return []
 
   return ''
@@ -184,6 +189,12 @@ const normalizeInputValue = (field: TemplateFieldSchema, value: unknown): unknow
 
   if (field.type === 'repeater') {
     return Array.isArray(value) ? value : []
+  }
+
+  if (field.type === 'cta') {
+    return value && typeof value === 'object' && !Array.isArray(value)
+      ? value
+      : defaultTemplateCta()
   }
 
   return String(value ?? '')

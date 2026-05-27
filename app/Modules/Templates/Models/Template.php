@@ -65,6 +65,11 @@ class Template extends Model
         return $this->hasMany(Post::class)->latest('published_at')->latest();
     }
 
+    public function ctaSubmissions(): HasMany
+    {
+        return $this->hasMany(TemplateCtaSubmission::class)->latest();
+    }
+
     public function websiteType(): BelongsTo
     {
         return $this->belongsTo(WebsiteType::class);

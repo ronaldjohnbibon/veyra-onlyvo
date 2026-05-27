@@ -13,7 +13,21 @@ import { Field, FieldDescription, FieldGroup, FieldLabel, FieldSet } from '@/com
 import { Input } from '@/components/ui/input'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Textarea } from '@/components/ui/textarea'
-import type { TemplateContent, TemplateFieldSchema } from '@/types/templates'
+import {
+  defaultTemplateCta,
+  templateCtaFieldTypes,
+  templateCtaPresets,
+  templateCtaTypes,
+} from '@/modules/templates/cta-presets'
+import type {
+  TemplateContent,
+  TemplateCtaConfig,
+  TemplateCtaField,
+  TemplateCtaFieldType,
+  TemplateCtaType,
+  TemplateFieldSchema,
+  TemplateFieldOption,
+} from '@/types/templates'
 import { Plus, Trash2 } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 
@@ -57,6 +71,7 @@ const defaultValueFor = (field: TemplateFieldSchema): unknown => {
   if (field.type === 'boolean') return false
   if (field.type === 'repeater') return []
   if (field.type === 'number') return null
+  if (field.type === 'cta') return defaultTemplateCta()
 
   return ''
 }
@@ -129,6 +144,160 @@ const removeRepeaterRow = (field: TemplateFieldSchema, rowIndex: number): void =
     repeaterRows(field).filter((_, index) => index !== rowIndex)
   )
 }
+
+const ctaConfigFor = (field: TemplateFieldSchema): TemplateCtaConfig => {
+  const value = asRecord(valueFor(field))
+  const type = templateCtaTypes.includes(value.type as TemplateCtaType)
+    ? (value.type as TemplateCtaType)
+    : 'contact_message'
+  const fallback = defaultTemplateCta(type)
+
+  return {
+    ...fallback,
+    ...value,
+    type,
+    title: stringValue(value.title, fallback.title),
+    description: stringValue(value.description, fallback.description),
+    submit_label: stringValue(value.submit_label, fallback.submit_label),
+    success_message: stringValue(value.success_message, fallback.success_message),
+    fields: ctaFieldsFor(value.fields, fallback.fields),
+  }
+}
+
+const stringValue = (value: unknown, fallback = ''): string => {
+  return typeof value === 'string' ? value : fallback
+}
+
+const ctaFieldsFor = (value: unknown, fallback: TemplateCtaField[] = []): TemplateCtaField[] => {
+  return Array.isArray(value) ? value.map((row) => normalizeCtaField(row)) : fallback
+}
+
+const normalizeCtaField = (value: unknown): TemplateCtaField => {
+  const row = asRecord(value)
+  const type = templateCtaFieldTypes.includes(row.type as TemplateCtaFieldType)
+    ? (row.type as TemplateCtaFieldType)
+    : 'text'
+
+  return {
+    key: stringValue(row.key, 'field'),
+    label: stringValue(row.label, 'Field'),
+    type,
+    required: Boolean(row.required),
+    placeholder: stringValue(row.placeholder),
+    options: ctaFieldOptions(row.options),
+  }
+}
+
+const ctaFieldOptions = (value: unknown): TemplateFieldOption[] => {
+  return Array.isArray(value)
+    ? value
+        .map((option) => asRecord(option))
+        .map((option) => ({
+          label: stringValue(option.label, String(option.value ?? 'Option')),
+          value: stringValue(option.value, String(option.label ?? 'option')),
+        }))
+    : []
+}
+
+const ctaFieldOptionsText = (field: TemplateCtaField): string => {
+  return (field.options ?? []).map((option) => `${option.label}:${option.value}`).join('\n')
+}
+
+const parseCtaFieldOptions = (value: string): TemplateFieldOption[] => {
+  return value
+    .split(/\r?\n|,/)
+    .map((option) => option.trim())
+    .filter(Boolean)
+    .map((option) => {
+      const [label, rawValue] = option.split(':')
+
+      return {
+        label: label.trim(),
+        value: (rawValue ?? label).trim(),
+      }
+    })
+}
+
+const slugKey = (value: string): string => {
+  return (
+    value
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '') || 'field'
+  )
+}
+
+const updateCta = (field: TemplateFieldSchema, value: Partial<TemplateCtaConfig>): void => {
+  updateField(field, {
+    ...ctaConfigFor(field),
+    ...value,
+  })
+}
+
+const loadCtaPreset = (field: TemplateFieldSchema, type?: TemplateCtaType): void => {
+  const current = ctaConfigFor(field)
+  const nextType = type ?? current.type
+  const next = defaultTemplateCta(nextType)
+
+  updateField(field, {
+    ...next,
+    redirect_url: current.redirect_url,
+    recipient_email: current.recipient_email,
+    downloadable_file: current.downloadable_file,
+  })
+}
+
+const loadCtaPresetFromValue = (field: TemplateFieldSchema, value: unknown): void => {
+  const type = templateCtaTypes.includes(value as TemplateCtaType)
+    ? (value as TemplateCtaType)
+    : 'contact_message'
+
+  loadCtaPreset(field, type)
+}
+
+const addCtaField = (field: TemplateFieldSchema): void => {
+  const config = ctaConfigFor(field)
+
+  updateCta(field, {
+    fields: [
+      ...config.fields,
+      {
+        key: `field_${config.fields.length + 1}`,
+        label: 'New Field',
+        type: 'text',
+        required: false,
+        placeholder: '',
+      },
+    ],
+  })
+}
+
+const updateCtaCustomField = (
+  field: TemplateFieldSchema,
+  index: number,
+  key: keyof TemplateCtaField,
+  value: unknown
+): void => {
+  const config = ctaConfigFor(field)
+  const fields = [...config.fields]
+  const current = { ...fields[index] }
+
+  if (key === 'label' && current.key.startsWith('field_')) {
+    current.key = slugKey(String(value))
+  }
+
+  fields[index] = { ...current, [key]: value }
+  updateCta(field, { fields })
+}
+
+const removeCtaCustomField = (field: TemplateFieldSchema, index: number): void => {
+  const config = ctaConfigFor(field)
+
+  updateCta(field, {
+    fields: config.fields.filter((_, fieldIndex) => fieldIndex !== index),
+  })
+}
 </script>
 
 <template>
@@ -189,6 +358,238 @@ const removeRepeaterRow = (field: TemplateFieldSchema, rowIndex: number): void =
               </NativeSelectOption>
             </NativeSelect>
             <FieldDescription v-if="field.description">{{ field.description }}</FieldDescription>
+          </Field>
+
+          <Field v-else-if="field.type === 'cta'" class="md:col-span-2">
+            <div class="space-y-5 rounded border bg-background p-4">
+              <div class="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <FieldLabel>{{ field.label }}</FieldLabel>
+                  <FieldDescription v-if="field.description">
+                    {{ field.description }}
+                  </FieldDescription>
+                </div>
+                <Button size="sm" variant="outline" type="button" @click="loadCtaPreset(field)">
+                  Load preset defaults
+                </Button>
+              </div>
+
+              <div class="grid gap-4 md:grid-cols-2">
+                <Field>
+                  <FieldLabel :for="`${fieldId(field)}-type`">CTA Type</FieldLabel>
+                  <NativeSelect
+                    :id="`${fieldId(field)}-type`"
+                    class="w-full"
+                    :model-value="ctaConfigFor(field).type"
+                    @update:model-value="loadCtaPresetFromValue(field, $event)"
+                  >
+                    <NativeSelectOption v-for="type in templateCtaTypes" :key="type" :value="type">
+                      {{ templateCtaPresets[type].label }}
+                    </NativeSelectOption>
+                  </NativeSelect>
+                </Field>
+
+                <Field>
+                  <FieldLabel :for="`${fieldId(field)}-title`">Title</FieldLabel>
+                  <Input
+                    :id="`${fieldId(field)}-title`"
+                    :model-value="ctaConfigFor(field).title"
+                    @update:model-value="updateCta(field, { title: String($event) })"
+                  />
+                </Field>
+
+                <Field class="md:col-span-2">
+                  <FieldLabel :for="`${fieldId(field)}-description`">Description</FieldLabel>
+                  <Textarea
+                    :id="`${fieldId(field)}-description`"
+                    :model-value="ctaConfigFor(field).description"
+                    class="min-h-20"
+                    @update:model-value="updateCta(field, { description: String($event) })"
+                  />
+                </Field>
+
+                <Field>
+                  <FieldLabel :for="`${fieldId(field)}-submit-label`">Submit Label</FieldLabel>
+                  <Input
+                    :id="`${fieldId(field)}-submit-label`"
+                    :model-value="ctaConfigFor(field).submit_label"
+                    @update:model-value="updateCta(field, { submit_label: String($event) })"
+                  />
+                </Field>
+
+                <Field>
+                  <FieldLabel :for="`${fieldId(field)}-success-message`"
+                    >Success Message</FieldLabel
+                  >
+                  <Input
+                    :id="`${fieldId(field)}-success-message`"
+                    :model-value="ctaConfigFor(field).success_message"
+                    @update:model-value="updateCta(field, { success_message: String($event) })"
+                  />
+                </Field>
+
+                <Field>
+                  <FieldLabel :for="`${fieldId(field)}-recipient-email`"
+                    >Recipient Email</FieldLabel
+                  >
+                  <Input
+                    :id="`${fieldId(field)}-recipient-email`"
+                    type="email"
+                    :model-value="ctaConfigFor(field).recipient_email ?? ''"
+                    @update:model-value="updateCta(field, { recipient_email: String($event) })"
+                  />
+                </Field>
+
+                <Field>
+                  <FieldLabel :for="`${fieldId(field)}-redirect-url`">Redirect URL</FieldLabel>
+                  <Input
+                    :id="`${fieldId(field)}-redirect-url`"
+                    type="url"
+                    :model-value="ctaConfigFor(field).redirect_url ?? ''"
+                    @update:model-value="updateCta(field, { redirect_url: String($event) })"
+                  />
+                </Field>
+
+                <Field v-if="ctaConfigFor(field).type === 'file_download'" class="md:col-span-2">
+                  <FieldLabel :for="`${fieldId(field)}-downloadable-file`">
+                    Downloadable File
+                  </FieldLabel>
+                  <Input
+                    :id="`${fieldId(field)}-downloadable-file`"
+                    type="url"
+                    :model-value="ctaConfigFor(field).downloadable_file ?? ''"
+                    @update:model-value="updateCta(field, { downloadable_file: String($event) })"
+                  />
+                </Field>
+              </div>
+
+              <div class="space-y-3">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p class="text-sm font-medium text-foreground">Fields</p>
+                    <p class="text-xs text-muted-foreground">
+                      Preset fields are editable when this CTA is a custom form.
+                    </p>
+                  </div>
+                  <Button
+                    v-if="ctaConfigFor(field).type === 'custom_form'"
+                    size="sm"
+                    variant="outline"
+                    type="button"
+                    @click="addCtaField(field)"
+                  >
+                    <Plus class="size-4" />
+                    Add field
+                  </Button>
+                </div>
+
+                <div
+                  v-if="ctaConfigFor(field).type !== 'custom_form'"
+                  class="grid gap-2 md:grid-cols-2"
+                >
+                  <div
+                    v-for="ctaField in ctaConfigFor(field).fields"
+                    :key="ctaField.key"
+                    class="rounded border p-3 text-sm"
+                  >
+                    <span class="font-medium">{{ ctaField.label }}</span>
+                    <span class="ml-2 text-xs text-muted-foreground">
+                      {{ ctaField.type }}{{ ctaField.required ? ', required' : '' }}
+                    </span>
+                  </div>
+                </div>
+
+                <div v-else class="space-y-3">
+                  <div
+                    v-for="(ctaField, ctaFieldIndex) in ctaConfigFor(field).fields"
+                    :key="`${ctaField.key}-${ctaFieldIndex}`"
+                    class="grid gap-3 rounded border p-3 md:grid-cols-2"
+                  >
+                    <Field>
+                      <FieldLabel>Label</FieldLabel>
+                      <Input
+                        :model-value="ctaField.label"
+                        @update:model-value="
+                          updateCtaCustomField(field, ctaFieldIndex, 'label', String($event))
+                        "
+                      />
+                    </Field>
+                    <Field>
+                      <FieldLabel>Key</FieldLabel>
+                      <Input
+                        :model-value="ctaField.key"
+                        @update:model-value="
+                          updateCtaCustomField(field, ctaFieldIndex, 'key', slugKey(String($event)))
+                        "
+                      />
+                    </Field>
+                    <Field>
+                      <FieldLabel>Type</FieldLabel>
+                      <NativeSelect
+                        class="w-full"
+                        :model-value="ctaField.type"
+                        @update:model-value="
+                          updateCtaCustomField(field, ctaFieldIndex, 'type', $event)
+                        "
+                      >
+                        <NativeSelectOption
+                          v-for="type in templateCtaFieldTypes"
+                          :key="type"
+                          :value="type"
+                        >
+                          {{ type }}
+                        </NativeSelectOption>
+                      </NativeSelect>
+                    </Field>
+                    <Field orientation="horizontal" class="items-center gap-3 self-end">
+                      <Checkbox
+                        :model-value="Boolean(ctaField.required)"
+                        @update:model-value="
+                          updateCtaCustomField(field, ctaFieldIndex, 'required', Boolean($event))
+                        "
+                      />
+                      <FieldLabel>Required</FieldLabel>
+                    </Field>
+                    <Field>
+                      <FieldLabel>Placeholder</FieldLabel>
+                      <Input
+                        :model-value="ctaField.placeholder ?? ''"
+                        @update:model-value="
+                          updateCtaCustomField(field, ctaFieldIndex, 'placeholder', String($event))
+                        "
+                      />
+                    </Field>
+                    <Field v-if="ctaField.type === 'select'">
+                      <FieldLabel>Options</FieldLabel>
+                      <Textarea
+                        :model-value="ctaFieldOptionsText(ctaField)"
+                        placeholder="Label:value"
+                        class="min-h-20"
+                        @update:model-value="
+                          updateCtaCustomField(
+                            field,
+                            ctaFieldIndex,
+                            'options',
+                            parseCtaFieldOptions(String($event))
+                          )
+                        "
+                      />
+                    </Field>
+                    <div class="md:col-span-2">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        type="button"
+                        @click="removeCtaCustomField(field, ctaFieldIndex)"
+                      >
+                        <Trash2 class="size-4" />
+                        Remove field
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </Field>
 
           <Field v-else-if="field.type === 'repeater'" class="md:col-span-2">

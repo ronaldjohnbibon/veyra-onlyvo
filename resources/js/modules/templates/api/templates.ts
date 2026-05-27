@@ -1,5 +1,6 @@
 import http from '@/shared/api/http'
 import type {
+  TemplateCtaConfig,
   TemplateCatalogItem,
   TemplateParams,
   TemplatePayload,
@@ -24,6 +25,12 @@ interface CatalogResponse {
 
 interface WebsiteTypeResponse {
   data: WebsiteType[]
+}
+
+interface CtaSubmissionResponse {
+  data: {
+    id: string
+  }
 }
 
 export const templateService = {
@@ -67,5 +74,15 @@ export const templateService = {
 
   publicDefault() {
     return http.get<TemplateResponse>('public/sites/default').then((response) => response.data)
+  },
+
+  submitCta(templateId: string, cta: TemplateCtaConfig, payload: Record<string, unknown>) {
+    return http
+      .post<CtaSubmissionResponse>('public/template-cta-submissions', {
+        template_id: templateId,
+        cta_type: cta.type,
+        payload,
+      })
+      .then((response) => response.data)
   },
 }

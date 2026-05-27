@@ -12,7 +12,63 @@ export type TemplateFieldType =
   | 'number'
   | 'boolean'
   | 'select'
+  | 'cta'
   | 'repeater'
+
+export type TemplateCtaType =
+  | 'contact_message'
+  | 'quote_request'
+  | 'booking'
+  | 'consultation'
+  | 'support'
+  | 'registration'
+  | 'newsletter'
+  | 'event_registration'
+  | 'job_application'
+  | 'feedback'
+  | 'product_inquiry'
+  | 'service_request'
+  | 'demo_request'
+  | 'lead_capture'
+  | 'file_download'
+  | 'donation'
+  | 'callback_request'
+  | 'custom_form'
+
+export type TemplateCtaFieldType =
+  | 'text'
+  | 'email'
+  | 'phone'
+  | 'textarea'
+  | 'number'
+  | 'date'
+  | 'time'
+  | 'select'
+  | 'checkbox'
+  | 'file'
+  | 'url'
+
+export interface TemplateCtaField {
+  key: string
+  label: string
+  type: TemplateCtaFieldType
+  required?: boolean
+  placeholder?: string
+  options?: TemplateFieldOption[]
+}
+
+export interface TemplateCtaConfig {
+  type: TemplateCtaType
+  label?: string
+  title: string
+  description: string
+  submit_label: string
+  success_message: string
+  fields: TemplateCtaField[]
+  redirect_url?: string
+  recipient_email?: string
+  downloadable_file?: string
+}
 
 export interface TemplateFieldOption {
   label: string
