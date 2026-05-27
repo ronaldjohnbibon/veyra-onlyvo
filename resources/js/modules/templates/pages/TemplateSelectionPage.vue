@@ -410,7 +410,7 @@ watch(
               v-for="template in templateStore.templates"
               :key="template.id"
               as="div"
-              variant="outline"
+              variant="select"
               role="button"
               tabindex="0"
               class="h-auto w-full cursor-pointer flex-col items-start justify-start gap-1 whitespace-normal border bg-background p-3 text-left hover:border-primary"
@@ -820,7 +820,7 @@ watch(
             <DialogFooter class="gap-2 sm:justify-between">
               <div class="flex flex-col gap-2 sm:flex-row">
                 <Button
-                  variant="outline"
+                  variant="restore"
                   type="button"
                   :disabled="templateStore.loading || !selectedTemplateId"
                   @click="resetTemplateDefault"
@@ -851,7 +851,7 @@ watch(
                   Draft
                 </Button>
                 <Button
-                  variant="create"
+                  variant="publish"
                   type="button"
                   :disabled="templateStore.loading || !canSave"
                   @click="saveTemplate('published')"
@@ -873,7 +873,7 @@ watch(
 
       <div class="fixed bottom-6 right-6 z-20 flex w-[112px] flex-col gap-2 draggable">
         <Button
-          variant="outline"
+          variant="create"
           class="w-full rounded shadow h-8 px-3 text-xs"
           type="button"
           @click="resetForm"
@@ -882,7 +882,7 @@ watch(
           New
         </Button>
         <Button
-          variant="update"
+          variant="edit"
           class="w-full rounded shadow h-8 px-3 text-xs"
           type="button"
           :disabled="!canEditDetails"
@@ -893,7 +893,7 @@ watch(
         </Button>
         <Button
           v-if="selectedTemplateId"
-          variant="outline"
+          variant="navigate"
           class="w-full rounded shadow h-8 px-3 text-xs"
           type="button"
           @click="router.push({ name: 'templates.published', params: { id: selectedTemplateId } })"

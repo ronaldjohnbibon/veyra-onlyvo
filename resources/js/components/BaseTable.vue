@@ -294,7 +294,7 @@ const updatePageSize = (event: Event): void => {
       <div class="flex items-center justify-end gap-1">
         <Button
           size="sm"
-          variant="outline"
+          variant="navigate"
           :disabled="page <= 1 || loading"
           @click="goToPage(page - 1)"
         >
@@ -306,7 +306,7 @@ const updatePageSize = (event: Event): void => {
             v-if="typeof pageNumber === 'number'"
             class="h-8 w-8 p-0"
             size="sm"
-            :variant="page === pageNumber ? 'default' : 'outline'"
+            :variant="page === pageNumber ? 'default' : 'navigate'"
             :disabled="loading"
             @click="goToPage(pageNumber)"
           >
@@ -317,7 +317,7 @@ const updatePageSize = (event: Event): void => {
 
         <Button
           size="sm"
-          variant="outline"
+          variant="navigate"
           :disabled="page >= pageCount || loading"
           @click="goToPage(page + 1)"
         >

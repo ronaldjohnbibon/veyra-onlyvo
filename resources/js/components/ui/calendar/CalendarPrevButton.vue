@@ -19,7 +19,7 @@ const forwardedProps = useForwardProps(delegatedProps)
     data-slot="calendar-prev-button"
     :class="
       cn(
-        buttonVariants({ variant: 'outline' }),
+        buttonVariants({ variant: 'navigate' }),
         'size-7 bg-transparent p-0 opacity-50 hover:opacity-100',
         props.class
       )

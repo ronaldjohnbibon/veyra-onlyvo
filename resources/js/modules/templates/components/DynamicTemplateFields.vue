@@ -455,7 +455,7 @@ const removeCtaCustomField = (field: TemplateFieldSchema, index: number): void =
                       </div>
                       <Button
                         size="sm"
-                        variant="outline"
+                        variant="restore"
                         type="button"
                         @click="loadCtaPreset(field)"
                       >
@@ -580,7 +580,7 @@ const removeCtaCustomField = (field: TemplateFieldSchema, index: number): void =
                         <Button
                           v-if="ctaConfigFor(field).type === 'custom_form'"
                           size="sm"
-                          variant="outline"
+                          variant="create"
                           type="button"
                           @click="addCtaField(field)"
                         >
@@ -723,7 +723,7 @@ const removeCtaCustomField = (field: TemplateFieldSchema, index: number): void =
                     </div>
                     <Button
                       size="sm"
-                      variant="outline"
+                      variant="create"
                       type="button"
                       @click="openRepeaterDialog(field)"
                     >
@@ -747,7 +747,7 @@ const removeCtaCustomField = (field: TemplateFieldSchema, index: number): void =
                       <div class="flex shrink-0 items-center gap-1">
                         <Button
                           size="sm"
-                          variant="outline"
+                          variant="edit"
                           type="button"
                           @click="openRepeaterDialog(field, rowIndex)"
                         >
@@ -838,9 +838,7 @@ const removeCtaCustomField = (field: TemplateFieldSchema, index: number): void =
       />
 
       <DialogFooter>
-        <Button variant="outline" type="button" @click="repeaterDialogOpen = false">
-          Cancel
-        </Button>
+        <Button variant="cancel" type="button" @click="repeaterDialogOpen = false"> Cancel </Button>
         <Button variant="create" type="button" @click="saveRepeaterDialog">Save</Button>
       </DialogFooter>
     </DialogScrollContent>

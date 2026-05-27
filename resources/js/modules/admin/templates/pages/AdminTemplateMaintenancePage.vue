@@ -785,7 +785,7 @@ watch(
             <div class="flex items-center gap-2">
               <Button
                 size="sm"
-                variant="outline"
+                variant="edit"
                 type="button"
                 :disabled="!selectedWebsiteType"
                 @click="editWebsiteType"
@@ -793,7 +793,7 @@ watch(
                 <Save class="size-4" />
                 Edit
               </Button>
-              <Button size="sm" variant="outline" type="button" @click="createWebsiteType">
+              <Button size="sm" variant="create" type="button" @click="createWebsiteType">
                 <Plus class="size-4" />
                 New
               </Button>
@@ -1136,7 +1136,7 @@ watch(
                               <div class="flex items-start justify-end gap-3">
                                 <Button
                                   size="sm"
-                                  variant="outline"
+                                  variant="create"
                                   type="button"
                                   :disabled="!selectedWebsiteType"
                                   @click="openSchemaFieldDialog(schemaFields)"
@@ -1184,7 +1184,7 @@ watch(
                                     <div class="flex shrink-0 items-center gap-1 py-2">
                                       <Button
                                         size="sm"
-                                        variant="outline"
+                                        variant="edit"
                                         type="button"
                                         @click.stop="
                                           openSchemaFieldDialog(schemaFields, fieldIndex)
@@ -1491,7 +1491,7 @@ watch(
                       <div class="flex items-center justify-end gap-3">
                         <Button
                           size="sm"
-                          variant="outline"
+                          variant="create"
                           type="button"
                           @click="addDraftSelectOption(schemaFieldDraft)"
                         >
@@ -1544,7 +1544,7 @@ watch(
                       <div class="flex items-center justify-end gap-3">
                         <Button
                           size="sm"
-                          variant="outline"
+                          variant="create"
                           type="button"
                           @click="addDraftListField(schemaFieldDraft)"
                         >
@@ -1722,7 +1722,7 @@ watch(
                             </p>
                             <Button
                               size="sm"
-                              variant="outline"
+                              variant="create"
                               type="button"
                               @click="addDraftSelectOption(nestedField)"
                             >
@@ -1766,7 +1766,7 @@ watch(
                 </Accordion>
 
                 <DialogFooter>
-                  <Button variant="outline" type="button" @click="schemaFieldDialogOpen = false">
+                  <Button variant="cancel" type="button" @click="schemaFieldDialogOpen = false">
                     Cancel
                   </Button>
                   <Button variant="create" type="button" @click="saveSchemaFieldDialog">
@@ -1788,7 +1788,7 @@ watch(
                 </CardTitle>
                 <Button
                   size="sm"
-                  variant="outline"
+                  variant="create"
                   type="button"
                   :disabled="!selectedWebsiteType"
                   @click="createCatalogItem"

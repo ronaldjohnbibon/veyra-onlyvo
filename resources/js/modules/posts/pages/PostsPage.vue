@@ -192,7 +192,7 @@ watch(selectedTemplateId, (templateId) => {
           <template #cell-actions="{ row }">
             <div class="flex justify-end gap-2">
               <Button
-                variant="outline"
+                variant="edit"
                 size="sm"
                 type="button"
                 aria-label="Edit post"
@@ -202,7 +202,7 @@ watch(selectedTemplateId, (templateId) => {
                 <Pencil class="size-4" />
               </Button>
               <Button
-                variant="outline"
+                variant="publish"
                 size="sm"
                 type="button"
                 :aria-label="row.status === 'published' ? 'Move to draft' : 'Publish post'"
@@ -213,7 +213,7 @@ watch(selectedTemplateId, (templateId) => {
                 <Globe2 class="size-4" />
               </Button>
               <Button
-                variant="outline"
+                variant="delete"
                 size="sm"
                 type="button"
                 aria-label="Delete post"

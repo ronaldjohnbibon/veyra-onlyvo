@@ -60,7 +60,7 @@ onMounted(() => {
             </BreadcrumbList>
           </Breadcrumb>
         </div>
-        <Button variant="outline" size="sm" @click="toggleTheme" aria-label="Toggle theme">
+        <Button variant="secondary" size="sm" @click="toggleTheme" aria-label="Toggle theme">
           <Sun v-if="isDark" class="size-4" />
           <Moon v-else class="size-4" />
         </Button>

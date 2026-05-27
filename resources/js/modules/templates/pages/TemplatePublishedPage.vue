@@ -18,13 +18,13 @@ onMounted(async () => {
 <template>
   <main class="min-h-screen bg-muted/30 p-4">
     <div class="mx-auto mb-4 flex max-w-6xl justify-between gap-3">
-      <Button as-child variant="outline">
+      <Button as-child variant="navigate">
         <RouterLink to="/templates">
           <ArrowLeft class="size-4" />
           Back
         </RouterLink>
       </Button>
-      <Button as-child variant="outline">
+      <Button as-child variant="navigate">
         <RouterLink :to="{ name: 'posts.index', query: { templateId } }">
           <FileText class="size-4" />
           Posts

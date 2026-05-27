@@ -66,7 +66,7 @@ const authStore = useAuthStore()
                   <Button size="sm" type="submit" :disabled="authStore.loading">
                     {{ authStore.loading ? 'Logging in...' : 'Login' }}
                   </Button>
-                  <Button variant="outline" size="sm" type="button"> Login with Google </Button>
+                  <Button variant="secondary" size="sm" type="button"> Login with Google </Button>
                   <FieldDescription class="text-center">
                     Don't have an account?
                     <router-link to="/register"> Sign up </router-link>
