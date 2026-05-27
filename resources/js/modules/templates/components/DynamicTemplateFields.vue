@@ -1,12 +1,21 @@
 <script setup lang="ts">
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import {
+  Dialog,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogScrollContent,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Field, FieldDescription, FieldGroup, FieldLabel, FieldSet } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Textarea } from '@/components/ui/textarea'
 import type { TemplateContent, TemplateFieldSchema } from '@/types/templates'
 import { Plus, Trash2 } from 'lucide-vue-next'
+import { computed, ref } from 'vue'
 
 defineOptions({
   name: 'DynamicTemplateFields',
@@ -20,6 +29,17 @@ const props = defineProps<{
 const emit = defineEmits<{
   'update:modelValue': [value: TemplateContent]
 }>()
+
+const repeaterDialogOpen = ref(false)
+const activeRepeaterField = ref<TemplateFieldSchema | null>(null)
+const activeRepeaterIndex = ref<number | null>(null)
+const repeaterDraft = ref<TemplateContent>({})
+
+const repeaterDialogTitle = computed(() => {
+  const label = activeRepeaterField.value?.label ?? 'Item'
+
+  return activeRepeaterIndex.value === null ? `Add ${label}` : `Edit ${label}`
+})
 
 const fieldId = (field: TemplateFieldSchema): string => `template-content-${field.key}`
 
@@ -79,18 +99,28 @@ const repeaterRows = (field: TemplateFieldSchema): TemplateContent[] => {
   return Array.isArray(value) ? value.map((row) => asRecord(row)) : []
 }
 
-const addRepeaterRow = (field: TemplateFieldSchema): void => {
-  updateField(field, [...repeaterRows(field), defaultRowFor(field.fields)])
+const openRepeaterDialog = (field: TemplateFieldSchema, rowIndex: number | null = null): void => {
+  // Keep new and existing repeater rows editable in a dialog instead of expanding the page.
+  activeRepeaterField.value = field
+  activeRepeaterIndex.value = rowIndex
+  repeaterDraft.value =
+    rowIndex === null ? defaultRowFor(field.fields) : { ...repeaterRows(field)[rowIndex] }
+  repeaterDialogOpen.value = true
 }
 
-const updateRepeaterRow = (
-  field: TemplateFieldSchema,
-  rowIndex: number,
-  value: TemplateContent
-): void => {
-  const rows = [...repeaterRows(field)]
-  rows[rowIndex] = value
-  updateField(field, rows)
+const saveRepeaterDialog = (): void => {
+  if (!activeRepeaterField.value) return
+
+  const rows = [...repeaterRows(activeRepeaterField.value)]
+
+  if (activeRepeaterIndex.value === null) {
+    rows.push(repeaterDraft.value)
+  } else {
+    rows[activeRepeaterIndex.value] = repeaterDraft.value
+  }
+
+  updateField(activeRepeaterField.value, rows)
+  repeaterDialogOpen.value = false
 }
 
 const removeRepeaterRow = (field: TemplateFieldSchema, rowIndex: number): void => {
@@ -169,22 +199,33 @@ const removeRepeaterRow = (field: TemplateFieldSchema, rowIndex: number): void =
                   field.description
                 }}</FieldDescription>
               </div>
-              <Button size="sm" variant="outline" type="button" @click="addRepeaterRow(field)">
+              <Button size="sm" variant="outline" type="button" @click="openRepeaterDialog(field)">
                 <Plus class="size-4" />
                 Add
               </Button>
             </div>
 
-            <div class="mt-3 space-y-3">
+            <div class="mt-3 space-y-2">
               <div
                 v-for="(row, rowIndex) in repeaterRows(field)"
                 :key="rowIndex"
-                class="rounded border bg-background p-3"
+                class="flex items-center justify-between gap-3 rounded border bg-background p-3"
               >
-                <div class="mb-3 flex items-center justify-between gap-3">
-                  <p class="text-xs font-semibold text-muted-foreground">
-                    {{ field.label }} {{ rowIndex + 1 }}
+                <div class="min-w-0">
+                  <p class="text-sm font-semibold">{{ field.label }} {{ rowIndex + 1 }}</p>
+                  <p class="mt-1 truncate text-xs text-muted-foreground">
+                    Click edit to manage this item.
                   </p>
+                </div>
+                <div class="flex shrink-0 items-center gap-1">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    type="button"
+                    @click="openRepeaterDialog(field, rowIndex)"
+                  >
+                    Edit
+                  </Button>
                   <Button
                     size="sm"
                     variant="ghost"
@@ -194,12 +235,6 @@ const removeRepeaterRow = (field: TemplateFieldSchema, rowIndex: number): void =
                     <Trash2 class="size-4" />
                   </Button>
                 </div>
-
-                <DynamicTemplateFields
-                  :schema="field.fields ?? []"
-                  :model-value="row"
-                  @update:model-value="updateRepeaterRow(field, rowIndex, $event)"
-                />
               </div>
             </div>
           </Field>
@@ -255,4 +290,27 @@ const removeRepeaterRow = (field: TemplateFieldSchema, rowIndex: number): void =
       </div>
     </FieldSet>
   </FieldGroup>
+
+  <Dialog :open="repeaterDialogOpen" @update:open="repeaterDialogOpen = $event">
+    <DialogScrollContent class="max-w-[calc(100%-2rem)] sm:max-w-2xl">
+      <DialogHeader>
+        <DialogTitle>{{ repeaterDialogTitle }}</DialogTitle>
+        <DialogDescription>Manage the fields for this list item.</DialogDescription>
+      </DialogHeader>
+
+      <DynamicTemplateFields
+        v-if="activeRepeaterField"
+        :schema="activeRepeaterField.fields ?? []"
+        :model-value="repeaterDraft"
+        @update:model-value="repeaterDraft = $event"
+      />
+
+      <DialogFooter>
+        <Button variant="outline" type="button" @click="repeaterDialogOpen = false">
+          Cancel
+        </Button>
+        <Button variant="create" type="button" @click="saveRepeaterDialog">Save</Button>
+      </DialogFooter>
+    </DialogScrollContent>
+  </Dialog>
 </template>

@@ -1,14 +1,13 @@
 <script setup lang="ts">
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
   Dialog,
@@ -456,218 +455,293 @@ watch(
             <form class="space-y-4" @submit.prevent>
               <Card class="gap-4 py-4">
                 <CardHeader class="px-4">
-                  <CardTitle class="text-sm">Website Type</CardTitle>
-                  <CardDescription
-                    >Choose the site category before viewing templates.</CardDescription
+                  <CardTitle class="text-sm">Template Setup</CardTitle>
+                </CardHeader>
+
+                <CardContent class="px-4">
+                  <Accordion
+                    type="multiple"
+                    :default-value="[
+                      'website-type',
+                      'available-templates',
+                      'site-details',
+                      'template-content',
+                      'global-styles',
+                    ]"
+                    class="space-y-2"
                   >
-                </CardHeader>
-
-                <CardContent class="px-4">
-                  <div class="grid gap-3 md:grid-cols-2 2xl:grid-cols-3">
-                    <button
-                      v-for="websiteType in templateStore.websiteTypes"
-                      :key="websiteType.id"
-                      type="button"
-                      class="group rounded border bg-background p-3 text-left transition hover:border-primary hover:shadow-sm"
-                      :class="{
-                        'border-primary ring-2 ring-primary/20':
-                          selectedWebsiteTypeId === websiteType.id,
-                      }"
-                      @click="selectWebsiteType(websiteType)"
+                    <AccordionItem
+                      value="website-type"
+                      class="rounded border bg-background px-3 last:border-b"
                     >
-                      <span class="flex items-start justify-between gap-3">
+                      <AccordionTrigger class="py-3 hover:no-underline">
                         <span>
-                          <span class="block text-sm font-semibold">{{ websiteType.name }}</span>
-                          <span class="mt-1 block text-xs leading-5 text-muted-foreground">
-                            {{ websiteType.available_templates_count }} templates available
+                          <span class="block text-sm font-semibold">Website Type</span>
+                          <span class="mt-1 block text-xs text-muted-foreground">
+                            Choose the site category before viewing templates.
                           </span>
                         </span>
-                        <Check
-                          v-if="selectedWebsiteTypeId === websiteType.id"
-                          class="size-4 shrink-0 text-primary"
-                        />
-                      </span>
-                    </button>
-                  </div>
-                </CardContent>
-              </Card>
+                      </AccordionTrigger>
+                      <AccordionContent class="space-y-3 pb-3">
+                        <div class="grid gap-3 md:grid-cols-2 2xl:grid-cols-3">
+                          <button
+                            v-for="websiteType in templateStore.websiteTypes"
+                            :key="websiteType.id"
+                            type="button"
+                            class="group rounded border bg-background p-3 text-left transition hover:border-primary hover:shadow-sm"
+                            :class="{
+                              'border-primary ring-2 ring-primary/20':
+                                selectedWebsiteTypeId === websiteType.id,
+                            }"
+                            @click="selectWebsiteType(websiteType)"
+                          >
+                            <span class="flex items-start justify-between gap-3">
+                              <span>
+                                <span class="block text-sm font-semibold">
+                                  {{ websiteType.name }}
+                                </span>
+                                <span class="mt-1 block text-xs leading-5 text-muted-foreground">
+                                  {{ websiteType.available_templates_count }} templates available
+                                </span>
+                              </span>
+                              <Check
+                                v-if="selectedWebsiteTypeId === websiteType.id"
+                                class="size-4 shrink-0 text-primary"
+                              />
+                            </span>
+                          </button>
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
 
-              <Card class="gap-4 py-4">
-                <CardHeader class="px-4">
-                  <CardTitle class="text-sm">Available Templates</CardTitle>
-                  <CardAction>
-                    <Badge v-if="selectedWebsiteType" variant="outline">
-                      {{ selectedWebsiteType.name }}
-                    </Badge>
-                  </CardAction>
-                </CardHeader>
-
-                <CardContent class="px-4">
-                  <Empty v-if="!selectedWebsiteType" class="min-h-[220px]">
-                    <EmptyHeader>
-                      <EmptyTitle>Select a website type</EmptyTitle>
-                      <EmptyDescription>
-                        Complete templates are grouped by website type.
-                      </EmptyDescription>
-                    </EmptyHeader>
-                  </Empty>
-
-                  <Empty v-else-if="!templateOptions.length" class="min-h-[220px]">
-                    <EmptyHeader>
-                      <EmptyTitle>No templates available yet</EmptyTitle>
-                      <EmptyDescription>
-                        {{ selectedWebsiteType.name }} is ready for future templates.
-                      </EmptyDescription>
-                    </EmptyHeader>
-                  </Empty>
-
-                  <div v-else class="grid gap-3 md:grid-cols-3">
-                    <button
-                      v-for="templateOption in templateOptions"
-                      :key="templateOption.key"
-                      type="button"
-                      class="group rounded border bg-background p-2 text-left transition hover:border-primary hover:shadow-sm"
-                      :class="{
-                        'border-primary ring-2 ring-primary/20':
-                          form.template_key === templateOption.key,
-                      }"
-                      @click="selectCatalogTemplate(templateOption)"
+                    <AccordionItem
+                      value="available-templates"
+                      class="rounded border bg-background px-3 last:border-b"
                     >
-                      <div
-                        class="flex aspect-video w-full items-center justify-center rounded bg-muted text-muted-foreground"
-                      >
-                        <img
-                          v-if="templateOption.preview_image"
-                          :src="templateOption.preview_image"
-                          :alt="templateOption.name"
-                          class="h-full w-full rounded object-cover"
-                        />
-                        <LayoutTemplate v-else class="size-6" />
-                      </div>
-                      <span class="mt-3 flex items-center justify-between gap-2">
+                      <AccordionTrigger class="py-3 hover:no-underline">
                         <span>
-                          <span class="block text-sm font-semibold">{{ templateOption.name }}</span>
-                          <span class="mt-1 block text-xs leading-5 text-muted-foreground">
-                            {{ templateOption.description }}
+                          <span class="flex flex-wrap items-center gap-2">
+                            <span class="block text-sm font-semibold">Available Templates</span>
+                            <Badge v-if="selectedWebsiteType" variant="outline">
+                              {{ selectedWebsiteType.name }}
+                            </Badge>
+                          </span>
+                          <span class="mt-1 block text-xs text-muted-foreground">
+                            Complete templates are grouped by website type.
                           </span>
                         </span>
-                        <Check
-                          v-if="form.template_key === templateOption.key"
-                          class="size-4 shrink-0 text-primary"
+                      </AccordionTrigger>
+                      <AccordionContent class="space-y-3 pb-3">
+                        <Empty v-if="!selectedWebsiteType" class="min-h-[220px]">
+                          <EmptyHeader>
+                            <EmptyTitle>Select a website type</EmptyTitle>
+                            <EmptyDescription>
+                              Complete templates are grouped by website type.
+                            </EmptyDescription>
+                          </EmptyHeader>
+                        </Empty>
+
+                        <Empty v-else-if="!templateOptions.length" class="min-h-[220px]">
+                          <EmptyHeader>
+                            <EmptyTitle>No templates available yet</EmptyTitle>
+                            <EmptyDescription>
+                              {{ selectedWebsiteType.name }} is ready for future templates.
+                            </EmptyDescription>
+                          </EmptyHeader>
+                        </Empty>
+
+                        <div v-else class="grid gap-3 md:grid-cols-3">
+                          <button
+                            v-for="templateOption in templateOptions"
+                            :key="templateOption.key"
+                            type="button"
+                            class="group rounded border bg-background p-2 text-left transition hover:border-primary hover:shadow-sm"
+                            :class="{
+                              'border-primary ring-2 ring-primary/20':
+                                form.template_key === templateOption.key,
+                            }"
+                            @click="selectCatalogTemplate(templateOption)"
+                          >
+                            <div
+                              class="flex aspect-video w-full items-center justify-center rounded bg-muted text-muted-foreground"
+                            >
+                              <img
+                                v-if="templateOption.preview_image"
+                                :src="templateOption.preview_image"
+                                :alt="templateOption.name"
+                                class="h-full w-full rounded object-cover"
+                              />
+                              <LayoutTemplate v-else class="size-6" />
+                            </div>
+                            <span class="mt-3 flex items-center justify-between gap-2">
+                              <span>
+                                <span class="block text-sm font-semibold">
+                                  {{ templateOption.name }}
+                                </span>
+                                <span class="mt-1 block text-xs leading-5 text-muted-foreground">
+                                  {{ templateOption.description }}
+                                </span>
+                              </span>
+                              <Check
+                                v-if="form.template_key === templateOption.key"
+                                class="size-4 shrink-0 text-primary"
+                              />
+                            </span>
+                          </button>
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+
+                    <AccordionItem
+                      v-if="canEditDetails"
+                      value="site-details"
+                      class="rounded border bg-background px-3 last:border-b"
+                    >
+                      <AccordionTrigger class="py-3 hover:no-underline">
+                        <span>
+                          <span class="flex flex-wrap items-center gap-2">
+                            <span class="block text-sm font-semibold">Site Details</span>
+                            <Badge variant="outline">{{ form.status }}</Badge>
+                          </span>
+                          <span class="mt-1 block text-xs text-muted-foreground">
+                            Name, slug, default setting, and logo.
+                          </span>
+                        </span>
+                      </AccordionTrigger>
+                      <AccordionContent class="space-y-3 pb-3">
+                        <FieldGroup>
+                          <FieldSet>
+                            <div class="grid gap-4 md:grid-cols-2">
+                              <Field>
+                                <FieldLabel for="template-name">Template Name</FieldLabel>
+                                <Input id="template-name" v-model="form.name" required />
+                              </Field>
+
+                              <Field>
+                                <FieldLabel for="site-slug">Site Slug</FieldLabel>
+                                <Input
+                                  id="site-slug"
+                                  v-model="form.slug"
+                                  maxlength="120"
+                                  required
+                                  @input="updateSlug"
+                                />
+                              </Field>
+
+                              <Field orientation="horizontal" class="items-center gap-3 self-end">
+                                <Checkbox id="default-site" v-model="form.is_default" />
+                                <FieldLabel for="default-site">Default public site</FieldLabel>
+                              </Field>
+
+                              <Field class="md:col-span-2">
+                                <FieldLabel for="logo-url">Logo URL</FieldLabel>
+                                <Input id="logo-url" v-model="form.logo" required />
+                                <Input
+                                  type="file"
+                                  accept="image/*"
+                                  class="cursor-pointer text-muted-foreground"
+                                  @change="handleLogoUpload"
+                                />
+                              </Field>
+                            </div>
+                          </FieldSet>
+                        </FieldGroup>
+                      </AccordionContent>
+                    </AccordionItem>
+
+                    <AccordionItem
+                      v-if="canEditDetails && dynamicFieldSchema.length"
+                      value="template-content"
+                      class="rounded border bg-background px-3 last:border-b"
+                    >
+                      <AccordionTrigger class="py-3 hover:no-underline">
+                        <span>
+                          <span class="block text-sm font-semibold">Template Content</span>
+                          <span class="mt-1 block text-xs text-muted-foreground">
+                            Complete fields from the selected catalog template.
+                          </span>
+                        </span>
+                      </AccordionTrigger>
+                      <AccordionContent class="space-y-3 pb-3">
+                        <DynamicTemplateFields
+                          :schema="dynamicFieldSchema"
+                          :model-value="form.content"
+                          @update:model-value="form.content = $event"
                         />
-                      </span>
-                    </button>
-                  </div>
-                </CardContent>
-              </Card>
+                      </AccordionContent>
+                    </AccordionItem>
 
-              <Card v-if="canEditDetails" class="gap-4 py-4">
-                <CardHeader class="px-4">
-                  <CardTitle class="text-sm">Site Details</CardTitle>
-                  <CardAction>
-                    <Badge variant="outline">{{ form.status }}</Badge>
-                  </CardAction>
-                </CardHeader>
+                    <AccordionItem
+                      v-if="canEditDetails"
+                      value="global-styles"
+                      class="rounded border bg-background px-3 last:border-b"
+                    >
+                      <AccordionTrigger class="py-3 hover:no-underline">
+                        <span>
+                          <span class="block text-sm font-semibold">Global Styles</span>
+                          <span class="mt-1 block text-xs text-muted-foreground">
+                            Font and color settings for the published site.
+                          </span>
+                        </span>
+                      </AccordionTrigger>
+                      <AccordionContent class="space-y-3 pb-3">
+                        <FieldGroup>
+                          <FieldSet>
+                            <div class="grid gap-4 md:grid-cols-5">
+                              <Field>
+                                <FieldLabel for="font-family">Font Family</FieldLabel>
+                                <NativeSelect
+                                  id="font-family"
+                                  v-model="form.font_family"
+                                  class="w-full"
+                                >
+                                  <NativeSelectOption
+                                    v-for="font in fonts"
+                                    :key="font"
+                                    :value="font"
+                                  >
+                                    {{ font }}
+                                  </NativeSelectOption>
+                                </NativeSelect>
+                              </Field>
 
-                <CardContent class="px-4">
-                  <FieldGroup>
-                    <FieldSet>
-                      <div class="grid gap-4 md:grid-cols-2">
-                        <Field>
-                          <FieldLabel for="template-name">Template Name</FieldLabel>
-                          <Input id="template-name" v-model="form.name" required />
-                        </Field>
+                              <Field>
+                                <FieldLabel for="primary-color">Primary Color</FieldLabel>
+                                <Input
+                                  id="primary-color"
+                                  v-model="form.primary_color"
+                                  type="color"
+                                />
+                              </Field>
 
-                        <Field>
-                          <FieldLabel for="site-slug">Site Slug</FieldLabel>
-                          <Input
-                            id="site-slug"
-                            v-model="form.slug"
-                            maxlength="120"
-                            required
-                            @input="updateSlug"
-                          />
-                        </Field>
+                              <Field>
+                                <FieldLabel for="secondary-color">Secondary Color</FieldLabel>
+                                <Input
+                                  id="secondary-color"
+                                  v-model="form.secondary_color"
+                                  type="color"
+                                />
+                              </Field>
 
-                        <Field orientation="horizontal" class="items-center gap-3 self-end">
-                          <Checkbox id="default-site" v-model="form.is_default" />
-                          <FieldLabel for="default-site">Default public site</FieldLabel>
-                        </Field>
+                              <Field>
+                                <FieldLabel for="background-color">Background Color</FieldLabel>
+                                <Input
+                                  id="background-color"
+                                  v-model="form.background_color"
+                                  type="color"
+                                />
+                              </Field>
 
-                        <Field class="md:col-span-2">
-                          <FieldLabel for="logo-url">Logo URL</FieldLabel>
-                          <Input id="logo-url" v-model="form.logo" required />
-                          <Input
-                            type="file"
-                            accept="image/*"
-                            class="cursor-pointer text-muted-foreground"
-                            @change="handleLogoUpload"
-                          />
-                        </Field>
-                      </div>
-                    </FieldSet>
-                  </FieldGroup>
-                </CardContent>
-              </Card>
-
-              <Card v-if="canEditDetails && dynamicFieldSchema.length" class="gap-4 py-4">
-                <CardHeader class="px-4">
-                  <CardTitle class="text-sm">Template Content</CardTitle>
-                </CardHeader>
-
-                <CardContent class="px-4">
-                  <DynamicTemplateFields
-                    :schema="dynamicFieldSchema"
-                    :model-value="form.content"
-                    @update:model-value="form.content = $event"
-                  />
-                </CardContent>
-              </Card>
-
-              <Card v-if="canEditDetails" class="gap-4 py-4">
-                <CardHeader class="px-4">
-                  <CardTitle class="text-sm">Global Styles</CardTitle>
-                </CardHeader>
-
-                <CardContent class="px-4">
-                  <FieldGroup>
-                    <FieldSet>
-                      <div class="grid gap-4 md:grid-cols-5">
-                        <Field>
-                          <FieldLabel for="font-family">Font Family</FieldLabel>
-                          <NativeSelect id="font-family" v-model="form.font_family" class="w-full">
-                            <NativeSelectOption v-for="font in fonts" :key="font" :value="font">
-                              {{ font }}
-                            </NativeSelectOption>
-                          </NativeSelect>
-                        </Field>
-
-                        <Field>
-                          <FieldLabel for="primary-color">Primary Color</FieldLabel>
-                          <Input id="primary-color" v-model="form.primary_color" type="color" />
-                        </Field>
-
-                        <Field>
-                          <FieldLabel for="secondary-color">Secondary Color</FieldLabel>
-                          <Input id="secondary-color" v-model="form.secondary_color" type="color" />
-                        </Field>
-
-                        <Field>
-                          <FieldLabel for="background-color">Background Color</FieldLabel>
-                          <Input
-                            id="background-color"
-                            v-model="form.background_color"
-                            type="color"
-                          />
-                        </Field>
-
-                        <Field>
-                          <FieldLabel for="text-color">Text Color</FieldLabel>
-                          <Input id="text-color" v-model="form.text_color" type="color" />
-                        </Field>
-                      </div>
-                    </FieldSet>
-                  </FieldGroup>
+                              <Field>
+                                <FieldLabel for="text-color">Text Color</FieldLabel>
+                                <Input id="text-color" v-model="form.text_color" type="color" />
+                              </Field>
+                            </div>
+                          </FieldSet>
+                        </FieldGroup>
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
                 </CardContent>
               </Card>
 

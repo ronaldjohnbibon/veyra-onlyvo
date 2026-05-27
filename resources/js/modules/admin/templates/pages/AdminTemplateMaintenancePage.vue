@@ -34,7 +34,7 @@ import type {
   WebsiteType,
   WebsiteTypePayload,
 } from '@/types/templates'
-import { ArrowDown, ArrowUp, Check, FileCode2, Plus, Save, Trash2 } from 'lucide-vue-next'
+import { ArrowDown, ArrowUp, Check, FileCode2, Pencil, Plus, Save, Trash2 } from 'lucide-vue-next'
 import { computed, onMounted, ref, watch } from 'vue'
 
 const maintenanceStore = useTemplateMaintenanceStore()
@@ -140,6 +140,30 @@ const blankSchemaField = (): TemplateFieldSchema => ({
   default: '',
 })
 
+interface SchemaFieldDialogTarget {
+  fields: TemplateFieldSchema[]
+  index: number | null
+  parentField: TemplateFieldSchema | null
+}
+
+const schemaFieldDialogOpen = ref(false)
+const schemaFieldDialogTarget = ref<SchemaFieldDialogTarget | null>(null)
+const schemaFieldDraft = ref<TemplateFieldSchema | null>(null)
+const schemaFieldError = ref('')
+
+const schemaFieldDialogTitle = computed(() => {
+  if (!schemaFieldDialogTarget.value) return 'Field'
+
+  const action = schemaFieldDialogTarget.value.index === null ? 'Add' : 'Edit'
+  const scope = schemaFieldDialogTarget.value.parentField ? 'List Field' : 'Field'
+
+  return `${action} ${scope}`
+})
+
+const schemaFieldTypeOptions = computed(() => {
+  return schemaFieldDialogTarget.value?.parentField ? nestedFieldTypes.value : fieldTypes
+})
+
 const defaultValueFor = (field: TemplateFieldSchema): unknown => {
   if (field.type === 'boolean') return false
   if (field.type === 'number') return null
@@ -243,6 +267,145 @@ const normalizeLoadedSchema = (
   return (fields ?? []).map(normalizeLoadedField)
 }
 
+const cloneSchemaField = (field: TemplateFieldSchema): TemplateFieldSchema => {
+  return normalizeLoadedField(JSON.parse(JSON.stringify(field)) as TemplateFieldSchema)
+}
+
+const fieldSummary = (field: TemplateFieldSchema): string => {
+  const parts = [field.key || 'No key', field.type]
+
+  if (field.required) parts.push('required')
+  if (field.type === 'select') parts.push(`${field.options?.length ?? 0} options`)
+  if (field.type === 'repeater') parts.push(`${field.fields?.length ?? 0} list fields`)
+
+  return parts.join(' / ')
+}
+
+const openSchemaFieldDialog = (
+  fields: TemplateFieldSchema[],
+  index: number | null = null,
+  parentField: TemplateFieldSchema | null = null
+): void => {
+  // Edit schema fields in a dialog so adding fields does not extend the page.
+  schemaFieldDialogTarget.value = { fields, index, parentField }
+  schemaFieldDraft.value = index === null ? blankSchemaField() : cloneSchemaField(fields[index])
+  schemaFieldError.value = ''
+  schemaFieldDialogOpen.value = true
+}
+
+const updateDraftFieldLabel = (field: TemplateFieldSchema, value: string): void => {
+  field.label = value
+
+  if (!field.key.trim()) {
+    field.key = fieldKeyFromLabel(value)
+  }
+}
+
+const updateDraftFieldKey = (field: TemplateFieldSchema, value: string): void => {
+  field.key = sanitizeFieldKey(value)
+}
+
+const updateDraftFieldType = (field: TemplateFieldSchema, type: TemplateFieldType): void => {
+  field.type = type
+  field.default = defaultValueFor(field)
+
+  if (type === 'select') {
+    field.options = field.options?.length ? field.options : [{ label: 'Option', value: 'option' }]
+  } else {
+    delete field.options
+  }
+
+  if (type === 'repeater') {
+    field.fields = field.fields?.length ? field.fields : []
+  } else {
+    delete field.fields
+  }
+}
+
+const updateDraftFieldDefault = (field: TemplateFieldSchema, value: unknown): void => {
+  field.default = normalizeInputValue(field, value)
+}
+
+const addDraftSelectOption = (field: TemplateFieldSchema): void => {
+  field.options = [...(field.options ?? []), { label: 'Option', value: 'option' }]
+}
+
+const removeDraftSelectOption = (field: TemplateFieldSchema, index: number): void => {
+  field.options = (field.options ?? []).filter((_, optionIndex) => optionIndex !== index)
+}
+
+const addDraftListField = (field: TemplateFieldSchema): void => {
+  field.fields = [...(field.fields ?? []), blankSchemaField()]
+}
+
+const removeDraftListField = (field: TemplateFieldSchema, index: number): void => {
+  field.fields = (field.fields ?? []).filter((_, fieldIndex) => fieldIndex !== index)
+}
+
+const moveDraftListField = (field: TemplateFieldSchema, index: number, direction: -1 | 1): void => {
+  const fields = [...(field.fields ?? [])]
+  const targetIndex = index + direction
+
+  if (targetIndex < 0 || targetIndex >= fields.length) return
+
+  const [movedField] = fields.splice(index, 1)
+  fields.splice(targetIndex, 0, movedField)
+  field.fields = fields
+}
+
+const saveSchemaFieldDialog = (): void => {
+  const target = schemaFieldDialogTarget.value
+  const draft = schemaFieldDraft.value
+
+  if (!target || !draft) return
+
+  const savedField = normalizeLoadedField({ ...draft, key: sanitizeFieldKey(draft.key) })
+  savedField.label = savedField.label.trim()
+
+  if (!savedField.label) {
+    schemaFieldError.value = 'Field label is required.'
+    return
+  }
+
+  if (!savedField.key) {
+    savedField.key = fieldKeyFromLabel(savedField.label)
+  }
+
+  if (!/^[a-z][a-z0-9_]*$/.test(savedField.key)) {
+    schemaFieldError.value =
+      'Field key must start with a letter and use lowercase letters, numbers, or underscores.'
+    return
+  }
+
+  const oldField = target.index === null ? null : target.fields[target.index]
+
+  if (target.index === null) {
+    target.fields.push(savedField)
+  } else {
+    target.fields.splice(target.index, 1, savedField)
+  }
+
+  if (oldField?.key && oldField.key !== savedField.key) {
+    if (target.parentField) {
+      remapRepeaterRows(target.parentField, oldField.key, savedField.key)
+    } else if (Object.prototype.hasOwnProperty.call(defaultContent.value, oldField.key)) {
+      const nextContent = {
+        ...defaultContent.value,
+        [savedField.key]: defaultContent.value[oldField.key],
+      }
+      delete nextContent[oldField.key]
+      defaultContent.value = nextContent
+    }
+  }
+
+  if (target.fields === schemaFields.value && target.index === null) {
+    openSchemaFieldSections.value = [schemaFieldSectionValue(target.fields.length - 1)]
+  }
+
+  syncDefaultContent()
+  schemaFieldDialogOpen.value = false
+}
+
 const schemaFieldSectionValue = (index: number): string => {
   return `schema-field-${index}`
 }
@@ -250,16 +413,6 @@ const schemaFieldSectionValue = (index: number): string => {
 const syncDefaultContent = (): void => {
   // Keep default content aligned with the current schema keys.
   defaultContent.value = contentForSchema(schemaFields.value, defaultContent.value)
-}
-
-const addSchemaField = (fields: TemplateFieldSchema[]): void => {
-  fields.push(blankSchemaField())
-
-  if (fields === schemaFields.value) {
-    openSchemaFieldSections.value = [schemaFieldSectionValue(fields.length - 1)]
-  }
-
-  syncDefaultContent()
 }
 
 const removeSchemaField = (
@@ -287,14 +440,6 @@ const moveSchemaField = (fields: TemplateFieldSchema[], index: number, direction
   fields.splice(targetIndex, 0, field)
 }
 
-const updateFieldLabel = (field: TemplateFieldSchema, value: string): void => {
-  field.label = value
-
-  if (!field.key.trim()) {
-    updateFieldKey(field, fieldKeyFromLabel(value))
-  }
-}
-
 const remapRepeaterRows = (
   parentField: TemplateFieldSchema,
   oldKey: string,
@@ -316,50 +461,6 @@ const remapRepeaterRows = (
   })
 }
 
-const updateFieldKey = (
-  field: TemplateFieldSchema,
-  value: string,
-  parentField: TemplateFieldSchema | null = null
-): void => {
-  const oldKey = field.key
-  field.key = sanitizeFieldKey(value)
-
-  if (oldKey && field.key && oldKey !== field.key) {
-    if (parentField) {
-      remapRepeaterRows(parentField, oldKey, field.key)
-    } else if (Object.prototype.hasOwnProperty.call(defaultContent.value, oldKey)) {
-      const nextContent = { ...defaultContent.value, [field.key]: defaultContent.value[oldKey] }
-      delete nextContent[oldKey]
-      defaultContent.value = nextContent
-    }
-  }
-
-  syncDefaultContent()
-}
-
-const updateFieldType = (field: TemplateFieldSchema, type: TemplateFieldType): void => {
-  field.type = type
-  field.default = defaultValueFor(field)
-
-  if (type === 'select') {
-    field.options = field.options?.length ? field.options : [{ label: 'Option', value: 'option' }]
-  } else {
-    delete field.options
-  }
-
-  if (type === 'repeater') {
-    field.fields = field.fields?.length ? field.fields : [blankSchemaField()]
-  } else {
-    delete field.fields
-  }
-
-  syncDefaultContent()
-}
-
-const addSelectOption = (field: TemplateFieldSchema): void => {
-  field.options = [...(field.options ?? []), { label: 'Option', value: 'option' }]
-}
-
 const updateSelectOptionLabel = (option: TemplateFieldOption, value: string): void => {
   option.label = value
 
@@ -370,16 +471,6 @@ const updateSelectOptionLabel = (option: TemplateFieldOption, value: string): vo
 
 const updateSelectOptionValue = (option: TemplateFieldOption, value: string): void => {
   option.value = value
-}
-
-const removeSelectOption = (field: TemplateFieldSchema, index: number): void => {
-  field.options = (field.options ?? []).filter((_, optionIndex) => optionIndex !== index)
-  syncDefaultContent()
-}
-
-const updateFieldDefault = (field: TemplateFieldSchema, value: unknown): void => {
-  field.default = normalizeInputValue(field, value)
-  syncDefaultContent()
 }
 
 const cleanOptions = (options: TemplateFieldOption[] = []): TemplateFieldOption[] => {
@@ -977,7 +1068,7 @@ watch(
                                   variant="outline"
                                   type="button"
                                   :disabled="!selectedWebsiteType"
-                                  @click="addSchemaField(schemaFields)"
+                                  @click="openSchemaFieldDialog(schemaFields)"
                                 >
                                   <Plus class="size-4" />
                                   Field
@@ -1022,6 +1113,17 @@ watch(
                                     <div class="flex shrink-0 items-center gap-1 py-2">
                                       <Button
                                         size="sm"
+                                        variant="outline"
+                                        type="button"
+                                        @click.stop="
+                                          openSchemaFieldDialog(schemaFields, fieldIndex)
+                                        "
+                                      >
+                                        <Pencil class="size-4" />
+                                        Edit
+                                      </Button>
+                                      <Button
+                                        size="sm"
                                         variant="ghost"
                                         type="button"
                                         :disabled="fieldIndex === 0"
@@ -1056,418 +1158,16 @@ watch(
                                   </div>
 
                                   <AccordionContent class="space-y-3 pb-3">
-                                    <div class="grid gap-3 md:grid-cols-2">
-                                      <Field>
-                                        <FieldLabel :for="`schema-label-${fieldIndex}`"
-                                          >Field label</FieldLabel
-                                        >
-                                        <Input
-                                          :id="`schema-label-${fieldIndex}`"
-                                          :model-value="field.label"
-                                          :disabled="!selectedWebsiteType"
-                                          @update:model-value="
-                                            updateFieldLabel(field, String($event))
-                                          "
-                                        />
-                                      </Field>
-
-                                      <Field>
-                                        <FieldLabel :for="`schema-key-${fieldIndex}`"
-                                          >Field key/name</FieldLabel
-                                        >
-                                        <Input
-                                          :id="`schema-key-${fieldIndex}`"
-                                          :model-value="field.key"
-                                          :disabled="!selectedWebsiteType"
-                                          @update:model-value="
-                                            updateFieldKey(field, String($event))
-                                          "
-                                        />
-                                        <FieldDescription
-                                          >Use lowercase letters, numbers, and
-                                          underscores.</FieldDescription
-                                        >
-                                      </Field>
-
-                                      <Field>
-                                        <FieldLabel :for="`schema-type-${fieldIndex}`"
-                                          >Field type</FieldLabel
-                                        >
-                                        <NativeSelect
-                                          :id="`schema-type-${fieldIndex}`"
-                                          class="w-full"
-                                          :model-value="field.type"
-                                          :disabled="!selectedWebsiteType"
-                                          @update:model-value="
-                                            updateFieldType(
-                                              field,
-                                              String($event) as TemplateFieldType
-                                            )
-                                          "
-                                        >
-                                          <NativeSelectOption
-                                            v-for="fieldType in fieldTypes"
-                                            :key="fieldType.value"
-                                            :value="fieldType.value"
-                                          >
-                                            {{ fieldType.label }}
-                                          </NativeSelectOption>
-                                        </NativeSelect>
-                                      </Field>
-
-                                      <Field
-                                        v-if="field.type !== 'boolean' && field.type !== 'repeater'"
+                                    <div class="rounded border bg-muted/20 p-3">
+                                      <p class="text-xs font-semibold text-muted-foreground">
+                                        {{ fieldSummary(field) }}
+                                      </p>
+                                      <p
+                                        v-if="field.placeholder"
+                                        class="mt-2 text-xs text-muted-foreground"
                                       >
-                                        <FieldLabel :for="`schema-placeholder-${fieldIndex}`">
-                                          Placeholder
-                                        </FieldLabel>
-                                        <Input
-                                          :id="`schema-placeholder-${fieldIndex}`"
-                                          v-model="field.placeholder"
-                                          :disabled="!selectedWebsiteType"
-                                        />
-                                      </Field>
-
-                                      <Field
-                                        v-if="field.type === 'boolean'"
-                                        orientation="horizontal"
-                                        class="items-center gap-3 self-end"
-                                      >
-                                        <Checkbox
-                                          :id="`schema-default-${fieldIndex}`"
-                                          :model-value="Boolean(field.default)"
-                                          :disabled="!selectedWebsiteType"
-                                          @update:model-value="
-                                            updateFieldDefault(field, Boolean($event))
-                                          "
-                                        />
-                                        <FieldLabel :for="`schema-default-${fieldIndex}`">
-                                          Default checked
-                                        </FieldLabel>
-                                      </Field>
-
-                                      <Field v-else-if="field.type !== 'repeater'">
-                                        <FieldLabel :for="`schema-default-${fieldIndex}`">
-                                          Default value
-                                        </FieldLabel>
-                                        <Textarea
-                                          v-if="
-                                            field.type === 'textarea' || field.type === 'rich_text'
-                                          "
-                                          :id="`schema-default-${fieldIndex}`"
-                                          :model-value="String(field.default ?? '')"
-                                          class="min-h-20"
-                                          :disabled="!selectedWebsiteType"
-                                          @update:model-value="updateFieldDefault(field, $event)"
-                                        />
-                                        <Input
-                                          v-else
-                                          :id="`schema-default-${fieldIndex}`"
-                                          :type="field.type === 'number' ? 'number' : 'text'"
-                                          :model-value="String(field.default ?? '')"
-                                          :disabled="!selectedWebsiteType"
-                                          @update:model-value="updateFieldDefault(field, $event)"
-                                        />
-                                      </Field>
-
-                                      <Field
-                                        orientation="horizontal"
-                                        class="items-center gap-3 self-end"
-                                      >
-                                        <Checkbox
-                                          :id="`schema-required-${fieldIndex}`"
-                                          :model-value="Boolean(field.required)"
-                                          :disabled="!selectedWebsiteType"
-                                          @update:model-value="field.required = Boolean($event)"
-                                        />
-                                        <FieldLabel :for="`schema-required-${fieldIndex}`">
-                                          Required
-                                        </FieldLabel>
-                                      </Field>
-                                    </div>
-
-                                    <div
-                                      v-if="field.type === 'select'"
-                                      class="mt-3 space-y-2 rounded border bg-muted/20 p-3"
-                                    >
-                                      <div class="flex items-center justify-between gap-3">
-                                        <p class="text-xs font-semibold text-muted-foreground">
-                                          Select options
-                                        </p>
-                                        <Button
-                                          size="sm"
-                                          variant="outline"
-                                          type="button"
-                                          @click="addSelectOption(field)"
-                                        >
-                                          <Plus class="size-4" />
-                                          Option
-                                        </Button>
-                                      </div>
-
-                                      <div
-                                        v-for="(option, optionIndex) in field.options ?? []"
-                                        :key="optionIndex"
-                                        class="grid gap-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]"
-                                      >
-                                        <Input
-                                          :model-value="String(option.label ?? '')"
-                                          placeholder="Label"
-                                          :disabled="!selectedWebsiteType"
-                                          @update:model-value="
-                                            updateSelectOptionLabel(option, String($event))
-                                          "
-                                        />
-                                        <Input
-                                          :model-value="String(option.value ?? '')"
-                                          placeholder="Value"
-                                          :disabled="!selectedWebsiteType"
-                                          @update:model-value="
-                                            updateSelectOptionValue(option, String($event))
-                                          "
-                                        />
-                                        <Button
-                                          size="sm"
-                                          variant="ghost"
-                                          type="button"
-                                          @click="removeSelectOption(field, optionIndex)"
-                                        >
-                                          <Trash2 class="size-4" />
-                                        </Button>
-                                      </div>
-                                    </div>
-
-                                    <div
-                                      v-if="field.type === 'repeater'"
-                                      class="mt-3 space-y-3 rounded border bg-muted/20 p-3"
-                                    >
-                                      <div class="flex items-center justify-between gap-3">
-                                        <div>
-                                          <p class="text-xs font-semibold text-muted-foreground">
-                                            List fields
-                                          </p>
-                                          <p class="mt-1 text-xs text-muted-foreground">
-                                            Define the fields each list item should contain.
-                                          </p>
-                                        </div>
-                                        <Button
-                                          size="sm"
-                                          variant="outline"
-                                          type="button"
-                                          @click="
-                                            addSchemaField(field.fields ?? (field.fields = []))
-                                          "
-                                        >
-                                          <Plus class="size-4" />
-                                          Field
-                                        </Button>
-                                      </div>
-
-                                      <div
-                                        v-for="(nestedField, nestedIndex) in field.fields ?? []"
-                                        :key="nestedIndex"
-                                        class="rounded border bg-background p-3"
-                                      >
-                                        <div class="mb-3 flex items-center justify-between gap-3">
-                                          <p class="text-sm font-semibold">
-                                            {{
-                                              nestedField.label || `List field ${nestedIndex + 1}`
-                                            }}
-                                          </p>
-                                          <div class="flex items-center gap-1">
-                                            <Button
-                                              size="sm"
-                                              variant="ghost"
-                                              type="button"
-                                              :disabled="nestedIndex === 0"
-                                              @click="
-                                                moveSchemaField(field.fields ?? [], nestedIndex, -1)
-                                              "
-                                            >
-                                              <ArrowUp class="size-4" />
-                                            </Button>
-                                            <Button
-                                              size="sm"
-                                              variant="ghost"
-                                              type="button"
-                                              :disabled="
-                                                nestedIndex === (field.fields ?? []).length - 1
-                                              "
-                                              @click="
-                                                moveSchemaField(field.fields ?? [], nestedIndex, 1)
-                                              "
-                                            >
-                                              <ArrowDown class="size-4" />
-                                            </Button>
-                                            <Button
-                                              size="sm"
-                                              variant="ghost"
-                                              type="button"
-                                              @click="
-                                                removeSchemaField(
-                                                  field.fields ?? [],
-                                                  nestedIndex,
-                                                  field
-                                                )
-                                              "
-                                            >
-                                              <Trash2 class="size-4" />
-                                            </Button>
-                                          </div>
-                                        </div>
-
-                                        <div class="grid gap-3 md:grid-cols-2">
-                                          <Field>
-                                            <FieldLabel
-                                              :for="`schema-nested-label-${fieldIndex}-${nestedIndex}`"
-                                            >
-                                              Field label
-                                            </FieldLabel>
-                                            <Input
-                                              :id="`schema-nested-label-${fieldIndex}-${nestedIndex}`"
-                                              :model-value="nestedField.label"
-                                              :disabled="!selectedWebsiteType"
-                                              @update:model-value="
-                                                updateFieldLabel(nestedField, String($event))
-                                              "
-                                            />
-                                          </Field>
-
-                                          <Field>
-                                            <FieldLabel
-                                              :for="`schema-nested-key-${fieldIndex}-${nestedIndex}`"
-                                            >
-                                              Field key/name
-                                            </FieldLabel>
-                                            <Input
-                                              :id="`schema-nested-key-${fieldIndex}-${nestedIndex}`"
-                                              :model-value="nestedField.key"
-                                              :disabled="!selectedWebsiteType"
-                                              @update:model-value="
-                                                updateFieldKey(nestedField, String($event), field)
-                                              "
-                                            />
-                                          </Field>
-
-                                          <Field>
-                                            <FieldLabel
-                                              :for="`schema-nested-type-${fieldIndex}-${nestedIndex}`"
-                                            >
-                                              Field type
-                                            </FieldLabel>
-                                            <NativeSelect
-                                              :id="`schema-nested-type-${fieldIndex}-${nestedIndex}`"
-                                              class="w-full"
-                                              :model-value="nestedField.type"
-                                              :disabled="!selectedWebsiteType"
-                                              @update:model-value="
-                                                updateFieldType(
-                                                  nestedField,
-                                                  String($event) as TemplateFieldType
-                                                )
-                                              "
-                                            >
-                                              <NativeSelectOption
-                                                v-for="fieldType in nestedFieldTypes"
-                                                :key="fieldType.value"
-                                                :value="fieldType.value"
-                                              >
-                                                {{ fieldType.label }}
-                                              </NativeSelectOption>
-                                            </NativeSelect>
-                                          </Field>
-
-                                          <Field
-                                            v-if="
-                                              nestedField.type !== 'boolean' &&
-                                              nestedField.type !== 'repeater'
-                                            "
-                                          >
-                                            <FieldLabel
-                                              :for="`schema-nested-placeholder-${fieldIndex}-${nestedIndex}`"
-                                            >
-                                              Placeholder
-                                            </FieldLabel>
-                                            <Input
-                                              :id="`schema-nested-placeholder-${fieldIndex}-${nestedIndex}`"
-                                              v-model="nestedField.placeholder"
-                                              :disabled="!selectedWebsiteType"
-                                            />
-                                          </Field>
-
-                                          <Field
-                                            v-if="nestedField.type === 'boolean'"
-                                            orientation="horizontal"
-                                            class="items-center gap-3 self-end"
-                                          >
-                                            <Checkbox
-                                              :id="`schema-nested-default-${fieldIndex}-${nestedIndex}`"
-                                              :model-value="Boolean(nestedField.default)"
-                                              :disabled="!selectedWebsiteType"
-                                              @update:model-value="
-                                                updateFieldDefault(nestedField, Boolean($event))
-                                              "
-                                            />
-                                            <FieldLabel
-                                              :for="`schema-nested-default-${fieldIndex}-${nestedIndex}`"
-                                            >
-                                              Default checked
-                                            </FieldLabel>
-                                          </Field>
-
-                                          <Field v-else>
-                                            <FieldLabel
-                                              :for="`schema-nested-default-${fieldIndex}-${nestedIndex}`"
-                                            >
-                                              Default value
-                                            </FieldLabel>
-                                            <Textarea
-                                              v-if="
-                                                nestedField.type === 'textarea' ||
-                                                nestedField.type === 'rich_text'
-                                              "
-                                              :id="`schema-nested-default-${fieldIndex}-${nestedIndex}`"
-                                              :model-value="String(nestedField.default ?? '')"
-                                              class="min-h-20"
-                                              :disabled="!selectedWebsiteType"
-                                              @update:model-value="
-                                                updateFieldDefault(nestedField, $event)
-                                              "
-                                            />
-                                            <Input
-                                              v-else
-                                              :id="`schema-nested-default-${fieldIndex}-${nestedIndex}`"
-                                              :type="
-                                                nestedField.type === 'number' ? 'number' : 'text'
-                                              "
-                                              :model-value="String(nestedField.default ?? '')"
-                                              :disabled="!selectedWebsiteType"
-                                              @update:model-value="
-                                                updateFieldDefault(nestedField, $event)
-                                              "
-                                            />
-                                          </Field>
-
-                                          <Field
-                                            orientation="horizontal"
-                                            class="items-center gap-3 self-end"
-                                          >
-                                            <Checkbox
-                                              :id="`schema-nested-required-${fieldIndex}-${nestedIndex}`"
-                                              :model-value="Boolean(nestedField.required)"
-                                              :disabled="!selectedWebsiteType"
-                                              @update:model-value="
-                                                nestedField.required = Boolean($event)
-                                              "
-                                            />
-                                            <FieldLabel
-                                              :for="`schema-nested-required-${fieldIndex}-${nestedIndex}`"
-                                            >
-                                              Required
-                                            </FieldLabel>
-                                          </Field>
-                                        </div>
-                                      </div>
+                                        Placeholder: {{ field.placeholder }}
+                                      </p>
                                     </div>
                                   </AccordionContent>
                                 </AccordionItem>
@@ -1548,6 +1248,397 @@ watch(
                     @click="saveCatalogItem"
                   >
                     <Save class="size-4" />
+                    Save
+                  </Button>
+                </DialogFooter>
+              </DialogScrollContent>
+            </Dialog>
+
+            <Dialog :open="schemaFieldDialogOpen" @update:open="schemaFieldDialogOpen = $event">
+              <DialogScrollContent class="max-w-[calc(100%-2rem)] md:max-w-3xl">
+                <DialogHeader>
+                  <DialogTitle>{{ schemaFieldDialogTitle }}</DialogTitle>
+                  <DialogDescription>
+                    Add or update the field settings without expanding the template form.
+                  </DialogDescription>
+                </DialogHeader>
+
+                <div v-if="schemaFieldDraft" class="space-y-4">
+                  <div class="grid gap-3 md:grid-cols-2">
+                    <Field>
+                      <FieldLabel for="schema-dialog-label">Field label</FieldLabel>
+                      <Input
+                        id="schema-dialog-label"
+                        :model-value="schemaFieldDraft.label"
+                        @update:model-value="
+                          updateDraftFieldLabel(schemaFieldDraft, String($event))
+                        "
+                      />
+                    </Field>
+
+                    <Field>
+                      <FieldLabel for="schema-dialog-key">Field key/name</FieldLabel>
+                      <Input
+                        id="schema-dialog-key"
+                        :model-value="schemaFieldDraft.key"
+                        @update:model-value="updateDraftFieldKey(schemaFieldDraft, String($event))"
+                      />
+                      <FieldDescription
+                        >Use lowercase letters, numbers, and underscores.</FieldDescription
+                      >
+                    </Field>
+
+                    <Field>
+                      <FieldLabel for="schema-dialog-type">Field type</FieldLabel>
+                      <NativeSelect
+                        id="schema-dialog-type"
+                        class="w-full"
+                        :model-value="schemaFieldDraft.type"
+                        @update:model-value="
+                          updateDraftFieldType(
+                            schemaFieldDraft,
+                            String($event) as TemplateFieldType
+                          )
+                        "
+                      >
+                        <NativeSelectOption
+                          v-for="fieldType in schemaFieldTypeOptions"
+                          :key="fieldType.value"
+                          :value="fieldType.value"
+                        >
+                          {{ fieldType.label }}
+                        </NativeSelectOption>
+                      </NativeSelect>
+                    </Field>
+
+                    <Field
+                      v-if="
+                        schemaFieldDraft.type !== 'boolean' && schemaFieldDraft.type !== 'repeater'
+                      "
+                    >
+                      <FieldLabel for="schema-dialog-placeholder">Placeholder</FieldLabel>
+                      <Input
+                        id="schema-dialog-placeholder"
+                        v-model="schemaFieldDraft.placeholder"
+                      />
+                    </Field>
+
+                    <Field
+                      v-if="schemaFieldDraft.type === 'boolean'"
+                      orientation="horizontal"
+                      class="items-center gap-3 self-end"
+                    >
+                      <Checkbox
+                        id="schema-dialog-default"
+                        :model-value="Boolean(schemaFieldDraft.default)"
+                        @update:model-value="
+                          updateDraftFieldDefault(schemaFieldDraft, Boolean($event))
+                        "
+                      />
+                      <FieldLabel for="schema-dialog-default">Default checked</FieldLabel>
+                    </Field>
+
+                    <Field v-else-if="schemaFieldDraft.type !== 'repeater'">
+                      <FieldLabel for="schema-dialog-default">Default value</FieldLabel>
+                      <Textarea
+                        v-if="
+                          schemaFieldDraft.type === 'textarea' ||
+                          schemaFieldDraft.type === 'rich_text'
+                        "
+                        id="schema-dialog-default"
+                        :model-value="String(schemaFieldDraft.default ?? '')"
+                        class="min-h-20"
+                        @update:model-value="updateDraftFieldDefault(schemaFieldDraft, $event)"
+                      />
+                      <Input
+                        v-else
+                        id="schema-dialog-default"
+                        :type="schemaFieldDraft.type === 'number' ? 'number' : 'text'"
+                        :model-value="String(schemaFieldDraft.default ?? '')"
+                        @update:model-value="updateDraftFieldDefault(schemaFieldDraft, $event)"
+                      />
+                    </Field>
+
+                    <Field orientation="horizontal" class="items-center gap-3 self-end">
+                      <Checkbox id="schema-dialog-required" v-model="schemaFieldDraft.required" />
+                      <FieldLabel for="schema-dialog-required">Required</FieldLabel>
+                    </Field>
+                  </div>
+
+                  <div
+                    v-if="schemaFieldDraft.type === 'select'"
+                    class="space-y-2 rounded border bg-muted/20 p-3"
+                  >
+                    <div class="flex items-center justify-between gap-3">
+                      <p class="text-xs font-semibold text-muted-foreground">Select options</p>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        type="button"
+                        @click="addDraftSelectOption(schemaFieldDraft)"
+                      >
+                        <Plus class="size-4" />
+                        Option
+                      </Button>
+                    </div>
+
+                    <div
+                      v-for="(option, optionIndex) in schemaFieldDraft.options ?? []"
+                      :key="optionIndex"
+                      class="grid gap-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]"
+                    >
+                      <Input
+                        :model-value="String(option.label ?? '')"
+                        placeholder="Label"
+                        @update:model-value="updateSelectOptionLabel(option, String($event))"
+                      />
+                      <Input
+                        :model-value="String(option.value ?? '')"
+                        placeholder="Value"
+                        @update:model-value="updateSelectOptionValue(option, String($event))"
+                      />
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        type="button"
+                        @click="removeDraftSelectOption(schemaFieldDraft, optionIndex)"
+                      >
+                        <Trash2 class="size-4" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div
+                    v-if="schemaFieldDraft.type === 'repeater'"
+                    class="space-y-3 rounded border bg-muted/20 p-3"
+                  >
+                    <div class="flex items-center justify-between gap-3">
+                      <div>
+                        <p class="text-xs font-semibold text-muted-foreground">List fields</p>
+                        <p class="mt-1 text-xs text-muted-foreground">
+                          Define the fields each list item should contain.
+                        </p>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        type="button"
+                        @click="addDraftListField(schemaFieldDraft)"
+                      >
+                        <Plus class="size-4" />
+                        Field
+                      </Button>
+                    </div>
+
+                    <Empty
+                      v-if="!schemaFieldDraft.fields?.length"
+                      class="min-h-[120px] bg-background"
+                    >
+                      <EmptyHeader>
+                        <EmptyTitle>No list fields</EmptyTitle>
+                        <EmptyDescription>Add fields for each list item.</EmptyDescription>
+                      </EmptyHeader>
+                    </Empty>
+
+                    <div
+                      v-for="(nestedField, nestedIndex) in schemaFieldDraft.fields ?? []"
+                      :key="nestedIndex"
+                      class="space-y-3 rounded border bg-background p-3"
+                    >
+                      <div class="flex items-center justify-between gap-3">
+                        <p class="text-sm font-semibold">
+                          {{ nestedField.label || `List field ${nestedIndex + 1}` }}
+                        </p>
+                        <div class="flex items-center gap-1">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            type="button"
+                            :disabled="nestedIndex === 0"
+                            @click="moveDraftListField(schemaFieldDraft, nestedIndex, -1)"
+                          >
+                            <ArrowUp class="size-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            type="button"
+                            :disabled="nestedIndex === (schemaFieldDraft.fields ?? []).length - 1"
+                            @click="moveDraftListField(schemaFieldDraft, nestedIndex, 1)"
+                          >
+                            <ArrowDown class="size-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            type="button"
+                            @click="removeDraftListField(schemaFieldDraft, nestedIndex)"
+                          >
+                            <Trash2 class="size-4" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div class="grid gap-3 md:grid-cols-2">
+                        <Field>
+                          <FieldLabel :for="`schema-dialog-nested-label-${nestedIndex}`">
+                            Field label
+                          </FieldLabel>
+                          <Input
+                            :id="`schema-dialog-nested-label-${nestedIndex}`"
+                            :model-value="nestedField.label"
+                            @update:model-value="updateDraftFieldLabel(nestedField, String($event))"
+                          />
+                        </Field>
+
+                        <Field>
+                          <FieldLabel :for="`schema-dialog-nested-key-${nestedIndex}`">
+                            Field key/name
+                          </FieldLabel>
+                          <Input
+                            :id="`schema-dialog-nested-key-${nestedIndex}`"
+                            :model-value="nestedField.key"
+                            @update:model-value="updateDraftFieldKey(nestedField, String($event))"
+                          />
+                        </Field>
+
+                        <Field>
+                          <FieldLabel :for="`schema-dialog-nested-type-${nestedIndex}`">
+                            Field type
+                          </FieldLabel>
+                          <NativeSelect
+                            :id="`schema-dialog-nested-type-${nestedIndex}`"
+                            class="w-full"
+                            :model-value="nestedField.type"
+                            @update:model-value="
+                              updateDraftFieldType(nestedField, String($event) as TemplateFieldType)
+                            "
+                          >
+                            <NativeSelectOption
+                              v-for="fieldType in nestedFieldTypes"
+                              :key="fieldType.value"
+                              :value="fieldType.value"
+                            >
+                              {{ fieldType.label }}
+                            </NativeSelectOption>
+                          </NativeSelect>
+                        </Field>
+
+                        <Field v-if="nestedField.type !== 'boolean'">
+                          <FieldLabel :for="`schema-dialog-nested-placeholder-${nestedIndex}`">
+                            Placeholder
+                          </FieldLabel>
+                          <Input
+                            :id="`schema-dialog-nested-placeholder-${nestedIndex}`"
+                            v-model="nestedField.placeholder"
+                          />
+                        </Field>
+
+                        <Field
+                          v-if="nestedField.type === 'boolean'"
+                          orientation="horizontal"
+                          class="items-center gap-3 self-end"
+                        >
+                          <Checkbox
+                            :id="`schema-dialog-nested-default-${nestedIndex}`"
+                            :model-value="Boolean(nestedField.default)"
+                            @update:model-value="
+                              updateDraftFieldDefault(nestedField, Boolean($event))
+                            "
+                          />
+                          <FieldLabel :for="`schema-dialog-nested-default-${nestedIndex}`">
+                            Default checked
+                          </FieldLabel>
+                        </Field>
+
+                        <Field v-else>
+                          <FieldLabel :for="`schema-dialog-nested-default-${nestedIndex}`">
+                            Default value
+                          </FieldLabel>
+                          <Textarea
+                            v-if="
+                              nestedField.type === 'textarea' || nestedField.type === 'rich_text'
+                            "
+                            :id="`schema-dialog-nested-default-${nestedIndex}`"
+                            :model-value="String(nestedField.default ?? '')"
+                            class="min-h-20"
+                            @update:model-value="updateDraftFieldDefault(nestedField, $event)"
+                          />
+                          <Input
+                            v-else
+                            :id="`schema-dialog-nested-default-${nestedIndex}`"
+                            :type="nestedField.type === 'number' ? 'number' : 'text'"
+                            :model-value="String(nestedField.default ?? '')"
+                            @update:model-value="updateDraftFieldDefault(nestedField, $event)"
+                          />
+                        </Field>
+
+                        <Field orientation="horizontal" class="items-center gap-3 self-end">
+                          <Checkbox
+                            :id="`schema-dialog-nested-required-${nestedIndex}`"
+                            v-model="nestedField.required"
+                          />
+                          <FieldLabel :for="`schema-dialog-nested-required-${nestedIndex}`">
+                            Required
+                          </FieldLabel>
+                        </Field>
+                      </div>
+
+                      <div
+                        v-if="nestedField.type === 'select'"
+                        class="space-y-2 rounded border bg-muted/20 p-3"
+                      >
+                        <div class="flex items-center justify-between gap-3">
+                          <p class="text-xs font-semibold text-muted-foreground">Select options</p>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            type="button"
+                            @click="addDraftSelectOption(nestedField)"
+                          >
+                            <Plus class="size-4" />
+                            Option
+                          </Button>
+                        </div>
+
+                        <div
+                          v-for="(option, optionIndex) in nestedField.options ?? []"
+                          :key="optionIndex"
+                          class="grid gap-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]"
+                        >
+                          <Input
+                            :model-value="String(option.label ?? '')"
+                            placeholder="Label"
+                            @update:model-value="updateSelectOptionLabel(option, String($event))"
+                          />
+                          <Input
+                            :model-value="String(option.value ?? '')"
+                            placeholder="Value"
+                            @update:model-value="updateSelectOptionValue(option, String($event))"
+                          />
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            type="button"
+                            @click="removeDraftSelectOption(nestedField, optionIndex)"
+                          >
+                            <Trash2 class="size-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <p v-if="schemaFieldError" class="text-sm font-medium text-destructive">
+                    {{ schemaFieldError }}
+                  </p>
+                </div>
+
+                <DialogFooter>
+                  <Button variant="outline" type="button" @click="schemaFieldDialogOpen = false">
+                    Cancel
+                  </Button>
+                  <Button variant="create" type="button" @click="saveSchemaFieldDialog">
                     Save
                   </Button>
                 </DialogFooter>
