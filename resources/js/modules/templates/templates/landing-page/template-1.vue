@@ -497,8 +497,12 @@ onBeforeUnmount(() => {
             <button class="tm-btn-submit" type="submit" :disabled="loading">
               {{ loading ? 'Sending...' : submitLabel }}
             </button>
-            <p v-if="success" class="tm-form-status" role="status">{{ successMessage }}</p>
-            <p v-if="error" class="tm-form-status" role="alert">{{ error }}</p>
+            <p v-if="success" class="tm-form-status tm-form-status-success" role="status">
+              {{ successMessage }}
+            </p>
+            <p v-if="error" class="tm-form-status tm-form-status-error" role="alert">
+              {{ error }}
+            </p>
           </TemplateCta>
 
           <div class="space-y-8">
@@ -834,8 +838,16 @@ onBeforeUnmount(() => {
 
 .tm-form-status {
   width: 90%;
-  color: white;
   font-size: 0.8em;
+  font-weight: 600;
+}
+
+.tm-form-status-success {
+  color: #86efac;
+}
+
+.tm-form-status-error {
+  color: #fca5a5;
 }
 
 .contact-item {

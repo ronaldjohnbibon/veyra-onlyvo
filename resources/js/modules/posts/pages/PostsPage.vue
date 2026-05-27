@@ -7,6 +7,7 @@ import type { PostParams, PostRecord, PostStatus } from '@/types/posts'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
+import { getStatusBadgeVariant, getStatusLabel } from '@/lib/status'
 import { Globe2, Pencil, Trash2 } from 'lucide-vue-next'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
@@ -179,8 +180,8 @@ watch(selectedTemplateId, (templateId) => {
           </template>
 
           <template #cell-status="{ row }">
-            <Badge :variant="row.status === 'published' ? 'default' : 'secondary'">
-              {{ row.status === 'published' ? 'Published' : 'Draft' }}
+            <Badge :variant="getStatusBadgeVariant(row.status)">
+              {{ getStatusLabel(row.status) }}
             </Badge>
           </template>
 

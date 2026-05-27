@@ -23,6 +23,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Textarea } from '@/components/ui/textarea'
+import { getStatusBadgeVariant, getStatusLabel } from '@/lib/status'
 import { useTemplateMaintenanceStore } from '@/modules/admin/templates/template-maintenance-store'
 import { defaultTemplateCta } from '@/modules/templates/cta-presets'
 import DynamicTemplateFields from '@/modules/templates/components/DynamicTemplateFields.vue'
@@ -820,7 +821,13 @@ watch(
                     <Badge variant="outline">
                       {{ websiteType.available_templates_count }} templates
                     </Badge>
-                    <Badge v-if="!websiteType.is_active" variant="outline">Inactive</Badge>
+                    <Badge
+                      :variant="
+                        getStatusBadgeVariant(websiteType.is_active ? 'active' : 'inactive')
+                      "
+                    >
+                      {{ getStatusLabel(websiteType.is_active ? 'active' : 'inactive') }}
+                    </Badge>
                   </span>
                 </span>
                 <Check
@@ -1825,7 +1832,11 @@ watch(
                         <span class="mt-1 block text-xs text-muted-foreground">{{ item.key }}</span>
                         <span class="mt-2 flex flex-wrap gap-2">
                           <Badge variant="outline">{{ item.website_type_slug }}</Badge>
-                          <Badge v-if="!item.is_active" variant="outline">Inactive</Badge>
+                          <Badge
+                            :variant="getStatusBadgeVariant(item.is_active ? 'active' : 'inactive')"
+                          >
+                            {{ getStatusLabel(item.is_active ? 'active' : 'inactive') }}
+                          </Badge>
                         </span>
                       </span>
                       <Check

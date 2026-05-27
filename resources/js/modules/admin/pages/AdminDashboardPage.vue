@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { getStatusBadgeVariant } from '@/lib/status'
 import { useAdminAuthStore } from '../admin-auth-store'
 
 const adminAuthStore = useAdminAuthStore()
@@ -24,7 +25,7 @@ const adminAuthStore = useAdminAuthStore()
             </p>
             <p class="text-sm text-muted-foreground">Your admin session is active.</p>
           </div>
-          <Badge variant="outline">Signed in</Badge>
+          <Badge :variant="getStatusBadgeVariant('signed_in')">Signed in</Badge>
         </div>
       </div>
 

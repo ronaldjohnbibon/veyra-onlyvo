@@ -199,7 +199,11 @@ const submit = async (): Promise<void> => {
         </slot>
       </button>
 
-      <p v-if="success" class="text-sm" role="status">
+      <p
+        v-if="success"
+        class="text-sm font-medium text-emerald-700 dark:text-emerald-300"
+        role="status"
+      >
         {{ props.cta.success_message }}
         <a
           v-if="props.cta.type === 'file_download' && props.cta.downloadable_file"
@@ -209,7 +213,7 @@ const submit = async (): Promise<void> => {
           Download file
         </a>
       </p>
-      <p v-if="error" class="text-sm" role="alert">{{ error }}</p>
+      <p v-if="error" class="text-sm font-medium text-destructive" role="alert">{{ error }}</p>
     </slot>
   </form>
 </template>

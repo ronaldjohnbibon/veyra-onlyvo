@@ -24,6 +24,7 @@ import { Label } from '@/components/ui/label'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import DynamicTemplateFields from '@/modules/templates/components/DynamicTemplateFields.vue'
 import TemplatePreview from '@/modules/templates/components/TemplatePreview.vue'
+import { getStatusBadgeVariant, getStatusLabel } from '@/lib/status'
 import { getTemplateCatalogItem } from '@/modules/templates/template-catalog'
 import { useTemplateStore } from '@/modules/templates/template-store'
 import { useConfirmStore } from '@/store/confirm-store'
@@ -435,7 +436,9 @@ watch(
                 <span class="truncate">{{ template.public_url }}</span>
               </a>
               <span class="mt-2 flex flex-wrap gap-2">
-                <Badge variant="outline">{{ template.status }}</Badge>
+                <Badge :variant="getStatusBadgeVariant(template.status)">
+                  {{ getStatusLabel(template.status) }}
+                </Badge>
                 <Badge v-if="template.website_type" variant="outline">
                   {{ template.website_type.name }}
                 </Badge>
@@ -604,7 +607,9 @@ watch(
                         <span>
                           <span class="flex flex-wrap items-center gap-2">
                             <span class="block text-sm font-semibold">Site Details</span>
-                            <Badge variant="outline">{{ form.status }}</Badge>
+                            <Badge :variant="getStatusBadgeVariant(form.status)">
+                              {{ getStatusLabel(form.status) }}
+                            </Badge>
                           </span>
                           <span class="mt-1 block text-xs text-muted-foreground">
                             Name, slug, default setting, and logo.
