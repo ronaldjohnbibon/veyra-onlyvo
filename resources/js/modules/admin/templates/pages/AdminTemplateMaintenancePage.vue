@@ -700,7 +700,7 @@ watch(
                     >
                       <AccordionItem
                         value="website-type-basics"
-                        class="rounded border bg-background px-3"
+                        class="rounded border bg-background px-3 last:border-b"
                       >
                         <AccordionTrigger class="py-3 hover:no-underline">
                           <span>
@@ -737,7 +737,7 @@ watch(
 
                       <AccordionItem
                         value="website-type-description"
-                        class="rounded border bg-background px-3"
+                        class="rounded border bg-background px-3 last:border-b"
                       >
                         <AccordionTrigger class="py-3 hover:no-underline">
                           <span>
@@ -823,7 +823,7 @@ watch(
                     >
                       <AccordionItem
                         value="template-metadata"
-                        class="rounded border bg-background px-3"
+                        class="rounded border bg-background px-3 last:border-b"
                       >
                         <AccordionTrigger class="py-3 hover:no-underline">
                           <span>
@@ -857,7 +857,7 @@ watch(
 
                       <AccordionItem
                         value="template-field-schema"
-                        class="rounded border bg-background px-3"
+                        class="rounded border bg-background px-3 last:border-b"
                       >
                         <AccordionTrigger class="py-3 hover:no-underline">
                           <span>
@@ -900,19 +900,17 @@ watch(
                               v-for="(field, fieldIndex) in schemaFields"
                               :key="fieldIndex"
                               :value="schemaFieldSectionValue(fieldIndex)"
-                              class="rounded border bg-background px-3"
+                              class="rounded border bg-background px-3 last:border-b"
                             >
                               <div class="flex items-start justify-between gap-3">
-                                <AccordionTrigger class="min-w-0 py-3 hover:no-underline">
-                                  <span>
-                                    <span class="block text-xs font-semibold text-muted-foreground">
-                                      Field {{ fieldIndex + 1 }}
-                                    </span>
-                                    <span class="mt-1 block text-sm font-semibold">
-                                      {{ field.label || 'Untitled field' }}
-                                    </span>
+                                <div class="min-w-0 flex-1 py-3">
+                                  <span class="block text-xs font-semibold text-muted-foreground">
+                                    Field {{ fieldIndex + 1 }}
                                   </span>
-                                </AccordionTrigger>
+                                  <span class="mt-1 block text-sm font-semibold">
+                                    {{ field.label || 'Untitled field' }}
+                                  </span>
+                                </div>
                                 <div class="flex shrink-0 items-center gap-1 py-2">
                                   <Button
                                     size="sm"
@@ -941,6 +939,12 @@ watch(
                                     <Trash2 class="size-4" />
                                   </Button>
                                 </div>
+                                <AccordionTrigger
+                                  class="flex-none px-0 py-3 hover:no-underline"
+                                  :aria-label="`Toggle field ${fieldIndex + 1}`"
+                                >
+                                  <span class="sr-only">Toggle field {{ fieldIndex + 1 }}</span>
+                                </AccordionTrigger>
                               </div>
 
                               <AccordionContent class="space-y-3 pb-3">
@@ -1350,7 +1354,7 @@ watch(
 
                       <AccordionItem
                         value="template-default-content"
-                        class="rounded border bg-background px-3"
+                        class="rounded border bg-background px-3 last:border-b"
                       >
                         <AccordionTrigger class="py-3 hover:no-underline">
                           <span>
