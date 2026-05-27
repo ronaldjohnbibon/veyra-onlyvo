@@ -145,6 +145,18 @@ const mergeTemplateContent = (
   }
 }
 
+const applyCatalogStyleDefaults = (catalogTemplate: TemplateCatalogItem): void => {
+  if (selectedWebsiteType.value?.slug !== 'landing-page' || catalogTemplate.key !== 'template-1') {
+    return
+  }
+
+  form.value.font_family = 'Arial'
+  form.value.primary_color = '#3377aa'
+  form.value.secondary_color = '#336699'
+  form.value.background_color = '#ffffff'
+  form.value.text_color = '#707070'
+}
+
 const stringContent = (content: TemplateContent, keys: string[], fallback = ''): string => {
   for (const key of keys) {
     const value = content[key]
@@ -200,7 +212,7 @@ const payloadForSave = (status: TemplateStatus): TemplatePayload => {
   const phone = stringContent(content, ['contact_phone', 'phone'], form.value.contact_info.phone)
   const address = stringContent(
     content,
-    ['contact_address', 'location', 'address'],
+    ['contact_address', 'contact_location', 'location', 'address'],
     form.value.contact_info.address
   )
 
@@ -216,7 +228,7 @@ const payloadForSave = (status: TemplateStatus): TemplatePayload => {
       ...form.value.social_links,
       website: stringContent(
         content,
-        ['website_url', 'portfolio_url', 'reservation_link'],
+        ['website_url', 'portfolio_url', 'reservation_link', 'chat_url'],
         form.value.social_links.website
       ),
     },
@@ -247,6 +259,7 @@ const selectWebsiteType = async (websiteType: WebsiteType): Promise<void> => {
 const selectCatalogTemplate = (template: TemplateCatalogItem): void => {
   form.value.template_key = template.key
   form.value.content = mergeTemplateContent(template, contentRecord(form.value.content))
+  applyCatalogStyleDefaults(template)
 }
 
 const resetForm = (): void => {
