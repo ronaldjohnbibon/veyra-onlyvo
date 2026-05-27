@@ -9,6 +9,14 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
+import {
+  Dialog,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogScrollContent,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty'
 import { Field, FieldDescription, FieldGroup, FieldLabel, FieldSet } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
@@ -32,6 +40,8 @@ import { computed, onMounted, ref, watch } from 'vue'
 const maintenanceStore = useTemplateMaintenanceStore()
 const selectedWebsiteTypeId = ref<string | null>(null)
 const selectedCatalogItemId = ref<string | null>(null)
+const websiteTypeDialogOpen = ref(false)
+const catalogDialogOpen = ref(false)
 const formError = ref('')
 const typeSlugTouched = ref(false)
 const itemKeyTouched = ref(false)
@@ -525,6 +535,33 @@ const newCatalogItem = (): void => {
   formError.value = ''
 }
 
+const createWebsiteType = (): void => {
+  // Open a clean website type form in the dialog.
+  newWebsiteType()
+  websiteTypeDialogOpen.value = true
+}
+
+const editWebsiteType = (): void => {
+  if (!selectedWebsiteType.value) return
+
+  activeFormSection.value = 'websiteType'
+  formError.value = ''
+  websiteTypeDialogOpen.value = true
+}
+
+const createCatalogItem = (): void => {
+  if (!selectedWebsiteType.value) return
+
+  // Start a new catalog item for the selected website type.
+  newCatalogItem()
+  catalogDialogOpen.value = true
+}
+
+const editCatalogItem = (item: TemplateCatalogItem): void => {
+  selectCatalogItem(item)
+  catalogDialogOpen.value = true
+}
+
 const saveWebsiteType = async (): Promise<void> => {
   activeFormSection.value = 'websiteType'
 
@@ -548,6 +585,7 @@ const deleteWebsiteType = async (): Promise<void> => {
 
   await maintenanceStore.deleteWebsiteType(selectedWebsiteTypeId.value)
   newWebsiteType()
+  websiteTypeDialogOpen.value = false
 }
 
 const saveCatalogItem = async (): Promise<void> => {
@@ -586,6 +624,7 @@ const deleteCatalogItem = async (): Promise<void> => {
 
   await maintenanceStore.deleteCatalogItem(selectedCatalogItemId.value, selectedWebsiteTypeId.value)
   newCatalogItem()
+  catalogDialogOpen.value = false
 }
 
 onMounted(async () => {
@@ -639,10 +678,22 @@ watch(
         <aside class="space-y-3">
           <div class="flex items-center justify-between gap-3">
             <h3 class="text-sm font-semibold">Website Types</h3>
-            <Button size="sm" variant="outline" type="button" @click="newWebsiteType">
-              <Plus class="size-4" />
-              New
-            </Button>
+            <div class="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                type="button"
+                :disabled="!selectedWebsiteType"
+                @click="editWebsiteType"
+              >
+                <Save class="size-4" />
+                Edit
+              </Button>
+              <Button size="sm" variant="outline" type="button" @click="createWebsiteType">
+                <Plus class="size-4" />
+                New
+              </Button>
+            </div>
           </div>
 
           <div class="space-y-2">
@@ -678,576 +729,384 @@ watch(
           </div>
         </aside>
 
-        <main class="grid gap-4 2xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-          <section class="space-y-4">
-            <Card
-              class="gap-4 py-4 transition"
-              :class="{
-                'border-primary ring-2 ring-primary/20': activeFormSection === 'websiteType',
-              }"
-              @focusin="activeFormSection = 'websiteType'"
-            >
-              <CardHeader class="px-4">
-                <CardTitle class="text-sm">Website Type Details</CardTitle>
-              </CardHeader>
-              <CardContent class="px-4">
-                <FieldGroup>
-                  <FieldSet>
-                    <Accordion
-                      type="multiple"
-                      :default-value="['website-type-basics']"
-                      class="space-y-2"
-                    >
-                      <AccordionItem
-                        value="website-type-basics"
-                        class="rounded border bg-background px-3 last:border-b"
-                      >
-                        <AccordionTrigger class="py-3 hover:no-underline">
-                          <span>
-                            <span class="block text-sm font-semibold">Basic Type Settings</span>
-                            <span class="mt-1 block text-xs text-muted-foreground">
-                              Name, URL slug, and active state.
-                            </span>
-                          </span>
-                        </AccordionTrigger>
-                        <AccordionContent class="space-y-3 pb-3">
-                          <Field>
-                            <FieldLabel for="website-type-name">Name</FieldLabel>
-                            <Input id="website-type-name" v-model="websiteTypeForm.name" />
-                          </Field>
+        <main class="space-y-4">
+          <section class="contents">
+            <Dialog :open="websiteTypeDialogOpen" @update:open="websiteTypeDialogOpen = $event">
+              <DialogScrollContent class="max-w-[calc(100%-2rem)] md:max-w-3xl">
+                <DialogHeader>
+                  <DialogTitle>
+                    {{ selectedWebsiteTypeId ? 'Edit Website Type' : 'Create Website Type' }}
+                  </DialogTitle>
+                  <DialogDescription>
+                    Manage the website type name, slug, description, and active state.
+                  </DialogDescription>
+                </DialogHeader>
 
-                          <Field>
-                            <FieldLabel for="website-type-slug">Slug</FieldLabel>
-                            <Input
-                              id="website-type-slug"
-                              v-model="websiteTypeForm.slug"
-                              @input="typeSlugTouched = true"
-                            />
-                          </Field>
+                <Card
+                  class="gap-4 py-4 transition"
+                  :class="{
+                    'border-primary ring-2 ring-primary/20': activeFormSection === 'websiteType',
+                  }"
+                  @focusin="activeFormSection = 'websiteType'"
+                >
+                  <CardHeader class="px-4">
+                    <CardTitle class="text-sm">Website Type Details</CardTitle>
+                  </CardHeader>
+                  <CardContent class="px-4">
+                    <FieldGroup>
+                      <FieldSet>
+                        <Accordion
+                          type="multiple"
+                          :default-value="['website-type-basics']"
+                          class="space-y-2"
+                        >
+                          <AccordionItem
+                            value="website-type-basics"
+                            class="rounded border bg-background px-3 last:border-b"
+                          >
+                            <AccordionTrigger class="py-3 hover:no-underline">
+                              <span>
+                                <span class="block text-sm font-semibold">Basic Type Settings</span>
+                                <span class="mt-1 block text-xs text-muted-foreground">
+                                  Name, URL slug, and active state.
+                                </span>
+                              </span>
+                            </AccordionTrigger>
+                            <AccordionContent class="space-y-3 pb-3">
+                              <Field>
+                                <FieldLabel for="website-type-name">Name</FieldLabel>
+                                <Input id="website-type-name" v-model="websiteTypeForm.name" />
+                              </Field>
+
+                              <Field>
+                                <FieldLabel for="website-type-slug">Slug</FieldLabel>
+                                <Input
+                                  id="website-type-slug"
+                                  v-model="websiteTypeForm.slug"
+                                  @input="typeSlugTouched = true"
+                                />
+                              </Field>
+
+                              <Field orientation="horizontal" class="items-center gap-3">
+                                <Checkbox
+                                  id="website-type-active"
+                                  v-model="websiteTypeForm.is_active"
+                                />
+                                <FieldLabel for="website-type-active">Active</FieldLabel>
+                              </Field>
+                            </AccordionContent>
+                          </AccordionItem>
+
+                          <AccordionItem
+                            value="website-type-description"
+                            class="rounded border bg-background px-3 last:border-b"
+                          >
+                            <AccordionTrigger class="py-3 hover:no-underline">
+                              <span>
+                                <span class="block text-sm font-semibold">Type Description</span>
+                                <span class="mt-1 block text-xs text-muted-foreground">
+                                  Optional notes shown with this website type.
+                                </span>
+                              </span>
+                            </AccordionTrigger>
+                            <AccordionContent class="space-y-3 pb-3">
+                              <Field>
+                                <FieldLabel for="website-type-description">Description</FieldLabel>
+                                <Textarea
+                                  id="website-type-description"
+                                  v-model="websiteTypeForm.description"
+                                  class="min-h-24"
+                                />
+                              </Field>
+                            </AccordionContent>
+                          </AccordionItem>
+                        </Accordion>
+                      </FieldSet>
+                    </FieldGroup>
+                  </CardContent>
+                </Card>
+
+                <p
+                  v-if="formError && activeFormSection === 'websiteType'"
+                  class="rounded border border-destructive/40 bg-destructive/10 p-3 text-sm font-medium text-destructive"
+                >
+                  {{ formError }}
+                </p>
+
+                <DialogFooter>
+                  <Button
+                    variant="delete"
+                    type="button"
+                    :disabled="maintenanceStore.loading || !selectedWebsiteType"
+                    @click="deleteWebsiteType"
+                  >
+                    <Trash2 class="size-4" />
+                    Delete
+                  </Button>
+                  <Button
+                    variant="update"
+                    type="button"
+                    :disabled="maintenanceStore.loading"
+                    @click="saveWebsiteType"
+                  >
+                    <Save class="size-4" />
+                    Save
+                  </Button>
+                </DialogFooter>
+              </DialogScrollContent>
+            </Dialog>
+
+            <Dialog :open="catalogDialogOpen" @update:open="catalogDialogOpen = $event">
+              <DialogScrollContent class="max-w-[calc(100%-2rem)] md:max-w-5xl xl:max-w-6xl">
+                <DialogHeader>
+                  <DialogTitle>
+                    {{ selectedCatalogItemId ? 'Edit Template' : 'Create Template' }}
+                  </DialogTitle>
+                  <DialogDescription>
+                    Configure the catalog template metadata, field schema, and default content.
+                  </DialogDescription>
+                </DialogHeader>
+
+                <Card
+                  class="gap-4 py-4 transition"
+                  :class="{
+                    'border-primary ring-2 ring-primary/20': activeFormSection === 'template',
+                  }"
+                  @focusin="activeFormSection = 'template'"
+                >
+                  <CardHeader class="px-4">
+                    <CardTitle class="text-sm">Template Details</CardTitle>
+                  </CardHeader>
+                  <CardContent class="px-4">
+                    <FieldGroup>
+                      <FieldSet>
+                        <div class="space-y-3 rounded border bg-muted/20 p-3">
+                          <div>
+                            <h4 class="text-sm font-semibold">Template Basics</h4>
+                            <p class="mt-1 text-xs text-muted-foreground">
+                              The fields used most often when creating or finding a template.
+                            </p>
+                          </div>
+
+                          <div class="grid gap-3 md:grid-cols-2">
+                            <Field>
+                              <FieldLabel for="catalog-name">Name</FieldLabel>
+                              <Input
+                                id="catalog-name"
+                                v-model="catalogItemForm.name"
+                                :disabled="!selectedWebsiteType"
+                              />
+                            </Field>
+
+                            <Field>
+                              <FieldLabel for="catalog-key">Template Key</FieldLabel>
+                              <Input
+                                id="catalog-key"
+                                v-model="catalogItemForm.key"
+                                :disabled="!selectedWebsiteType"
+                                @input="itemKeyTouched = true"
+                              />
+                            </Field>
+                          </div>
 
                           <Field orientation="horizontal" class="items-center gap-3">
                             <Checkbox
-                              id="website-type-active"
-                              v-model="websiteTypeForm.is_active"
-                            />
-                            <FieldLabel for="website-type-active">Active</FieldLabel>
-                          </Field>
-                        </AccordionContent>
-                      </AccordionItem>
-
-                      <AccordionItem
-                        value="website-type-description"
-                        class="rounded border bg-background px-3 last:border-b"
-                      >
-                        <AccordionTrigger class="py-3 hover:no-underline">
-                          <span>
-                            <span class="block text-sm font-semibold">Type Description</span>
-                            <span class="mt-1 block text-xs text-muted-foreground">
-                              Optional notes shown with this website type.
-                            </span>
-                          </span>
-                        </AccordionTrigger>
-                        <AccordionContent class="space-y-3 pb-3">
-                          <Field>
-                            <FieldLabel for="website-type-description">Description</FieldLabel>
-                            <Textarea
-                              id="website-type-description"
-                              v-model="websiteTypeForm.description"
-                              class="min-h-24"
-                            />
-                          </Field>
-                        </AccordionContent>
-                      </AccordionItem>
-                    </Accordion>
-                  </FieldSet>
-                </FieldGroup>
-              </CardContent>
-            </Card>
-
-            <Card
-              class="gap-4 py-4 transition"
-              :class="{
-                'border-primary ring-2 ring-primary/20': activeFormSection === 'template',
-              }"
-              @focusin="activeFormSection = 'template'"
-            >
-              <CardHeader class="px-4">
-                <CardTitle class="text-sm">Template Details</CardTitle>
-              </CardHeader>
-              <CardContent class="px-4">
-                <FieldGroup>
-                  <FieldSet>
-                    <div class="space-y-3 rounded border bg-muted/20 p-3">
-                      <div>
-                        <h4 class="text-sm font-semibold">Template Basics</h4>
-                        <p class="mt-1 text-xs text-muted-foreground">
-                          The fields used most often when creating or finding a template.
-                        </p>
-                      </div>
-
-                      <div class="grid gap-3 md:grid-cols-2">
-                        <Field>
-                          <FieldLabel for="catalog-name">Name</FieldLabel>
-                          <Input
-                            id="catalog-name"
-                            v-model="catalogItemForm.name"
-                            :disabled="!selectedWebsiteType"
-                          />
-                        </Field>
-
-                        <Field>
-                          <FieldLabel for="catalog-key">Template Key</FieldLabel>
-                          <Input
-                            id="catalog-key"
-                            v-model="catalogItemForm.key"
-                            :disabled="!selectedWebsiteType"
-                            @input="itemKeyTouched = true"
-                          />
-                        </Field>
-                      </div>
-
-                      <Field orientation="horizontal" class="items-center gap-3">
-                        <Checkbox
-                          id="catalog-active"
-                          v-model="catalogItemForm.is_active"
-                          :disabled="!selectedWebsiteType"
-                        />
-                        <FieldLabel for="catalog-active">Active</FieldLabel>
-                      </Field>
-                    </div>
-
-                    <Accordion
-                      type="multiple"
-                      :default-value="['template-field-schema']"
-                      class="space-y-2"
-                    >
-                      <AccordionItem
-                        value="template-metadata"
-                        class="rounded border bg-background px-3 last:border-b"
-                      >
-                        <AccordionTrigger class="py-3 hover:no-underline">
-                          <span>
-                            <span class="block text-sm font-semibold">Template Metadata</span>
-                            <span class="mt-1 block text-xs text-muted-foreground">
-                              Description and preview image settings.
-                            </span>
-                          </span>
-                        </AccordionTrigger>
-                        <AccordionContent class="space-y-3 pb-3">
-                          <Field>
-                            <FieldLabel for="catalog-description">Description</FieldLabel>
-                            <Textarea
-                              id="catalog-description"
-                              v-model="catalogItemForm.description"
-                              class="min-h-24"
+                              id="catalog-active"
+                              v-model="catalogItemForm.is_active"
                               :disabled="!selectedWebsiteType"
                             />
+                            <FieldLabel for="catalog-active">Active</FieldLabel>
                           </Field>
+                        </div>
 
-                          <Field>
-                            <FieldLabel for="catalog-preview">Preview Image</FieldLabel>
-                            <Input
-                              id="catalog-preview"
-                              v-model="catalogItemForm.preview_image"
-                              :disabled="!selectedWebsiteType"
-                            />
-                          </Field>
-                        </AccordionContent>
-                      </AccordionItem>
-
-                      <AccordionItem
-                        value="template-field-schema"
-                        class="rounded border bg-background px-3 last:border-b"
-                      >
-                        <AccordionTrigger class="py-3 hover:no-underline">
-                          <span>
-                            <span class="block text-sm font-semibold">Field Schema</span>
-                            <span class="mt-1 block text-xs text-muted-foreground">
-                              Add the content fields users will complete for this template.
-                            </span>
-                          </span>
-                        </AccordionTrigger>
-                        <AccordionContent class="space-y-3 pb-3">
-                          <div class="flex items-start justify-end gap-3">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              type="button"
-                              :disabled="!selectedWebsiteType"
-                              @click="addSchemaField(schemaFields)"
-                            >
-                              <Plus class="size-4" />
-                              Field
-                            </Button>
-                          </div>
-
-                          <Empty v-if="!schemaFields.length" class="min-h-[160px] bg-background">
-                            <EmptyHeader>
-                              <EmptyTitle>No fields yet</EmptyTitle>
-                              <EmptyDescription
-                                >Add a field to build this template form.</EmptyDescription
-                              >
-                            </EmptyHeader>
-                          </Empty>
-
-                          <Accordion
-                            v-else
-                            v-model="openSchemaFieldSections"
-                            type="multiple"
-                            class="space-y-2"
+                        <Accordion
+                          type="multiple"
+                          :default-value="['template-field-schema']"
+                          class="space-y-2"
+                        >
+                          <AccordionItem
+                            value="template-metadata"
+                            class="rounded border bg-background px-3 last:border-b"
                           >
-                            <AccordionItem
-                              v-for="(field, fieldIndex) in schemaFields"
-                              :key="fieldIndex"
-                              :value="schemaFieldSectionValue(fieldIndex)"
-                              class="rounded border bg-background px-3 last:border-b"
-                            >
-                              <div class="flex items-start justify-between gap-3">
-                                <div class="min-w-0 flex-1 py-3">
-                                  <span class="block text-xs font-semibold text-muted-foreground">
-                                    Field {{ fieldIndex + 1 }}
-                                  </span>
-                                  <span class="mt-1 block text-sm font-semibold">
-                                    {{ field.label || 'Untitled field' }}
-                                  </span>
-                                </div>
-                                <div class="flex shrink-0 items-center gap-1 py-2">
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    type="button"
-                                    :disabled="fieldIndex === 0"
-                                    @click.stop="moveSchemaField(schemaFields, fieldIndex, -1)"
-                                  >
-                                    <ArrowUp class="size-4" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    type="button"
-                                    :disabled="fieldIndex === schemaFields.length - 1"
-                                    @click.stop="moveSchemaField(schemaFields, fieldIndex, 1)"
-                                  >
-                                    <ArrowDown class="size-4" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    type="button"
-                                    @click.stop="removeSchemaField(schemaFields, fieldIndex)"
-                                  >
-                                    <Trash2 class="size-4" />
-                                  </Button>
-                                </div>
-                                <AccordionTrigger
-                                  class="flex-none px-0 py-3 hover:no-underline"
-                                  :aria-label="`Toggle field ${fieldIndex + 1}`"
+                            <AccordionTrigger class="py-3 hover:no-underline">
+                              <span>
+                                <span class="block text-sm font-semibold">Template Metadata</span>
+                                <span class="mt-1 block text-xs text-muted-foreground">
+                                  Description and preview image settings.
+                                </span>
+                              </span>
+                            </AccordionTrigger>
+                            <AccordionContent class="space-y-3 pb-3">
+                              <Field>
+                                <FieldLabel for="catalog-description">Description</FieldLabel>
+                                <Textarea
+                                  id="catalog-description"
+                                  v-model="catalogItemForm.description"
+                                  class="min-h-24"
+                                  :disabled="!selectedWebsiteType"
+                                />
+                              </Field>
+
+                              <Field>
+                                <FieldLabel for="catalog-preview">Preview Image</FieldLabel>
+                                <Input
+                                  id="catalog-preview"
+                                  v-model="catalogItemForm.preview_image"
+                                  :disabled="!selectedWebsiteType"
+                                />
+                              </Field>
+                            </AccordionContent>
+                          </AccordionItem>
+
+                          <AccordionItem
+                            value="template-field-schema"
+                            class="rounded border bg-background px-3 last:border-b"
+                          >
+                            <AccordionTrigger class="py-3 hover:no-underline">
+                              <span>
+                                <span class="block text-sm font-semibold">Field Schema</span>
+                                <span class="mt-1 block text-xs text-muted-foreground">
+                                  Add the content fields users will complete for this template.
+                                </span>
+                              </span>
+                            </AccordionTrigger>
+                            <AccordionContent class="space-y-3 pb-3">
+                              <div class="flex items-start justify-end gap-3">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  type="button"
+                                  :disabled="!selectedWebsiteType"
+                                  @click="addSchemaField(schemaFields)"
                                 >
-                                  <span class="sr-only">Toggle field {{ fieldIndex + 1 }}</span>
-                                </AccordionTrigger>
+                                  <Plus class="size-4" />
+                                  Field
+                                </Button>
                               </div>
 
-                              <AccordionContent class="space-y-3 pb-3">
-                                <div class="grid gap-3 md:grid-cols-2">
-                                  <Field>
-                                    <FieldLabel :for="`schema-label-${fieldIndex}`"
-                                      >Field label</FieldLabel
-                                    >
-                                    <Input
-                                      :id="`schema-label-${fieldIndex}`"
-                                      :model-value="field.label"
-                                      :disabled="!selectedWebsiteType"
-                                      @update:model-value="updateFieldLabel(field, String($event))"
-                                    />
-                                  </Field>
+                              <Empty
+                                v-if="!schemaFields.length"
+                                class="min-h-[160px] bg-background"
+                              >
+                                <EmptyHeader>
+                                  <EmptyTitle>No fields yet</EmptyTitle>
+                                  <EmptyDescription
+                                    >Add a field to build this template form.</EmptyDescription
+                                  >
+                                </EmptyHeader>
+                              </Empty>
 
-                                  <Field>
-                                    <FieldLabel :for="`schema-key-${fieldIndex}`"
-                                      >Field key/name</FieldLabel
-                                    >
-                                    <Input
-                                      :id="`schema-key-${fieldIndex}`"
-                                      :model-value="field.key"
-                                      :disabled="!selectedWebsiteType"
-                                      @update:model-value="updateFieldKey(field, String($event))"
-                                    />
-                                    <FieldDescription
-                                      >Use lowercase letters, numbers, and
-                                      underscores.</FieldDescription
-                                    >
-                                  </Field>
-
-                                  <Field>
-                                    <FieldLabel :for="`schema-type-${fieldIndex}`"
-                                      >Field type</FieldLabel
-                                    >
-                                    <NativeSelect
-                                      :id="`schema-type-${fieldIndex}`"
-                                      class="w-full"
-                                      :model-value="field.type"
-                                      :disabled="!selectedWebsiteType"
-                                      @update:model-value="
-                                        updateFieldType(field, String($event) as TemplateFieldType)
-                                      "
-                                    >
-                                      <NativeSelectOption
-                                        v-for="fieldType in fieldTypes"
-                                        :key="fieldType.value"
-                                        :value="fieldType.value"
+                              <Accordion
+                                v-else
+                                v-model="openSchemaFieldSections"
+                                type="multiple"
+                                class="space-y-2"
+                              >
+                                <AccordionItem
+                                  v-for="(field, fieldIndex) in schemaFields"
+                                  :key="fieldIndex"
+                                  :value="schemaFieldSectionValue(fieldIndex)"
+                                  class="rounded border bg-background px-3 last:border-b"
+                                >
+                                  <div class="flex items-start justify-between gap-3">
+                                    <div class="min-w-0 flex-1 py-3">
+                                      <span
+                                        class="block text-xs font-semibold text-muted-foreground"
                                       >
-                                        {{ fieldType.label }}
-                                      </NativeSelectOption>
-                                    </NativeSelect>
-                                  </Field>
-
-                                  <Field
-                                    v-if="field.type !== 'boolean' && field.type !== 'repeater'"
-                                  >
-                                    <FieldLabel :for="`schema-placeholder-${fieldIndex}`">
-                                      Placeholder
-                                    </FieldLabel>
-                                    <Input
-                                      :id="`schema-placeholder-${fieldIndex}`"
-                                      v-model="field.placeholder"
-                                      :disabled="!selectedWebsiteType"
-                                    />
-                                  </Field>
-
-                                  <Field
-                                    v-if="field.type === 'boolean'"
-                                    orientation="horizontal"
-                                    class="items-center gap-3 self-end"
-                                  >
-                                    <Checkbox
-                                      :id="`schema-default-${fieldIndex}`"
-                                      :model-value="Boolean(field.default)"
-                                      :disabled="!selectedWebsiteType"
-                                      @update:model-value="
-                                        updateFieldDefault(field, Boolean($event))
-                                      "
-                                    />
-                                    <FieldLabel :for="`schema-default-${fieldIndex}`">
-                                      Default checked
-                                    </FieldLabel>
-                                  </Field>
-
-                                  <Field v-else-if="field.type !== 'repeater'">
-                                    <FieldLabel :for="`schema-default-${fieldIndex}`">
-                                      Default value
-                                    </FieldLabel>
-                                    <Textarea
-                                      v-if="field.type === 'textarea' || field.type === 'rich_text'"
-                                      :id="`schema-default-${fieldIndex}`"
-                                      :model-value="String(field.default ?? '')"
-                                      class="min-h-20"
-                                      :disabled="!selectedWebsiteType"
-                                      @update:model-value="updateFieldDefault(field, $event)"
-                                    />
-                                    <Input
-                                      v-else
-                                      :id="`schema-default-${fieldIndex}`"
-                                      :type="field.type === 'number' ? 'number' : 'text'"
-                                      :model-value="String(field.default ?? '')"
-                                      :disabled="!selectedWebsiteType"
-                                      @update:model-value="updateFieldDefault(field, $event)"
-                                    />
-                                  </Field>
-
-                                  <Field
-                                    orientation="horizontal"
-                                    class="items-center gap-3 self-end"
-                                  >
-                                    <Checkbox
-                                      :id="`schema-required-${fieldIndex}`"
-                                      :model-value="Boolean(field.required)"
-                                      :disabled="!selectedWebsiteType"
-                                      @update:model-value="field.required = Boolean($event)"
-                                    />
-                                    <FieldLabel :for="`schema-required-${fieldIndex}`">
-                                      Required
-                                    </FieldLabel>
-                                  </Field>
-                                </div>
-
-                                <div
-                                  v-if="field.type === 'select'"
-                                  class="mt-3 space-y-2 rounded border bg-muted/20 p-3"
-                                >
-                                  <div class="flex items-center justify-between gap-3">
-                                    <p class="text-xs font-semibold text-muted-foreground">
-                                      Select options
-                                    </p>
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      type="button"
-                                      @click="addSelectOption(field)"
-                                    >
-                                      <Plus class="size-4" />
-                                      Option
-                                    </Button>
-                                  </div>
-
-                                  <div
-                                    v-for="(option, optionIndex) in field.options ?? []"
-                                    :key="optionIndex"
-                                    class="grid gap-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]"
-                                  >
-                                    <Input
-                                      :model-value="String(option.label ?? '')"
-                                      placeholder="Label"
-                                      :disabled="!selectedWebsiteType"
-                                      @update:model-value="
-                                        updateSelectOptionLabel(option, String($event))
-                                      "
-                                    />
-                                    <Input
-                                      :model-value="String(option.value ?? '')"
-                                      placeholder="Value"
-                                      :disabled="!selectedWebsiteType"
-                                      @update:model-value="
-                                        updateSelectOptionValue(option, String($event))
-                                      "
-                                    />
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      type="button"
-                                      @click="removeSelectOption(field, optionIndex)"
-                                    >
-                                      <Trash2 class="size-4" />
-                                    </Button>
-                                  </div>
-                                </div>
-
-                                <div
-                                  v-if="field.type === 'repeater'"
-                                  class="mt-3 space-y-3 rounded border bg-muted/20 p-3"
-                                >
-                                  <div class="flex items-center justify-between gap-3">
-                                    <div>
-                                      <p class="text-xs font-semibold text-muted-foreground">
-                                        List fields
-                                      </p>
-                                      <p class="mt-1 text-xs text-muted-foreground">
-                                        Define the fields each list item should contain.
-                                      </p>
+                                        Field {{ fieldIndex + 1 }}
+                                      </span>
+                                      <span class="mt-1 block text-sm font-semibold">
+                                        {{ field.label || 'Untitled field' }}
+                                      </span>
                                     </div>
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      type="button"
-                                      @click="addSchemaField(field.fields ?? (field.fields = []))"
+                                    <div class="flex shrink-0 items-center gap-1 py-2">
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        type="button"
+                                        :disabled="fieldIndex === 0"
+                                        @click.stop="moveSchemaField(schemaFields, fieldIndex, -1)"
+                                      >
+                                        <ArrowUp class="size-4" />
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        type="button"
+                                        :disabled="fieldIndex === schemaFields.length - 1"
+                                        @click.stop="moveSchemaField(schemaFields, fieldIndex, 1)"
+                                      >
+                                        <ArrowDown class="size-4" />
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        type="button"
+                                        @click.stop="removeSchemaField(schemaFields, fieldIndex)"
+                                      >
+                                        <Trash2 class="size-4" />
+                                      </Button>
+                                    </div>
+                                    <AccordionTrigger
+                                      class="flex-none px-0 py-3 hover:no-underline"
+                                      :aria-label="`Toggle field ${fieldIndex + 1}`"
                                     >
-                                      <Plus class="size-4" />
-                                      Field
-                                    </Button>
+                                      <span class="sr-only">Toggle field {{ fieldIndex + 1 }}</span>
+                                    </AccordionTrigger>
                                   </div>
 
-                                  <div
-                                    v-for="(nestedField, nestedIndex) in field.fields ?? []"
-                                    :key="nestedIndex"
-                                    class="rounded border bg-background p-3"
-                                  >
-                                    <div class="mb-3 flex items-center justify-between gap-3">
-                                      <p class="text-sm font-semibold">
-                                        {{ nestedField.label || `List field ${nestedIndex + 1}` }}
-                                      </p>
-                                      <div class="flex items-center gap-1">
-                                        <Button
-                                          size="sm"
-                                          variant="ghost"
-                                          type="button"
-                                          :disabled="nestedIndex === 0"
-                                          @click="
-                                            moveSchemaField(field.fields ?? [], nestedIndex, -1)
-                                          "
-                                        >
-                                          <ArrowUp class="size-4" />
-                                        </Button>
-                                        <Button
-                                          size="sm"
-                                          variant="ghost"
-                                          type="button"
-                                          :disabled="
-                                            nestedIndex === (field.fields ?? []).length - 1
-                                          "
-                                          @click="
-                                            moveSchemaField(field.fields ?? [], nestedIndex, 1)
-                                          "
-                                        >
-                                          <ArrowDown class="size-4" />
-                                        </Button>
-                                        <Button
-                                          size="sm"
-                                          variant="ghost"
-                                          type="button"
-                                          @click="
-                                            removeSchemaField(
-                                              field.fields ?? [],
-                                              nestedIndex,
-                                              field
-                                            )
-                                          "
-                                        >
-                                          <Trash2 class="size-4" />
-                                        </Button>
-                                      </div>
-                                    </div>
-
+                                  <AccordionContent class="space-y-3 pb-3">
                                     <div class="grid gap-3 md:grid-cols-2">
                                       <Field>
-                                        <FieldLabel
-                                          :for="`schema-nested-label-${fieldIndex}-${nestedIndex}`"
+                                        <FieldLabel :for="`schema-label-${fieldIndex}`"
+                                          >Field label</FieldLabel
                                         >
-                                          Field label
-                                        </FieldLabel>
                                         <Input
-                                          :id="`schema-nested-label-${fieldIndex}-${nestedIndex}`"
-                                          :model-value="nestedField.label"
+                                          :id="`schema-label-${fieldIndex}`"
+                                          :model-value="field.label"
                                           :disabled="!selectedWebsiteType"
                                           @update:model-value="
-                                            updateFieldLabel(nestedField, String($event))
+                                            updateFieldLabel(field, String($event))
                                           "
                                         />
                                       </Field>
 
                                       <Field>
-                                        <FieldLabel
-                                          :for="`schema-nested-key-${fieldIndex}-${nestedIndex}`"
+                                        <FieldLabel :for="`schema-key-${fieldIndex}`"
+                                          >Field key/name</FieldLabel
                                         >
-                                          Field key/name
-                                        </FieldLabel>
                                         <Input
-                                          :id="`schema-nested-key-${fieldIndex}-${nestedIndex}`"
-                                          :model-value="nestedField.key"
+                                          :id="`schema-key-${fieldIndex}`"
+                                          :model-value="field.key"
                                           :disabled="!selectedWebsiteType"
                                           @update:model-value="
-                                            updateFieldKey(nestedField, String($event), field)
+                                            updateFieldKey(field, String($event))
                                           "
                                         />
+                                        <FieldDescription
+                                          >Use lowercase letters, numbers, and
+                                          underscores.</FieldDescription
+                                        >
                                       </Field>
 
                                       <Field>
-                                        <FieldLabel
-                                          :for="`schema-nested-type-${fieldIndex}-${nestedIndex}`"
+                                        <FieldLabel :for="`schema-type-${fieldIndex}`"
+                                          >Field type</FieldLabel
                                         >
-                                          Field type
-                                        </FieldLabel>
                                         <NativeSelect
-                                          :id="`schema-nested-type-${fieldIndex}-${nestedIndex}`"
+                                          :id="`schema-type-${fieldIndex}`"
                                           class="w-full"
-                                          :model-value="nestedField.type"
+                                          :model-value="field.type"
                                           :disabled="!selectedWebsiteType"
                                           @update:model-value="
                                             updateFieldType(
-                                              nestedField,
+                                              field,
                                               String($event) as TemplateFieldType
                                             )
                                           "
                                         >
                                           <NativeSelectOption
-                                            v-for="fieldType in nestedFieldTypes"
+                                            v-for="fieldType in fieldTypes"
                                             :key="fieldType.value"
                                             :value="fieldType.value"
                                           >
@@ -1257,71 +1116,57 @@ watch(
                                       </Field>
 
                                       <Field
-                                        v-if="
-                                          nestedField.type !== 'boolean' &&
-                                          nestedField.type !== 'repeater'
-                                        "
+                                        v-if="field.type !== 'boolean' && field.type !== 'repeater'"
                                       >
-                                        <FieldLabel
-                                          :for="`schema-nested-placeholder-${fieldIndex}-${nestedIndex}`"
-                                        >
+                                        <FieldLabel :for="`schema-placeholder-${fieldIndex}`">
                                           Placeholder
                                         </FieldLabel>
                                         <Input
-                                          :id="`schema-nested-placeholder-${fieldIndex}-${nestedIndex}`"
-                                          v-model="nestedField.placeholder"
+                                          :id="`schema-placeholder-${fieldIndex}`"
+                                          v-model="field.placeholder"
                                           :disabled="!selectedWebsiteType"
                                         />
                                       </Field>
 
                                       <Field
-                                        v-if="nestedField.type === 'boolean'"
+                                        v-if="field.type === 'boolean'"
                                         orientation="horizontal"
                                         class="items-center gap-3 self-end"
                                       >
                                         <Checkbox
-                                          :id="`schema-nested-default-${fieldIndex}-${nestedIndex}`"
-                                          :model-value="Boolean(nestedField.default)"
+                                          :id="`schema-default-${fieldIndex}`"
+                                          :model-value="Boolean(field.default)"
                                           :disabled="!selectedWebsiteType"
                                           @update:model-value="
-                                            updateFieldDefault(nestedField, Boolean($event))
+                                            updateFieldDefault(field, Boolean($event))
                                           "
                                         />
-                                        <FieldLabel
-                                          :for="`schema-nested-default-${fieldIndex}-${nestedIndex}`"
-                                        >
+                                        <FieldLabel :for="`schema-default-${fieldIndex}`">
                                           Default checked
                                         </FieldLabel>
                                       </Field>
 
-                                      <Field v-else>
-                                        <FieldLabel
-                                          :for="`schema-nested-default-${fieldIndex}-${nestedIndex}`"
-                                        >
+                                      <Field v-else-if="field.type !== 'repeater'">
+                                        <FieldLabel :for="`schema-default-${fieldIndex}`">
                                           Default value
                                         </FieldLabel>
                                         <Textarea
                                           v-if="
-                                            nestedField.type === 'textarea' ||
-                                            nestedField.type === 'rich_text'
+                                            field.type === 'textarea' || field.type === 'rich_text'
                                           "
-                                          :id="`schema-nested-default-${fieldIndex}-${nestedIndex}`"
-                                          :model-value="String(nestedField.default ?? '')"
+                                          :id="`schema-default-${fieldIndex}`"
+                                          :model-value="String(field.default ?? '')"
                                           class="min-h-20"
                                           :disabled="!selectedWebsiteType"
-                                          @update:model-value="
-                                            updateFieldDefault(nestedField, $event)
-                                          "
+                                          @update:model-value="updateFieldDefault(field, $event)"
                                         />
                                         <Input
                                           v-else
-                                          :id="`schema-nested-default-${fieldIndex}-${nestedIndex}`"
-                                          :type="nestedField.type === 'number' ? 'number' : 'text'"
-                                          :model-value="String(nestedField.default ?? '')"
+                                          :id="`schema-default-${fieldIndex}`"
+                                          :type="field.type === 'number' ? 'number' : 'text'"
+                                          :model-value="String(field.default ?? '')"
                                           :disabled="!selectedWebsiteType"
-                                          @update:model-value="
-                                            updateFieldDefault(nestedField, $event)
-                                          "
+                                          @update:model-value="updateFieldDefault(field, $event)"
                                         />
                                       </Field>
 
@@ -1330,80 +1175,384 @@ watch(
                                         class="items-center gap-3 self-end"
                                       >
                                         <Checkbox
-                                          :id="`schema-nested-required-${fieldIndex}-${nestedIndex}`"
-                                          :model-value="Boolean(nestedField.required)"
+                                          :id="`schema-required-${fieldIndex}`"
+                                          :model-value="Boolean(field.required)"
                                           :disabled="!selectedWebsiteType"
-                                          @update:model-value="
-                                            nestedField.required = Boolean($event)
-                                          "
+                                          @update:model-value="field.required = Boolean($event)"
                                         />
-                                        <FieldLabel
-                                          :for="`schema-nested-required-${fieldIndex}-${nestedIndex}`"
-                                        >
+                                        <FieldLabel :for="`schema-required-${fieldIndex}`">
                                           Required
                                         </FieldLabel>
                                       </Field>
                                     </div>
-                                  </div>
-                                </div>
-                              </AccordionContent>
-                            </AccordionItem>
-                          </Accordion>
-                        </AccordionContent>
-                      </AccordionItem>
 
-                      <AccordionItem
-                        value="template-default-content"
-                        class="rounded border bg-background px-3 last:border-b"
-                      >
-                        <AccordionTrigger class="py-3 hover:no-underline">
-                          <span>
-                            <span class="block text-sm font-semibold">Default Content</span>
-                            <span class="mt-1 mb-1 block text-xs text-muted-foreground">
-                              Starter values generated from the current field schema.
-                            </span>
-                          </span>
-                        </AccordionTrigger>
-                        <AccordionContent class="space-y-3 pb-3">
-                          <Empty v-if="!contentSchema.length" class="min-h-[160px] bg-background">
-                            <EmptyHeader>
-                              <EmptyTitle>No content fields</EmptyTitle>
-                              <EmptyDescription>
-                                Add schema fields before entering default content.
-                              </EmptyDescription>
-                            </EmptyHeader>
-                          </Empty>
+                                    <div
+                                      v-if="field.type === 'select'"
+                                      class="mt-3 space-y-2 rounded border bg-muted/20 p-3"
+                                    >
+                                      <div class="flex items-center justify-between gap-3">
+                                        <p class="text-xs font-semibold text-muted-foreground">
+                                          Select options
+                                        </p>
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          type="button"
+                                          @click="addSelectOption(field)"
+                                        >
+                                          <Plus class="size-4" />
+                                          Option
+                                        </Button>
+                                      </div>
 
-                          <DynamicTemplateFields
-                            v-else
-                            :schema="contentSchema"
-                            :model-value="defaultContent"
-                            @update:model-value="defaultContent = $event"
-                          />
-                        </AccordionContent>
-                      </AccordionItem>
-                    </Accordion>
-                  </FieldSet>
-                </FieldGroup>
+                                      <div
+                                        v-for="(option, optionIndex) in field.options ?? []"
+                                        :key="optionIndex"
+                                        class="grid gap-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]"
+                                      >
+                                        <Input
+                                          :model-value="String(option.label ?? '')"
+                                          placeholder="Label"
+                                          :disabled="!selectedWebsiteType"
+                                          @update:model-value="
+                                            updateSelectOptionLabel(option, String($event))
+                                          "
+                                        />
+                                        <Input
+                                          :model-value="String(option.value ?? '')"
+                                          placeholder="Value"
+                                          :disabled="!selectedWebsiteType"
+                                          @update:model-value="
+                                            updateSelectOptionValue(option, String($event))
+                                          "
+                                        />
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          type="button"
+                                          @click="removeSelectOption(field, optionIndex)"
+                                        >
+                                          <Trash2 class="size-4" />
+                                        </Button>
+                                      </div>
+                                    </div>
 
-                <div
-                  v-if="renderPath"
-                  class="mt-4 rounded border bg-muted/30 p-3 text-xs text-muted-foreground"
+                                    <div
+                                      v-if="field.type === 'repeater'"
+                                      class="mt-3 space-y-3 rounded border bg-muted/20 p-3"
+                                    >
+                                      <div class="flex items-center justify-between gap-3">
+                                        <div>
+                                          <p class="text-xs font-semibold text-muted-foreground">
+                                            List fields
+                                          </p>
+                                          <p class="mt-1 text-xs text-muted-foreground">
+                                            Define the fields each list item should contain.
+                                          </p>
+                                        </div>
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          type="button"
+                                          @click="
+                                            addSchemaField(field.fields ?? (field.fields = []))
+                                          "
+                                        >
+                                          <Plus class="size-4" />
+                                          Field
+                                        </Button>
+                                      </div>
+
+                                      <div
+                                        v-for="(nestedField, nestedIndex) in field.fields ?? []"
+                                        :key="nestedIndex"
+                                        class="rounded border bg-background p-3"
+                                      >
+                                        <div class="mb-3 flex items-center justify-between gap-3">
+                                          <p class="text-sm font-semibold">
+                                            {{
+                                              nestedField.label || `List field ${nestedIndex + 1}`
+                                            }}
+                                          </p>
+                                          <div class="flex items-center gap-1">
+                                            <Button
+                                              size="sm"
+                                              variant="ghost"
+                                              type="button"
+                                              :disabled="nestedIndex === 0"
+                                              @click="
+                                                moveSchemaField(field.fields ?? [], nestedIndex, -1)
+                                              "
+                                            >
+                                              <ArrowUp class="size-4" />
+                                            </Button>
+                                            <Button
+                                              size="sm"
+                                              variant="ghost"
+                                              type="button"
+                                              :disabled="
+                                                nestedIndex === (field.fields ?? []).length - 1
+                                              "
+                                              @click="
+                                                moveSchemaField(field.fields ?? [], nestedIndex, 1)
+                                              "
+                                            >
+                                              <ArrowDown class="size-4" />
+                                            </Button>
+                                            <Button
+                                              size="sm"
+                                              variant="ghost"
+                                              type="button"
+                                              @click="
+                                                removeSchemaField(
+                                                  field.fields ?? [],
+                                                  nestedIndex,
+                                                  field
+                                                )
+                                              "
+                                            >
+                                              <Trash2 class="size-4" />
+                                            </Button>
+                                          </div>
+                                        </div>
+
+                                        <div class="grid gap-3 md:grid-cols-2">
+                                          <Field>
+                                            <FieldLabel
+                                              :for="`schema-nested-label-${fieldIndex}-${nestedIndex}`"
+                                            >
+                                              Field label
+                                            </FieldLabel>
+                                            <Input
+                                              :id="`schema-nested-label-${fieldIndex}-${nestedIndex}`"
+                                              :model-value="nestedField.label"
+                                              :disabled="!selectedWebsiteType"
+                                              @update:model-value="
+                                                updateFieldLabel(nestedField, String($event))
+                                              "
+                                            />
+                                          </Field>
+
+                                          <Field>
+                                            <FieldLabel
+                                              :for="`schema-nested-key-${fieldIndex}-${nestedIndex}`"
+                                            >
+                                              Field key/name
+                                            </FieldLabel>
+                                            <Input
+                                              :id="`schema-nested-key-${fieldIndex}-${nestedIndex}`"
+                                              :model-value="nestedField.key"
+                                              :disabled="!selectedWebsiteType"
+                                              @update:model-value="
+                                                updateFieldKey(nestedField, String($event), field)
+                                              "
+                                            />
+                                          </Field>
+
+                                          <Field>
+                                            <FieldLabel
+                                              :for="`schema-nested-type-${fieldIndex}-${nestedIndex}`"
+                                            >
+                                              Field type
+                                            </FieldLabel>
+                                            <NativeSelect
+                                              :id="`schema-nested-type-${fieldIndex}-${nestedIndex}`"
+                                              class="w-full"
+                                              :model-value="nestedField.type"
+                                              :disabled="!selectedWebsiteType"
+                                              @update:model-value="
+                                                updateFieldType(
+                                                  nestedField,
+                                                  String($event) as TemplateFieldType
+                                                )
+                                              "
+                                            >
+                                              <NativeSelectOption
+                                                v-for="fieldType in nestedFieldTypes"
+                                                :key="fieldType.value"
+                                                :value="fieldType.value"
+                                              >
+                                                {{ fieldType.label }}
+                                              </NativeSelectOption>
+                                            </NativeSelect>
+                                          </Field>
+
+                                          <Field
+                                            v-if="
+                                              nestedField.type !== 'boolean' &&
+                                              nestedField.type !== 'repeater'
+                                            "
+                                          >
+                                            <FieldLabel
+                                              :for="`schema-nested-placeholder-${fieldIndex}-${nestedIndex}`"
+                                            >
+                                              Placeholder
+                                            </FieldLabel>
+                                            <Input
+                                              :id="`schema-nested-placeholder-${fieldIndex}-${nestedIndex}`"
+                                              v-model="nestedField.placeholder"
+                                              :disabled="!selectedWebsiteType"
+                                            />
+                                          </Field>
+
+                                          <Field
+                                            v-if="nestedField.type === 'boolean'"
+                                            orientation="horizontal"
+                                            class="items-center gap-3 self-end"
+                                          >
+                                            <Checkbox
+                                              :id="`schema-nested-default-${fieldIndex}-${nestedIndex}`"
+                                              :model-value="Boolean(nestedField.default)"
+                                              :disabled="!selectedWebsiteType"
+                                              @update:model-value="
+                                                updateFieldDefault(nestedField, Boolean($event))
+                                              "
+                                            />
+                                            <FieldLabel
+                                              :for="`schema-nested-default-${fieldIndex}-${nestedIndex}`"
+                                            >
+                                              Default checked
+                                            </FieldLabel>
+                                          </Field>
+
+                                          <Field v-else>
+                                            <FieldLabel
+                                              :for="`schema-nested-default-${fieldIndex}-${nestedIndex}`"
+                                            >
+                                              Default value
+                                            </FieldLabel>
+                                            <Textarea
+                                              v-if="
+                                                nestedField.type === 'textarea' ||
+                                                nestedField.type === 'rich_text'
+                                              "
+                                              :id="`schema-nested-default-${fieldIndex}-${nestedIndex}`"
+                                              :model-value="String(nestedField.default ?? '')"
+                                              class="min-h-20"
+                                              :disabled="!selectedWebsiteType"
+                                              @update:model-value="
+                                                updateFieldDefault(nestedField, $event)
+                                              "
+                                            />
+                                            <Input
+                                              v-else
+                                              :id="`schema-nested-default-${fieldIndex}-${nestedIndex}`"
+                                              :type="
+                                                nestedField.type === 'number' ? 'number' : 'text'
+                                              "
+                                              :model-value="String(nestedField.default ?? '')"
+                                              :disabled="!selectedWebsiteType"
+                                              @update:model-value="
+                                                updateFieldDefault(nestedField, $event)
+                                              "
+                                            />
+                                          </Field>
+
+                                          <Field
+                                            orientation="horizontal"
+                                            class="items-center gap-3 self-end"
+                                          >
+                                            <Checkbox
+                                              :id="`schema-nested-required-${fieldIndex}-${nestedIndex}`"
+                                              :model-value="Boolean(nestedField.required)"
+                                              :disabled="!selectedWebsiteType"
+                                              @update:model-value="
+                                                nestedField.required = Boolean($event)
+                                              "
+                                            />
+                                            <FieldLabel
+                                              :for="`schema-nested-required-${fieldIndex}-${nestedIndex}`"
+                                            >
+                                              Required
+                                            </FieldLabel>
+                                          </Field>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </AccordionContent>
+                                </AccordionItem>
+                              </Accordion>
+                            </AccordionContent>
+                          </AccordionItem>
+
+                          <AccordionItem
+                            value="template-default-content"
+                            class="rounded border bg-background px-3 last:border-b"
+                          >
+                            <AccordionTrigger class="py-3 hover:no-underline">
+                              <span>
+                                <span class="block text-sm font-semibold">Default Content</span>
+                                <span class="mt-1 mb-1 block text-xs text-muted-foreground">
+                                  Starter values generated from the current field schema.
+                                </span>
+                              </span>
+                            </AccordionTrigger>
+                            <AccordionContent class="space-y-3 pb-3">
+                              <Empty
+                                v-if="!contentSchema.length"
+                                class="min-h-[160px] bg-background"
+                              >
+                                <EmptyHeader>
+                                  <EmptyTitle>No content fields</EmptyTitle>
+                                  <EmptyDescription>
+                                    Add schema fields before entering default content.
+                                  </EmptyDescription>
+                                </EmptyHeader>
+                              </Empty>
+
+                              <DynamicTemplateFields
+                                v-else
+                                :schema="contentSchema"
+                                :model-value="defaultContent"
+                                @update:model-value="defaultContent = $event"
+                              />
+                            </AccordionContent>
+                          </AccordionItem>
+                        </Accordion>
+                      </FieldSet>
+                    </FieldGroup>
+
+                    <div
+                      v-if="renderPath"
+                      class="mt-4 rounded border bg-muted/30 p-3 text-xs text-muted-foreground"
+                    >
+                      <div class="flex items-start gap-2">
+                        <FileCode2 class="mt-0.5 size-4 shrink-0" />
+                        <span>{{ renderPath }}</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <p
+                  v-if="formError && activeFormSection === 'template'"
+                  class="rounded border border-destructive/40 bg-destructive/10 p-3 text-sm font-medium text-destructive"
                 >
-                  <div class="flex items-start gap-2">
-                    <FileCode2 class="mt-0.5 size-4 shrink-0" />
-                    <span>{{ renderPath }}</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                  {{ formError }}
+                </p>
 
-            <p
-              v-if="formError"
-              class="rounded border border-destructive/40 bg-destructive/10 p-3 text-sm font-medium text-destructive"
-            >
-              {{ formError }}
-            </p>
+                <DialogFooter>
+                  <Button
+                    variant="delete"
+                    type="button"
+                    :disabled="maintenanceStore.loading || !selectedCatalogItem"
+                    @click="deleteCatalogItem"
+                  >
+                    <Trash2 class="size-4" />
+                    Delete
+                  </Button>
+                  <Button
+                    variant="create"
+                    type="button"
+                    :disabled="maintenanceStore.loading || !selectedWebsiteType"
+                    @click="saveCatalogItem"
+                  >
+                    <Save class="size-4" />
+                    Save
+                  </Button>
+                </DialogFooter>
+              </DialogScrollContent>
+            </Dialog>
           </section>
 
           <section class="space-y-4">
@@ -1420,7 +1569,7 @@ watch(
                   variant="outline"
                   type="button"
                   :disabled="!selectedWebsiteType"
-                  @click="newCatalogItem"
+                  @click="createCatalogItem"
                 >
                   <Plus class="size-4" />
                   New
@@ -1453,7 +1602,7 @@ watch(
                     :class="{
                       'border-primary ring-2 ring-primary/20': selectedCatalogItemId === item.id,
                     }"
-                    @click="selectCatalogItem(item)"
+                    @click="editCatalogItem(item)"
                   >
                     <span class="flex items-start justify-between gap-3">
                       <span>
@@ -1475,49 +1624,6 @@ watch(
             </Card>
           </section>
         </main>
-      </div>
-
-      <div class="fixed bottom-6 right-6 z-20 flex w-[120px] flex-col gap-2 draggable">
-        <Button
-          variant="update"
-          class="h-8 w-full rounded px-3 text-xs shadow"
-          type="button"
-          :disabled="maintenanceStore.loading"
-          @click="saveWebsiteType"
-        >
-          <Save class="size-3" />
-          Type
-        </Button>
-        <Button
-          variant="create"
-          class="h-8 w-full rounded px-3 text-xs shadow"
-          type="button"
-          :disabled="maintenanceStore.loading || !selectedWebsiteType"
-          @click="saveCatalogItem"
-        >
-          <Save class="size-3" />
-          Template
-        </Button>
-        <Button
-          variant="delete"
-          class="h-8 w-full rounded px-3 text-xs shadow"
-          type="button"
-          :disabled="maintenanceStore.loading || !selectedCatalogItem"
-          @click="deleteCatalogItem"
-        >
-          <Trash2 class="size-3" />
-          Template
-        </Button>
-        <Button
-          variant="delete"
-          class="h-8 w-full rounded px-3 text-xs shadow"
-          type="button"
-          :disabled="maintenanceStore.loading || !selectedWebsiteType"
-          @click="deleteWebsiteType"
-        >
-          <Trash2 class="size-3" />
-          Type
-        </Button>
       </div>
     </div>
   </div>

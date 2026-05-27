@@ -12,28 +12,6 @@ const routes: RouteRecordRaw[] = [
       description: 'Manage website posts',
     },
   },
-  {
-    path: '/templates/:templateId/posts/create',
-    name: 'posts.create',
-    component: () => import('@/modules/posts/pages/PostEditorPage.vue'),
-    meta: {
-      requiresAuth: true,
-      layout: 'tenant',
-      title: 'Create Post',
-      description: 'Create a website post',
-    },
-  },
-  {
-    path: '/templates/:templateId/posts/:postId/edit',
-    name: 'posts.edit',
-    component: () => import('@/modules/posts/pages/PostEditorPage.vue'),
-    meta: {
-      requiresAuth: true,
-      layout: 'tenant',
-      title: 'Edit Post',
-      description: 'Edit a website post',
-    },
-  },
 ]
 
 export const publicPostRoutes: RouteRecordRaw[] = [

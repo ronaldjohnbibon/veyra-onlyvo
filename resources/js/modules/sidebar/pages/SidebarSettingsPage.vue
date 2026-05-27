@@ -1,5 +1,13 @@
 <script setup lang="ts">
 import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogScrollContent,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/textarea'
 import { useSidebarStore } from '@/modules/sidebar/sidebar-store'
 import type { SidebarData } from '@/types/sidebar'
@@ -8,6 +16,7 @@ import { computed, onMounted, ref } from 'vue'
 const sidebarStore = useSidebarStore()
 const editorValue = ref('')
 const errorMessage = ref('')
+const editorOpen = ref(false)
 
 const sidebar = computed(() => sidebarStore.sidebars[0] ?? null)
 
@@ -63,25 +72,49 @@ onMounted(loadSidebar)
           <div>Links: {{ sidebar.stats?.links ?? 0 }}</div>
         </div>
 
-        <Textarea
-          v-model="editorValue"
-          class="min-h-[calc(100vh-18rem)] resize-y bg-background p-4 font-mono"
-          spellcheck="false"
-        />
-
-        <p v-if="errorMessage" class="text-sm font-medium text-destructive">{{ errorMessage }}</p>
-
         <div class="fixed bottom-6 right-6 flex w-[100px] flex-col gap-2">
           <Button
             variant="update"
             size="sm"
             class="w-full rounded shadow-lg"
             :disabled="sidebarStore.loading || !sidebar"
-            @click="saveSidebar"
+            @click="editorOpen = true"
           >
-            {{ sidebarStore.loading ? 'Saving...' : 'Save' }}
+            Edit
           </Button>
         </div>
+
+        <Dialog :open="editorOpen" @update:open="editorOpen = $event">
+          <DialogScrollContent class="max-w-[calc(100%-2rem)] md:max-w-4xl">
+            <DialogHeader>
+              <DialogTitle>Edit Sidebar JSON</DialogTitle>
+              <DialogDescription>
+                Update the tenant navigation JSON stored by the API.
+              </DialogDescription>
+            </DialogHeader>
+
+            <Textarea
+              v-model="editorValue"
+              class="min-h-[60vh] resize-y bg-background p-4 font-mono"
+              spellcheck="false"
+            />
+
+            <p v-if="errorMessage" class="text-sm font-medium text-destructive">
+              {{ errorMessage }}
+            </p>
+
+            <DialogFooter>
+              <Button
+                variant="update"
+                type="button"
+                :disabled="sidebarStore.loading || !sidebar"
+                @click="saveSidebar"
+              >
+                {{ sidebarStore.loading ? 'Saving...' : 'Save' }}
+              </Button>
+            </DialogFooter>
+          </DialogScrollContent>
+        </Dialog>
       </div>
     </div>
   </div>

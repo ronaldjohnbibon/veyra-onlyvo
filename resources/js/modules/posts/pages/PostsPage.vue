@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import BaseTable from '@/components/BaseTable.vue'
+import PostFormDialog from '@/modules/posts/components/PostFormDialog.vue'
 import { usePostStore } from '@/modules/posts/post-store'
 import { useTemplateStore } from '@/modules/templates/template-store'
 import type { PostParams, PostRecord, PostStatus } from '@/types/posts'
@@ -8,13 +9,14 @@ import { Button } from '@/components/ui/button'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Globe2, Pencil, Trash2 } from 'lucide-vue-next'
 import { computed, onMounted, ref, watch } from 'vue'
-import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 
 const postStore = usePostStore()
 const templateStore = useTemplateStore()
 const route = useRoute()
-const router = useRouter()
 const selectedTemplateId = ref('')
+const postDialogOpen = ref(false)
+const selectedPost = ref<PostRecord | null>(null)
 
 const tableColumns = [
   { key: 'title', label: 'Title', sortable: true },
@@ -46,7 +48,13 @@ const loadPosts = async (params: Partial<PostParams> = {}): Promise<void> => {
 const createPost = async (): Promise<void> => {
   if (!canCreate.value) return
 
-  await router.push({ name: 'posts.create', params: { templateId: selectedTemplateId.value } })
+  selectedPost.value = null
+  postDialogOpen.value = true
+}
+
+const editPost = (post: PostRecord): void => {
+  selectedPost.value = post
+  postDialogOpen.value = true
 }
 
 const updateStatus = (event: Event): void => {
@@ -182,16 +190,15 @@ watch(selectedTemplateId, (templateId) => {
 
           <template #cell-actions="{ row }">
             <div class="flex justify-end gap-2">
-              <Button as-child variant="outline" size="sm" aria-label="Edit post" title="Edit post">
-                <RouterLink
-                  v-if="selectedTemplateId"
-                  :to="{
-                    name: 'posts.edit',
-                    params: { templateId: selectedTemplateId, postId: row.id },
-                  }"
-                >
-                  <Pencil class="size-4" />
-                </RouterLink>
+              <Button
+                variant="outline"
+                size="sm"
+                type="button"
+                aria-label="Edit post"
+                title="Edit post"
+                @click="editPost(row)"
+              >
+                <Pencil class="size-4" />
               </Button>
               <Button
                 variant="outline"
@@ -220,5 +227,11 @@ watch(selectedTemplateId, (templateId) => {
         </BaseTable>
       </div>
     </div>
+
+    <PostFormDialog
+      v-model:open="postDialogOpen"
+      :post="selectedPost"
+      :template-id="selectedTemplateId"
+    />
   </div>
 </template>

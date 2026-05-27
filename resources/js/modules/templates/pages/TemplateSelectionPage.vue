@@ -10,6 +10,14 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
+import {
+  Dialog,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogScrollContent,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty'
 import { Field, FieldGroup, FieldLabel, FieldSet } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
@@ -35,6 +43,7 @@ const templateStore = useTemplateStore()
 const router = useRouter()
 const selectedWebsiteTypeId = ref<string | null>(null)
 const selectedTemplateId = ref<string | null>(null)
+const templateDialogOpen = ref(false)
 const formError = ref('')
 const slugTouched = ref(false)
 
@@ -246,6 +255,7 @@ const resetForm = (): void => {
   slugTouched.value = false
   form.value = createBlankTemplate(selectedWebsiteType.value)
   formError.value = ''
+  templateDialogOpen.value = true
 }
 
 const updateSlug = (): void => {
@@ -297,6 +307,7 @@ const openTemplate = async (template: TemplateRecord): Promise<void> => {
   }
 
   hydrateForm(template)
+  templateDialogOpen.value = true
 }
 
 const validate = (): boolean => {
@@ -388,7 +399,7 @@ watch(
         </div>
       </div>
 
-      <div class="grid gap-4 xl:grid-cols-[16rem_minmax(0,1fr)_30rem]">
+      <div class="grid gap-4 xl:grid-cols-[16rem_minmax(0,1fr)]">
         <aside class="space-y-3">
           <Input
             v-model="templateStore.params.search"
@@ -431,225 +442,265 @@ watch(
           </Empty>
         </aside>
 
-        <form class="space-y-4" @submit.prevent>
-          <Card class="gap-4 py-4">
-            <CardHeader class="px-4">
-              <CardTitle class="text-sm">Website Type</CardTitle>
-              <CardDescription>Choose the site category before viewing templates.</CardDescription>
-            </CardHeader>
+        <Dialog :open="templateDialogOpen" @update:open="templateDialogOpen = $event">
+          <DialogScrollContent class="max-w-[calc(100%-2rem)] md:max-w-5xl xl:max-w-7xl">
+            <DialogHeader>
+              <DialogTitle>
+                {{ selectedTemplateId ? 'Edit Template' : 'Create Template' }}
+              </DialogTitle>
+              <DialogDescription>
+                Choose a website type, complete the template fields, and save or publish the site.
+              </DialogDescription>
+            </DialogHeader>
 
-            <CardContent class="px-4">
-              <div class="grid gap-3 md:grid-cols-2 2xl:grid-cols-3">
-                <button
-                  v-for="websiteType in templateStore.websiteTypes"
-                  :key="websiteType.id"
-                  type="button"
-                  class="group rounded border bg-background p-3 text-left transition hover:border-primary hover:shadow-sm"
-                  :class="{
-                    'border-primary ring-2 ring-primary/20':
-                      selectedWebsiteTypeId === websiteType.id,
-                  }"
-                  @click="selectWebsiteType(websiteType)"
-                >
-                  <span class="flex items-start justify-between gap-3">
-                    <span>
-                      <span class="block text-sm font-semibold">{{ websiteType.name }}</span>
-                      <span class="mt-1 block text-xs leading-5 text-muted-foreground">
-                        {{ websiteType.available_templates_count }} templates available
-                      </span>
-                    </span>
-                    <Check
-                      v-if="selectedWebsiteTypeId === websiteType.id"
-                      class="size-4 shrink-0 text-primary"
-                    />
-                  </span>
-                </button>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card class="gap-4 py-4">
-            <CardHeader class="px-4">
-              <CardTitle class="text-sm">Available Templates</CardTitle>
-              <CardAction>
-                <Badge v-if="selectedWebsiteType" variant="outline">
-                  {{ selectedWebsiteType.name }}
-                </Badge>
-              </CardAction>
-            </CardHeader>
-
-            <CardContent class="px-4">
-              <Empty v-if="!selectedWebsiteType" class="min-h-[220px]">
-                <EmptyHeader>
-                  <EmptyTitle>Select a website type</EmptyTitle>
-                  <EmptyDescription>
-                    Complete templates are grouped by website type.
-                  </EmptyDescription>
-                </EmptyHeader>
-              </Empty>
-
-              <Empty v-else-if="!templateOptions.length" class="min-h-[220px]">
-                <EmptyHeader>
-                  <EmptyTitle>No templates available yet</EmptyTitle>
-                  <EmptyDescription>
-                    {{ selectedWebsiteType.name }} is ready for future templates.
-                  </EmptyDescription>
-                </EmptyHeader>
-              </Empty>
-
-              <div v-else class="grid gap-3 md:grid-cols-3">
-                <button
-                  v-for="templateOption in templateOptions"
-                  :key="templateOption.key"
-                  type="button"
-                  class="group rounded border bg-background p-2 text-left transition hover:border-primary hover:shadow-sm"
-                  :class="{
-                    'border-primary ring-2 ring-primary/20':
-                      form.template_key === templateOption.key,
-                  }"
-                  @click="selectCatalogTemplate(templateOption)"
-                >
-                  <div
-                    class="flex aspect-video w-full items-center justify-center rounded bg-muted text-muted-foreground"
+            <form class="space-y-4" @submit.prevent>
+              <Card class="gap-4 py-4">
+                <CardHeader class="px-4">
+                  <CardTitle class="text-sm">Website Type</CardTitle>
+                  <CardDescription
+                    >Choose the site category before viewing templates.</CardDescription
                   >
-                    <img
-                      v-if="templateOption.preview_image"
-                      :src="templateOption.preview_image"
-                      :alt="templateOption.name"
-                      class="h-full w-full rounded object-cover"
-                    />
-                    <LayoutTemplate v-else class="size-6" />
-                  </div>
-                  <span class="mt-3 flex items-center justify-between gap-2">
-                    <span>
-                      <span class="block text-sm font-semibold">{{ templateOption.name }}</span>
-                      <span class="mt-1 block text-xs leading-5 text-muted-foreground">
-                        {{ templateOption.description }}
+                </CardHeader>
+
+                <CardContent class="px-4">
+                  <div class="grid gap-3 md:grid-cols-2 2xl:grid-cols-3">
+                    <button
+                      v-for="websiteType in templateStore.websiteTypes"
+                      :key="websiteType.id"
+                      type="button"
+                      class="group rounded border bg-background p-3 text-left transition hover:border-primary hover:shadow-sm"
+                      :class="{
+                        'border-primary ring-2 ring-primary/20':
+                          selectedWebsiteTypeId === websiteType.id,
+                      }"
+                      @click="selectWebsiteType(websiteType)"
+                    >
+                      <span class="flex items-start justify-between gap-3">
+                        <span>
+                          <span class="block text-sm font-semibold">{{ websiteType.name }}</span>
+                          <span class="mt-1 block text-xs leading-5 text-muted-foreground">
+                            {{ websiteType.available_templates_count }} templates available
+                          </span>
+                        </span>
+                        <Check
+                          v-if="selectedWebsiteTypeId === websiteType.id"
+                          class="size-4 shrink-0 text-primary"
+                        />
                       </span>
-                    </span>
-                    <Check
-                      v-if="form.template_key === templateOption.key"
-                      class="size-4 shrink-0 text-primary"
-                    />
-                  </span>
-                </button>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card v-if="canEditDetails" class="gap-4 py-4">
-            <CardHeader class="px-4">
-              <CardTitle class="text-sm">Site Details</CardTitle>
-              <CardAction>
-                <Badge variant="outline">{{ form.status }}</Badge>
-              </CardAction>
-            </CardHeader>
-
-            <CardContent class="px-4">
-              <FieldGroup>
-                <FieldSet>
-                  <div class="grid gap-4 md:grid-cols-2">
-                    <Field>
-                      <FieldLabel for="template-name">Template Name</FieldLabel>
-                      <Input id="template-name" v-model="form.name" required />
-                    </Field>
-
-                    <Field>
-                      <FieldLabel for="site-slug">Site Slug</FieldLabel>
-                      <Input
-                        id="site-slug"
-                        v-model="form.slug"
-                        maxlength="120"
-                        required
-                        @input="updateSlug"
-                      />
-                    </Field>
-
-                    <Field orientation="horizontal" class="items-center gap-3 self-end">
-                      <Checkbox id="default-site" v-model="form.is_default" />
-                      <FieldLabel for="default-site">Default public site</FieldLabel>
-                    </Field>
-
-                    <Field class="md:col-span-2">
-                      <FieldLabel for="logo-url">Logo URL</FieldLabel>
-                      <Input id="logo-url" v-model="form.logo" required />
-                      <Input
-                        type="file"
-                        accept="image/*"
-                        class="cursor-pointer text-muted-foreground"
-                        @change="handleLogoUpload"
-                      />
-                    </Field>
+                    </button>
                   </div>
-                </FieldSet>
-              </FieldGroup>
-            </CardContent>
-          </Card>
+                </CardContent>
+              </Card>
 
-          <Card v-if="canEditDetails && dynamicFieldSchema.length" class="gap-4 py-4">
-            <CardHeader class="px-4">
-              <CardTitle class="text-sm">Template Content</CardTitle>
-            </CardHeader>
+              <Card class="gap-4 py-4">
+                <CardHeader class="px-4">
+                  <CardTitle class="text-sm">Available Templates</CardTitle>
+                  <CardAction>
+                    <Badge v-if="selectedWebsiteType" variant="outline">
+                      {{ selectedWebsiteType.name }}
+                    </Badge>
+                  </CardAction>
+                </CardHeader>
 
-            <CardContent class="px-4">
-              <DynamicTemplateFields
-                :schema="dynamicFieldSchema"
-                :model-value="form.content"
-                @update:model-value="form.content = $event"
-              />
-            </CardContent>
-          </Card>
+                <CardContent class="px-4">
+                  <Empty v-if="!selectedWebsiteType" class="min-h-[220px]">
+                    <EmptyHeader>
+                      <EmptyTitle>Select a website type</EmptyTitle>
+                      <EmptyDescription>
+                        Complete templates are grouped by website type.
+                      </EmptyDescription>
+                    </EmptyHeader>
+                  </Empty>
 
-          <Card v-if="canEditDetails" class="gap-4 py-4">
-            <CardHeader class="px-4">
-              <CardTitle class="text-sm">Global Styles</CardTitle>
-            </CardHeader>
+                  <Empty v-else-if="!templateOptions.length" class="min-h-[220px]">
+                    <EmptyHeader>
+                      <EmptyTitle>No templates available yet</EmptyTitle>
+                      <EmptyDescription>
+                        {{ selectedWebsiteType.name }} is ready for future templates.
+                      </EmptyDescription>
+                    </EmptyHeader>
+                  </Empty>
 
-            <CardContent class="px-4">
-              <FieldGroup>
-                <FieldSet>
-                  <div class="grid gap-4 md:grid-cols-5">
-                    <Field>
-                      <FieldLabel for="font-family">Font Family</FieldLabel>
-                      <NativeSelect id="font-family" v-model="form.font_family" class="w-full">
-                        <NativeSelectOption v-for="font in fonts" :key="font" :value="font">
-                          {{ font }}
-                        </NativeSelectOption>
-                      </NativeSelect>
-                    </Field>
-
-                    <Field>
-                      <FieldLabel for="primary-color">Primary Color</FieldLabel>
-                      <Input id="primary-color" v-model="form.primary_color" type="color" />
-                    </Field>
-
-                    <Field>
-                      <FieldLabel for="secondary-color">Secondary Color</FieldLabel>
-                      <Input id="secondary-color" v-model="form.secondary_color" type="color" />
-                    </Field>
-
-                    <Field>
-                      <FieldLabel for="background-color">Background Color</FieldLabel>
-                      <Input id="background-color" v-model="form.background_color" type="color" />
-                    </Field>
-
-                    <Field>
-                      <FieldLabel for="text-color">Text Color</FieldLabel>
-                      <Input id="text-color" v-model="form.text_color" type="color" />
-                    </Field>
+                  <div v-else class="grid gap-3 md:grid-cols-3">
+                    <button
+                      v-for="templateOption in templateOptions"
+                      :key="templateOption.key"
+                      type="button"
+                      class="group rounded border bg-background p-2 text-left transition hover:border-primary hover:shadow-sm"
+                      :class="{
+                        'border-primary ring-2 ring-primary/20':
+                          form.template_key === templateOption.key,
+                      }"
+                      @click="selectCatalogTemplate(templateOption)"
+                    >
+                      <div
+                        class="flex aspect-video w-full items-center justify-center rounded bg-muted text-muted-foreground"
+                      >
+                        <img
+                          v-if="templateOption.preview_image"
+                          :src="templateOption.preview_image"
+                          :alt="templateOption.name"
+                          class="h-full w-full rounded object-cover"
+                        />
+                        <LayoutTemplate v-else class="size-6" />
+                      </div>
+                      <span class="mt-3 flex items-center justify-between gap-2">
+                        <span>
+                          <span class="block text-sm font-semibold">{{ templateOption.name }}</span>
+                          <span class="mt-1 block text-xs leading-5 text-muted-foreground">
+                            {{ templateOption.description }}
+                          </span>
+                        </span>
+                        <Check
+                          v-if="form.template_key === templateOption.key"
+                          class="size-4 shrink-0 text-primary"
+                        />
+                      </span>
+                    </button>
                   </div>
-                </FieldSet>
-              </FieldGroup>
-            </CardContent>
-          </Card>
+                </CardContent>
+              </Card>
 
-          <p
-            v-if="formError"
-            class="rounded border border-destructive/40 bg-destructive/10 p-3 text-sm font-medium text-destructive"
-          >
-            {{ formError }}
-          </p>
-        </form>
+              <Card v-if="canEditDetails" class="gap-4 py-4">
+                <CardHeader class="px-4">
+                  <CardTitle class="text-sm">Site Details</CardTitle>
+                  <CardAction>
+                    <Badge variant="outline">{{ form.status }}</Badge>
+                  </CardAction>
+                </CardHeader>
+
+                <CardContent class="px-4">
+                  <FieldGroup>
+                    <FieldSet>
+                      <div class="grid gap-4 md:grid-cols-2">
+                        <Field>
+                          <FieldLabel for="template-name">Template Name</FieldLabel>
+                          <Input id="template-name" v-model="form.name" required />
+                        </Field>
+
+                        <Field>
+                          <FieldLabel for="site-slug">Site Slug</FieldLabel>
+                          <Input
+                            id="site-slug"
+                            v-model="form.slug"
+                            maxlength="120"
+                            required
+                            @input="updateSlug"
+                          />
+                        </Field>
+
+                        <Field orientation="horizontal" class="items-center gap-3 self-end">
+                          <Checkbox id="default-site" v-model="form.is_default" />
+                          <FieldLabel for="default-site">Default public site</FieldLabel>
+                        </Field>
+
+                        <Field class="md:col-span-2">
+                          <FieldLabel for="logo-url">Logo URL</FieldLabel>
+                          <Input id="logo-url" v-model="form.logo" required />
+                          <Input
+                            type="file"
+                            accept="image/*"
+                            class="cursor-pointer text-muted-foreground"
+                            @change="handleLogoUpload"
+                          />
+                        </Field>
+                      </div>
+                    </FieldSet>
+                  </FieldGroup>
+                </CardContent>
+              </Card>
+
+              <Card v-if="canEditDetails && dynamicFieldSchema.length" class="gap-4 py-4">
+                <CardHeader class="px-4">
+                  <CardTitle class="text-sm">Template Content</CardTitle>
+                </CardHeader>
+
+                <CardContent class="px-4">
+                  <DynamicTemplateFields
+                    :schema="dynamicFieldSchema"
+                    :model-value="form.content"
+                    @update:model-value="form.content = $event"
+                  />
+                </CardContent>
+              </Card>
+
+              <Card v-if="canEditDetails" class="gap-4 py-4">
+                <CardHeader class="px-4">
+                  <CardTitle class="text-sm">Global Styles</CardTitle>
+                </CardHeader>
+
+                <CardContent class="px-4">
+                  <FieldGroup>
+                    <FieldSet>
+                      <div class="grid gap-4 md:grid-cols-5">
+                        <Field>
+                          <FieldLabel for="font-family">Font Family</FieldLabel>
+                          <NativeSelect id="font-family" v-model="form.font_family" class="w-full">
+                            <NativeSelectOption v-for="font in fonts" :key="font" :value="font">
+                              {{ font }}
+                            </NativeSelectOption>
+                          </NativeSelect>
+                        </Field>
+
+                        <Field>
+                          <FieldLabel for="primary-color">Primary Color</FieldLabel>
+                          <Input id="primary-color" v-model="form.primary_color" type="color" />
+                        </Field>
+
+                        <Field>
+                          <FieldLabel for="secondary-color">Secondary Color</FieldLabel>
+                          <Input id="secondary-color" v-model="form.secondary_color" type="color" />
+                        </Field>
+
+                        <Field>
+                          <FieldLabel for="background-color">Background Color</FieldLabel>
+                          <Input
+                            id="background-color"
+                            v-model="form.background_color"
+                            type="color"
+                          />
+                        </Field>
+
+                        <Field>
+                          <FieldLabel for="text-color">Text Color</FieldLabel>
+                          <Input id="text-color" v-model="form.text_color" type="color" />
+                        </Field>
+                      </div>
+                    </FieldSet>
+                  </FieldGroup>
+                </CardContent>
+              </Card>
+
+              <p
+                v-if="formError"
+                class="rounded border border-destructive/40 bg-destructive/10 p-3 text-sm font-medium text-destructive"
+              >
+                {{ formError }}
+              </p>
+            </form>
+
+            <DialogFooter>
+              <Button
+                variant="update"
+                type="button"
+                :disabled="templateStore.loading || !canSave"
+                @click="saveTemplate('draft')"
+              >
+                <Save class="size-4" />
+                Draft
+              </Button>
+              <Button
+                variant="create"
+                type="button"
+                :disabled="templateStore.loading || !canSave"
+                @click="saveTemplate('published')"
+              >
+                <Send class="size-4" />
+                Publish
+              </Button>
+            </DialogFooter>
+          </DialogScrollContent>
+        </Dialog>
 
         <aside class="xl:sticky xl:top-5 xl:self-start">
           <div class="h-[calc(100vh-10rem)] overflow-auto rounded border bg-muted/30 p-3">
@@ -672,21 +723,11 @@ watch(
           variant="update"
           class="w-full rounded shadow h-8 px-3 text-xs"
           type="button"
-          :disabled="templateStore.loading || !canSave"
-          @click="saveTemplate('draft')"
+          :disabled="!canEditDetails"
+          @click="templateDialogOpen = true"
         >
           <Save class="size-3" />
-          Draft
-        </Button>
-        <Button
-          variant="create"
-          class="w-full rounded shadow h-8 px-3 text-xs"
-          type="button"
-          :disabled="templateStore.loading || !canSave"
-          @click="saveTemplate('published')"
-        >
-          <Send class="size-3" />
-          Publish
+          Edit
         </Button>
         <Button
           v-if="selectedTemplateId"
