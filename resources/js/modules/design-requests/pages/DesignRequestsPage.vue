@@ -48,6 +48,21 @@ const form = reactive({
   files: [] as File[],
 })
 
+const firstFieldError = (field: string): string => {
+  const directError = designRequestStore.errors[field]?.[0]
+
+  if (directError) {
+    return directError
+  }
+
+  // Laravel returns array item errors with keys like reference_links.0.
+  const nestedKey = Object.keys(designRequestStore.errors).find((key) =>
+    key.startsWith(`${field}.`)
+  )
+
+  return nestedKey ? (designRequestStore.errors[nestedKey]?.[0] ?? '') : ''
+}
+
 const page = computed(() => designRequestStore.params.page ?? 1)
 const pageSize = computed(() => designRequestStore.params.pageSize ?? 15)
 const search = computed(() => designRequestStore.params.search ?? '')
@@ -59,6 +74,8 @@ const statusFilter = computed({
     designRequestStore.index({ status: value, page: 1 })
   },
 })
+const referenceLinksError = computed(() => firstFieldError('reference_links'))
+const filesError = computed(() => firstFieldError('files'))
 
 const resetForm = (): void => {
   form.title = ''
@@ -261,8 +278,8 @@ onMounted(() => {
                     class="min-h-24"
                     placeholder="Add one URL per line."
                   />
-                  <FieldError v-if="designRequestStore.errors.reference_links">
-                    {{ designRequestStore.errors.reference_links[0] }}
+                  <FieldError v-if="referenceLinksError">
+                    {{ referenceLinksError }}
                   </FieldError>
                 </Field>
 
@@ -287,8 +304,8 @@ onMounted(() => {
                     :disabled="designRequestStore.loading"
                     @change="handleFiles"
                   />
-                  <FieldError v-if="designRequestStore.errors.files">
-                    {{ designRequestStore.errors.files[0] }}
+                  <FieldError v-if="filesError">
+                    {{ filesError }}
                   </FieldError>
                   <div v-if="selectedFiles.length" class="space-y-1 text-sm text-muted-foreground">
                     <div
