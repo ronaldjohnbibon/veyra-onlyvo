@@ -1,12 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { AxiosError } from 'axios'
 import { postService } from './api/posts'
+import { validationErrorsFrom } from '@/shared/api/errors'
 import type { PostParams, PostPayload, PostRecord } from '@/types/posts'
-
-interface ApiErrorResponse {
-  errors?: Record<string, string[]>
-}
 
 export const usePostStore = defineStore('tenant-posts', () => {
   const posts = ref<PostRecord[]>([])
@@ -51,9 +47,8 @@ export const usePostStore = defineStore('tenant-posts', () => {
       await index(templateId)
       return post.value
     } catch (err) {
-      const axiosError = err as AxiosError<ApiErrorResponse>
       // Keep Laravel validation errors keyed by field for the dialog.
-      errors.value = axiosError.response?.data?.errors ?? {}
+      errors.value = validationErrorsFrom(err)
       throw err
     } finally {
       loading.value = false
@@ -72,9 +67,8 @@ export const usePostStore = defineStore('tenant-posts', () => {
       await index(templateId)
       return post.value
     } catch (err) {
-      const axiosError = err as AxiosError<ApiErrorResponse>
       // Keep Laravel validation errors keyed by field for the dialog.
-      errors.value = axiosError.response?.data?.errors ?? {}
+      errors.value = validationErrorsFrom(err)
       throw err
     } finally {
       loading.value = false

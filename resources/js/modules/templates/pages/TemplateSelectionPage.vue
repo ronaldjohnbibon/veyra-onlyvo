@@ -27,10 +27,18 @@ import TemplatePreview from '@/modules/templates/components/TemplatePreview.vue'
 import { getStatusBadgeVariant, getStatusLabel } from '@/lib/status'
 import { getTemplateCatalogItem } from '@/modules/templates/template-catalog'
 import { useTemplateStore } from '@/modules/templates/template-store'
+import {
+  applyCatalogStyleDefaults,
+  contentRecord,
+  createBlankTemplate,
+  mergeTemplateContent,
+  payloadForSave,
+  slugify,
+  templateToPayload,
+} from '@/modules/templates/utils/template-form'
 import { useConfirmStore } from '@/store/confirm-store'
 import { useToastStore } from '@/store/toast-store'
 import type {
-  TemplateContent,
   TemplateCatalogItem,
   TemplateFieldSchema,
   TemplatePayload,
@@ -63,53 +71,9 @@ const slugTouched = ref(false)
 
 const fonts = ['Inter', 'Poppins', 'Arial', 'Georgia']
 
-const slugify = (value: string): string => {
-  return (
-    value
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '') || 'site'
-  )
-}
-
 const selectedWebsiteType = computed<WebsiteType | null>(() => {
   return templateStore.websiteTypes.find((type) => type.id === selectedWebsiteTypeId.value) ?? null
 })
-
-const createBlankTemplate = (
-  websiteType: WebsiteType | null = selectedWebsiteType.value
-): TemplatePayload => {
-  const templateName = websiteType?.name ?? 'Website'
-
-  return {
-    website_type_id: websiteType?.id ?? '',
-    name: templateName,
-    slug: slugify(templateName),
-    template_key: '',
-    business_name: 'Onlyvo Studio',
-    logo: 'https://dummyimage.com/120x120/14b8a6/ffffff.png&text=OV',
-    contact_info: {
-      email: 'hello@example.com',
-      phone: '+1 555 0100',
-      address: '123 Market Street',
-    },
-    social_links: {
-      website: 'https://example.com',
-      linkedin: '',
-      instagram: '',
-      facebook: '',
-    },
-    content: {},
-    font_family: 'Inter',
-    primary_color: '#14b8a6',
-    secondary_color: '#0f766e',
-    background_color: '#ffffff',
-    text_color: '#111827',
-    status: 'draft',
-    is_default: false,
-  }
-}
 
 const form = ref<TemplatePayload>(createBlankTemplate())
 
@@ -143,81 +107,6 @@ const previewTemplate = computed<TemplateRecord>(() => ({
   website_type: selectedWebsiteType.value ?? undefined,
 }))
 
-const contentRecord = (value: unknown): TemplateContent => {
-  return value && typeof value === 'object' && !Array.isArray(value)
-    ? (value as TemplateContent)
-    : {}
-}
-
-const mergeTemplateContent = (
-  catalogTemplate: TemplateCatalogItem,
-  existingContent: TemplateContent = {}
-): TemplateContent => {
-  // Catalog defaults fill new schema fields without overwriting saved answers.
-  return {
-    ...(catalogTemplate.default_content ?? {}),
-    ...existingContent,
-  }
-}
-
-const applyCatalogStyleDefaults = (catalogTemplate: TemplateCatalogItem): void => {
-  if (selectedWebsiteType.value?.slug !== 'landing-page' || catalogTemplate.key !== 'template-1') {
-    return
-  }
-
-  form.value.font_family = 'Arial'
-  form.value.primary_color = '#3377aa'
-  form.value.secondary_color = '#336699'
-  form.value.background_color = '#ffffff'
-  form.value.text_color = '#707070'
-}
-
-const stringContent = (content: TemplateContent, keys: string[], fallback = ''): string => {
-  for (const key of keys) {
-    const value = content[key]
-
-    if (typeof value === 'string' && value.trim()) return value
-  }
-
-  return fallback
-}
-
-const payloadForSave = (status: TemplateStatus): TemplatePayload => {
-  const content = contentRecord(form.value.content)
-  const businessName = stringContent(
-    content,
-    ['business_name', 'display_name'],
-    form.value.business_name
-  )
-  const email = stringContent(content, ['contact_email', 'email'], form.value.contact_info.email)
-  const phone = stringContent(content, ['contact_phone', 'phone'], form.value.contact_info.phone)
-  const address = stringContent(
-    content,
-    ['contact_address', 'contact_location', 'location', 'address'],
-    form.value.contact_info.address
-  )
-
-  return {
-    ...form.value,
-    business_name: businessName || form.value.name,
-    contact_info: {
-      email: email || 'hello@example.com',
-      phone: phone || '+1 555 0100',
-      address,
-    },
-    social_links: {
-      ...form.value.social_links,
-      website: stringContent(
-        content,
-        ['website_url', 'portfolio_url', 'reservation_link', 'chat_url'],
-        form.value.social_links.website
-      ),
-    },
-    content,
-    status,
-  }
-}
-
 const searchTemplates = async (): Promise<void> => {
   await templateStore.index({
     page: 1,
@@ -239,9 +128,15 @@ const selectWebsiteType = async (websiteType: WebsiteType): Promise<void> => {
 }
 
 const selectCatalogTemplate = (template: TemplateCatalogItem): void => {
-  form.value.template_key = template.key
-  form.value.content = mergeTemplateContent(template, contentRecord(form.value.content))
-  applyCatalogStyleDefaults(template)
+  form.value = applyCatalogStyleDefaults(
+    {
+      ...form.value,
+      template_key: template.key,
+      content: mergeTemplateContent(template, contentRecord(form.value.content)),
+    },
+    selectedWebsiteType.value,
+    template
+  )
 }
 
 const resetForm = (): void => {
@@ -262,36 +157,7 @@ const hydrateForm = (template: TemplateRecord): void => {
   selectedTemplateId.value = template.id
   selectedWebsiteTypeId.value = template.website_type_id
   slugTouched.value = true
-  form.value = {
-    website_type_id: template.website_type_id,
-    name: template.name,
-    slug: template.slug,
-    template_key: template.template_key,
-    business_name: template.business_name,
-    logo: template.logo,
-    contact_info: {
-      email: template.contact_info?.email ?? '',
-      phone: template.contact_info?.phone ?? '',
-      address: template.contact_info?.address ?? '',
-    },
-    social_links: {
-      website: template.social_links?.website ?? '',
-      linkedin: template.social_links?.linkedin ?? '',
-      instagram: template.social_links?.instagram ?? '',
-      facebook: template.social_links?.facebook ?? '',
-    },
-    content: mergeTemplateContent(
-      getTemplateCatalogItem(template.template_key, templateStore.availableTemplates),
-      contentRecord(template.content)
-    ),
-    font_family: template.font_family,
-    primary_color: template.primary_color,
-    secondary_color: template.secondary_color,
-    background_color: template.background_color,
-    text_color: template.text_color,
-    status: template.status,
-    is_default: template.is_default,
-  }
+  form.value = templateToPayload(template, templateStore.availableTemplates)
   formError.value = ''
   templateStore.errors = {}
 }
@@ -309,7 +175,7 @@ const openTemplate = async (template: TemplateRecord): Promise<void> => {
 const saveTemplate = async (status: TemplateStatus): Promise<void> => {
   if (!canSave.value) return
 
-  const payload = payloadForSave(status)
+  const payload = payloadForSave(form.value, status)
   formError.value = ''
 
   try {

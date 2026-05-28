@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { AxiosError } from 'axios'
 import { adminTemplateService } from './api/templates'
+import { validationErrorsFrom } from '@/shared/api/errors'
 import type {
   TemplateCatalogItem,
   TemplateCatalogPayload,
@@ -9,10 +9,6 @@ import type {
   WebsiteType,
   WebsiteTypePayload,
 } from '@/types/templates'
-
-interface ApiErrorResponse {
-  errors?: Record<string, string[]>
-}
 
 export const useTemplateMaintenanceStore = defineStore('admin-template-maintenance', () => {
   const websiteTypes = ref<WebsiteType[]>([])
@@ -71,9 +67,8 @@ export const useTemplateMaintenanceStore = defineStore('admin-template-maintenan
 
       return response.data
     } catch (err) {
-      const axiosError = err as AxiosError<ApiErrorResponse>
       // Keep Laravel validation errors keyed by field for the form.
-      errors.value = axiosError.response?.data?.errors ?? {}
+      errors.value = validationErrorsFrom(err)
       throw err
     } finally {
       loading.value = false
@@ -106,9 +101,8 @@ export const useTemplateMaintenanceStore = defineStore('admin-template-maintenan
 
       return response.data
     } catch (err) {
-      const axiosError = err as AxiosError<ApiErrorResponse>
       // Keep Laravel validation errors keyed by field for the form.
-      errors.value = axiosError.response?.data?.errors ?? {}
+      errors.value = validationErrorsFrom(err)
       throw err
     } finally {
       loading.value = false

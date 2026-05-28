@@ -1,12 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { AxiosError } from 'axios'
 import { sidebarService } from './api/sidebar'
+import { validationErrorsFrom } from '@/shared/api/errors'
 import type { SidebarParams, SidebarPayload, SidebarRecord } from '@/types/sidebar'
-
-interface ApiErrorResponse {
-  errors?: Record<string, string[]>
-}
 
 export const useSidebarStore = defineStore('tenant-sidebar', () => {
   const sidebars = ref<SidebarRecord[]>([])
@@ -49,9 +45,8 @@ export const useSidebarStore = defineStore('tenant-sidebar', () => {
       sidebar.value = (await sidebarService.update(id, payload)).data
       await index()
     } catch (err) {
-      const axiosError = err as AxiosError<ApiErrorResponse>
       // Keep Laravel validation errors keyed by field for the editor.
-      errors.value = axiosError.response?.data?.errors ?? {}
+      errors.value = validationErrorsFrom(err)
       throw err
     } finally {
       loading.value = false

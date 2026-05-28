@@ -1,18 +1,15 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { AxiosError } from 'axios'
 import { templateService } from './api/templates'
+import { validationErrorsFrom } from '@/shared/api/errors'
 import type {
+  TemplateCtaConfig,
   TemplateCatalogItem,
   TemplateParams,
   TemplatePayload,
   TemplateRecord,
   WebsiteType,
 } from '@/types/templates'
-
-interface ApiErrorResponse {
-  errors?: Record<string, string[]>
-}
 
 export const useTemplateStore = defineStore('tenant-templates', () => {
   const templates = ref<TemplateRecord[]>([])
@@ -78,9 +75,8 @@ export const useTemplateStore = defineStore('tenant-templates', () => {
       await index()
       return template.value
     } catch (err) {
-      const axiosError = err as AxiosError<ApiErrorResponse>
       // Keep Laravel validation errors keyed by field for the form.
-      errors.value = axiosError.response?.data?.errors ?? {}
+      errors.value = validationErrorsFrom(err)
       throw err
     } finally {
       loading.value = false
@@ -95,9 +91,8 @@ export const useTemplateStore = defineStore('tenant-templates', () => {
       await index()
       return template.value
     } catch (err) {
-      const axiosError = err as AxiosError<ApiErrorResponse>
       // Keep Laravel validation errors keyed by field for the form.
-      errors.value = axiosError.response?.data?.errors ?? {}
+      errors.value = validationErrorsFrom(err)
       throw err
     } finally {
       loading.value = false
@@ -112,9 +107,8 @@ export const useTemplateStore = defineStore('tenant-templates', () => {
       await index()
       return template.value
     } catch (err) {
-      const axiosError = err as AxiosError<ApiErrorResponse>
       // Keep Laravel validation errors keyed by field for the form.
-      errors.value = axiosError.response?.data?.errors ?? {}
+      errors.value = validationErrorsFrom(err)
       throw err
     } finally {
       loading.value = false
@@ -132,6 +126,19 @@ export const useTemplateStore = defineStore('tenant-templates', () => {
     }
   }
 
+  const submitCta = async (
+    templateId: string,
+    cta: TemplateCtaConfig,
+    payload: Record<string, unknown>
+  ): Promise<void> => {
+    try {
+      loading.value = true
+      await templateService.submitCta(templateId, cta, payload)
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     destroy,
     availableTemplates,
@@ -144,6 +151,7 @@ export const useTemplateStore = defineStore('tenant-templates', () => {
     resetDefault,
     show,
     store,
+    submitCta,
     template,
     templates,
     total,

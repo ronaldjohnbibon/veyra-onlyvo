@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { templateService } from '@/modules/templates/api/templates'
-import { useLoadingStore } from '@/store/loading-store'
+import { useTemplateCtaForm } from '@/modules/templates/composables/useTemplateCtaForm'
 import type { TemplateCtaConfig, TemplateCtaField } from '@/types/templates'
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 
 defineOptions({
   name: 'TemplateDynamicForm',
@@ -57,58 +56,20 @@ defineSlots<{
   submit?: (props: { loading: boolean; submitLabel: string }) => unknown
 }>()
 
-const loading = ref(false)
-const loadingStore = useLoadingStore()
-const success = ref(false)
-const error = ref('')
-const payload = ref<Record<string, unknown>>({})
+const templateId = computed(() => props.templateId)
+const cta = computed(() => props.cta)
 
-const fields = computed(() => props.cta.fields ?? [])
-
-const inputTypeFor = (field: TemplateCtaField): string => {
-  if (field.type === 'phone') return 'tel'
-  if (['email', 'number', 'date', 'time', 'url', 'file'].includes(field.type)) return field.type
-
-  return 'text'
-}
-
-const updateFileField = (field: TemplateCtaField, event: Event): void => {
-  const file = (event.target as HTMLInputElement).files?.[0]
-
-  payload.value = {
-    ...payload.value,
-    [field.key]: file?.name ?? '',
-  }
-}
-
-const updateField = (field: TemplateCtaField, value: unknown): void => {
-  payload.value = {
-    ...payload.value,
-    [field.key]: value,
-  }
-}
-
-const submit = async (): Promise<void> => {
-  try {
-    loading.value = true
-    error.value = ''
-    success.value = false
-
-    await loadingStore.run(() =>
-      templateService.submitCta(props.templateId, props.cta, payload.value)
-    )
-    success.value = true
-    emit('submitted', payload.value)
-
-    if (props.cta.redirect_url) {
-      window.location.href = props.cta.redirect_url
-    }
-  } catch {
-    error.value = 'Please check the form and try again.'
-  } finally {
-    loading.value = false
-  }
-}
+const {
+  error,
+  fields,
+  inputTypeFor,
+  loading,
+  payload,
+  submit,
+  success,
+  updateField,
+  updateFileField,
+} = useTemplateCtaForm(templateId, cta, (submittedPayload) => emit('submitted', submittedPayload))
 </script>
 
 <template>

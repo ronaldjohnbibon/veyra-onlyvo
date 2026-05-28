@@ -7,6 +7,7 @@ import type { PostParams, PostRecord, PostStatus } from '@/types/posts'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
+import { formatDisplayDate } from '@/lib/date'
 import { getStatusBadgeVariant, getStatusLabel } from '@/lib/status'
 import { Globe2, Pencil, Trash2 } from 'lucide-vue-next'
 import { computed, onMounted, ref, watch } from 'vue'
@@ -88,16 +89,6 @@ const deletePost = async (post: PostRecord): Promise<void> => {
   if (!selectedTemplateId.value) return
 
   await postStore.destroy(selectedTemplateId.value, post.id)
-}
-
-const formatDate = (value?: string | null): string => {
-  if (!value) return 'Unpublished'
-
-  return new Intl.DateTimeFormat(undefined, {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  }).format(new Date(value))
 }
 
 onMounted(async () => {
@@ -186,7 +177,9 @@ watch(selectedTemplateId, (templateId) => {
           </template>
 
           <template #cell-published_at="{ row }">
-            <span class="text-sm text-muted-foreground">{{ formatDate(row.published_at) }}</span>
+            <span class="text-sm text-muted-foreground">
+              {{ row.published_at ? formatDisplayDate(row.published_at) : 'Unpublished' }}
+            </span>
           </template>
 
           <template #cell-actions="{ row }">

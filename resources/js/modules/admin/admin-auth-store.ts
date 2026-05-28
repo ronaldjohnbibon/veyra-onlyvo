@@ -1,15 +1,10 @@
 import { defineStore } from 'pinia'
 import { computed, reactive, ref } from 'vue'
-import { AxiosError } from 'axios'
 import router from '@/router'
 import { adminAuthService } from '@/modules/admin/api/auth'
+import { apiMessageFrom, validationErrorsFrom } from '@/shared/api/errors'
 import type { LoginFormInterface } from '@/types/auth'
 import type { UserInterface } from '@/types/user'
-
-interface ApiErrorResponse {
-  errors?: Record<string, string[]>
-  message?: string
-}
 
 export const useAdminAuthStore = defineStore('admin-auth', () => {
   const user = ref<UserInterface | null>(null)
@@ -46,9 +41,8 @@ export const useAdminAuthStore = defineStore('admin-auth', () => {
 
       await router.push({ name: 'admin.dashboard' })
     } catch (err) {
-      const axiosError = err as AxiosError<ApiErrorResponse>
-      errors.value = axiosError.response?.data?.errors ?? {}
-      message.value = axiosError.response?.data?.message ?? 'Unable to log in.'
+      errors.value = validationErrorsFrom(err)
+      message.value = apiMessageFrom(err, 'Unable to log in.')
     } finally {
       loading.value = false
     }

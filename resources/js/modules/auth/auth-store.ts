@@ -1,8 +1,8 @@
 import { defineStore } from 'pinia'
 import { computed, reactive, ref } from 'vue'
-import { AxiosError } from 'axios'
 import router from '@/router'
 import { authService } from '@/modules/auth/api/auth'
+import { apiMessageFrom, validationErrorsFrom } from '@/shared/api/errors'
 import type {
   ForgotPasswordFormInterface,
   LoginFormInterface,
@@ -10,11 +10,6 @@ import type {
   ResetPasswordFormInterface,
 } from '@/types/auth'
 import type { UserInterface } from '@/types/user'
-
-interface ApiErrorResponse {
-  errors?: Record<string, string[]>
-  message?: string
-}
 
 export const useAuthStore = defineStore('tenant-auth', () => {
   const user = ref<UserInterface | null>(null)
@@ -88,9 +83,8 @@ export const useAuthStore = defineStore('tenant-auth', () => {
 
       await router.push({ name: 'sidebar.index' })
     } catch (err) {
-      const axiosError = err as AxiosError<ApiErrorResponse>
-      errors.value = axiosError.response?.data?.errors ?? {}
-      message.value = axiosError.response?.data?.message ?? 'Unable to log in.'
+      errors.value = validationErrorsFrom(err)
+      message.value = apiMessageFrom(err, 'Unable to log in.')
     } finally {
       loading.value = false
     }
@@ -105,9 +99,8 @@ export const useAuthStore = defineStore('tenant-auth', () => {
       const data = await authService.register(registerForm)
       await redirectToTenantLogin(data.data?.subdomain)
     } catch (err) {
-      const axiosError = err as AxiosError<ApiErrorResponse>
-      errors.value = axiosError.response?.data?.errors ?? {}
-      message.value = axiosError.response?.data?.message ?? 'Unable to create account.'
+      errors.value = validationErrorsFrom(err)
+      message.value = apiMessageFrom(err, 'Unable to create account.')
     } finally {
       loading.value = false
     }
@@ -155,9 +148,8 @@ export const useAuthStore = defineStore('tenant-auth', () => {
       const data = await authService.forgotPassword(forgotPasswordForm)
       message.value = data.message ?? 'Password reset link sent.'
     } catch (err) {
-      const axiosError = err as AxiosError<ApiErrorResponse>
-      errors.value = axiosError.response?.data?.errors ?? {}
-      message.value = axiosError.response?.data?.message ?? 'Unable to send reset link.'
+      errors.value = validationErrorsFrom(err)
+      message.value = apiMessageFrom(err, 'Unable to send reset link.')
     } finally {
       loading.value = false
     }
@@ -173,9 +165,8 @@ export const useAuthStore = defineStore('tenant-auth', () => {
       message.value = data.message ?? 'Password reset successfully.'
       await router.push({ name: 'TenantLogin' })
     } catch (err) {
-      const axiosError = err as AxiosError<ApiErrorResponse>
-      errors.value = axiosError.response?.data?.errors ?? {}
-      message.value = axiosError.response?.data?.message ?? 'Unable to reset password.'
+      errors.value = validationErrorsFrom(err)
+      message.value = apiMessageFrom(err, 'Unable to reset password.')
     } finally {
       loading.value = false
     }
