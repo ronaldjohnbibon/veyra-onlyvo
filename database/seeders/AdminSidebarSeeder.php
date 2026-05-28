@@ -34,6 +34,8 @@ class AdminSidebarSeeder extends Seeder
                             'is_active'   => true,
                             'items'       => [
                                 ['title' => 'Dashboard', 'url' => 'dashboard', 'is_active' => true],
+                                ['title' => 'Tenant', 'url' => 'tenants', 'is_active' => true],
+                                ['title' => 'Design Requests', 'url' => 'design-requests', 'is_active' => true],
                                 ['title' => 'Sidebars', 'url' => 'sidebar', 'is_active' => true],
                                 ['title' => 'Templates', 'url' => 'templates', 'is_active' => true],
                             ],

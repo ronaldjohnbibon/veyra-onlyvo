@@ -43,6 +43,10 @@ class AuthController extends Controller
             return $this->error(__('auth.unauthorized'), 403);
         }
 
+        if ($user->tenant?->status !== 'active') {
+            return $this->error(__('auth.unauthorized'), 403);
+        }
+
         return $this->loginResponse($user);
     }
 

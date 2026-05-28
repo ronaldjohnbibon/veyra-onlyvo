@@ -16,16 +16,20 @@ const statusLabels: Record<string, string> = {
   published: 'Published',
   rejected: 'Rejected',
   signed_in: 'Signed in',
+  under_review: 'Under Review',
+  completed: 'Completed',
 }
 
 const statusVariants: Record<string, BadgeVariant> = {
   active: 'success',
   approved: 'success',
+  completed: 'success',
   enabled: 'success',
   published: 'success',
   signed_in: 'success',
   draft: 'warning',
   pending: 'warning',
+  under_review: 'info',
   new: 'info',
   archived: 'neutral',
   disabled: 'neutral',

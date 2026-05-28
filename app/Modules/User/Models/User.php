@@ -4,9 +4,11 @@ namespace App\Modules\User\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Modules\Auth\Enums\UserType;
+use App\Modules\DesignRequests\Models\DesignRequest;
 use App\Modules\Tenant\Models\Tenant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -64,5 +66,10 @@ class User extends Authenticatable
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class);
+    }
+
+    public function designRequests(): HasMany
+    {
+        return $this->hasMany(DesignRequest::class);
     }
 }

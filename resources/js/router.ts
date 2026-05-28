@@ -5,8 +5,11 @@ import { useAdminAuthStore } from '@/modules/admin/admin-auth-store'
 import authRoutes from '@/modules/auth/routes'
 import adminRoutes from '@/modules/admin/routes'
 import adminTemplateRoutes from '@/modules/admin/templates/routes'
+import adminTenantRoutes from '@/modules/admin/tenants/routes'
+import adminDesignRequestRoutes from '@/modules/admin/design-requests/routes'
 import sidebarRoutes from './modules/sidebar/routes'
 import adminSidebarRoutes from './modules/admin/sidebar/routes'
+import designRequestRoutes from './modules/design-requests/routes'
 import templateRoutes, { publicTemplateRoutes } from './modules/templates/routes'
 import postRoutes, { publicPostRoutes } from './modules/posts/routes'
 
@@ -23,8 +26,11 @@ const routes: RouteRecordRaw[] = [
   },
   ...authRoutes,
   ...adminRoutes,
+  ...adminTenantRoutes,
+  ...adminDesignRequestRoutes,
   ...adminTemplateRoutes,
   ...adminSidebarRoutes,
+  ...designRequestRoutes,
   ...sidebarRoutes,
   ...templateRoutes,
   ...postRoutes,
