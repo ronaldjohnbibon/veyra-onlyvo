@@ -2,7 +2,7 @@ I want you to polish the prompt below.
 
 Requirements:
 
-- Make it one complete copy-paste format.
+- Make it one complete copy-paste format ( with copy button ).
 - Keep it clear and direct.
 - Avoid nested code blocks so the output stays complete.
 
@@ -23,4 +23,4 @@ Rules:
 - Before creating a migration, check existing migrations first. If a related migration already exists, modify and extend it instead of creating a duplicate migration.
 
 Task:
-I want you to add make the migrations of the templates separated. Example landing-page/template-1-migration.php.
+We have custom button variants for update, create and delete. But other buttons only uses the outline. I want you to make other variants necessary for other buttons that currently inside the app but only uses outline variant.

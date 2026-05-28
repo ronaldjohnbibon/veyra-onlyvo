@@ -91,6 +91,9 @@ const selectedCatalogItem = computed<TemplateCatalogItem | null>(() => {
   )
 })
 
+// Show content setup only after the catalog entry exists.
+const canConfigureTemplateContent = computed(() => Boolean(selectedCatalogItemId.value))
+
 const contentSchema = computed<TemplateFieldSchema[]>(() => {
   return schemaForContent(schemaFields.value)
 })
@@ -743,7 +746,11 @@ watch(
                     {{ selectedCatalogItemId ? 'Edit Template' : 'Create Template' }}
                   </DialogTitle>
                   <DialogDescription>
-                    Configure the catalog template metadata, field schema, and default content.
+                    {{
+                      selectedCatalogItemId
+                        ? 'Configure the catalog template metadata, field schema, and default content.'
+                        : 'Create the catalog entry first. Field schema and default content can be configured after the Vue template file exists.'
+                    }}
                   </DialogDescription>
                 </DialogHeader>
 
@@ -871,6 +878,7 @@ watch(
                           </AccordionItem>
 
                           <AccordionItem
+                            v-if="canConfigureTemplateContent"
                             value="template-field-schema"
                             class="rounded border bg-background px-3 last:border-b"
                           >
@@ -1003,6 +1011,7 @@ watch(
                           </AccordionItem>
 
                           <AccordionItem
+                            v-if="canConfigureTemplateContent"
                             value="template-default-content"
                             class="rounded border bg-background px-3 last:border-b"
                           >
