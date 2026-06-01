@@ -1,14 +1,18 @@
 <script setup lang="ts">
 import TemplatePreview from '@/modules/templates/components/TemplatePreview.vue'
 import { formatDisplayDate } from '@/lib/date'
+import { ctaPayloadFromElement, ctaViewPayloadFromElement } from '@/modules/analytics/cta-tracking'
 import { useAnalyticsStore } from '@/modules/analytics/analytics-store'
 import { usePublicSiteStore } from '@/modules/templates/public-site-store'
-import { computed, onMounted, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 
 const route = useRoute()
 const analyticsStore = useAnalyticsStore()
 const publicSiteStore = usePublicSiteStore()
+const siteRoot = ref<HTMLElement | null>(null)
+let ctaViewObserver: IntersectionObserver | null = null
+const viewedCtas = new Set<string>()
 
 const siteSlug = computed(() => {
   const slug = route.params.siteSlug
@@ -21,15 +25,85 @@ const loadSite = async (): Promise<void> => {
 
   if (publicSiteStore.template) {
     await analyticsStore.trackPublicVisit(publicSiteStore.template.id, window.location.href)
+    await nextTick()
+    observePublicCtaViews()
   }
 }
 
+// Capture public CTA clicks from current and future templates.
+const trackPublicCtaClick = (event: MouseEvent): void => {
+  const template = publicSiteStore.template
+  const target = event.target instanceof Element ? event.target : null
+
+  if (!template || !target) {
+    return
+  }
+
+  const element = target.closest<HTMLElement>('a, button, [role="button"], [data-cta-track]')
+
+  if (!element || !siteRoot.value?.contains(element)) {
+    return
+  }
+
+  const payload = ctaPayloadFromElement(template.id, element)
+
+  if (payload) {
+    void analyticsStore.trackPublicCta(payload)
+  }
+}
+
+// Track each visible CTA once for the current page view.
+const observePublicCtaViews = (): void => {
+  ctaViewObserver?.disconnect()
+
+  const template = publicSiteStore.template
+
+  if (!template || !siteRoot.value || !('IntersectionObserver' in window)) {
+    return
+  }
+
+  ctaViewObserver = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) {
+          return
+        }
+
+        const element = entry.target instanceof HTMLElement ? entry.target : null
+
+        if (!element) {
+          return
+        }
+
+        const payload = ctaViewPayloadFromElement(template.id, element)
+        const viewKey = payload ? `${payload.template_id}:${payload.cta_identifier}:${payload.url}` : ''
+
+        if (payload && !viewedCtas.has(viewKey)) {
+          viewedCtas.add(viewKey)
+          void analyticsStore.trackPublicCta(payload)
+        }
+
+        ctaViewObserver?.unobserve(element)
+      })
+    },
+    { threshold: 0.5 }
+  )
+
+  siteRoot.value
+    .querySelectorAll<HTMLElement>('a, button, [role="button"], [data-cta-track]')
+    .forEach((element) => ctaViewObserver?.observe(element))
+}
+
 onMounted(loadSite)
-watch(siteSlug, loadSite)
+onUnmounted(() => ctaViewObserver?.disconnect())
+watch(siteSlug, () => {
+  viewedCtas.clear()
+  void loadSite()
+})
 </script>
 
 <template>
-  <main class="min-h-screen bg-background">
+  <main ref="siteRoot" class="min-h-screen bg-background" @click.capture="trackPublicCtaClick">
     <TemplatePreview
       v-if="publicSiteStore.template"
       :template="publicSiteStore.template"

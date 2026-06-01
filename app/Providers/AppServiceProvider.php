@@ -29,6 +29,7 @@ class AppServiceProvider extends ServiceProvider
         $this->loadMigrationsFrom(app_path('Modules/Posts/Database/Migrations'));
         $this->loadMigrationsFrom(app_path('Modules/Sidebar/Database/Migrations'));
         $this->loadMigrationsFrom($this->templateMigrationPaths());
+        $this->loadMigrationsFrom(app_path('Modules/TrackingLogs/Database/Migrations'));
         $this->loadMigrationsFrom(app_path('Modules/Tenant/Database/Migrations'));
         $this->loadMigrationsFrom(app_path('Modules/User/Database/Migrations'));
 

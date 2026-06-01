@@ -2,6 +2,8 @@
 
 namespace App\Modules\Templates\Models;
 
+use App\Modules\Analytics\Models\CtaEvent;
+use App\Modules\Analytics\Models\CtaUniqueVisitor;
 use App\Modules\Analytics\Models\VisitorUniqueVisitor;
 use App\Modules\Analytics\Models\VisitorVisit;
 use App\Modules\Posts\Models\Post;
@@ -80,6 +82,16 @@ class Template extends Model
     public function visitorUniqueVisitors(): HasMany
     {
         return $this->hasMany(VisitorUniqueVisitor::class);
+    }
+
+    public function ctaEvents(): HasMany
+    {
+        return $this->hasMany(CtaEvent::class);
+    }
+
+    public function ctaUniqueVisitors(): HasMany
+    {
+        return $this->hasMany(CtaUniqueVisitor::class);
     }
 
     public function websiteType(): BelongsTo

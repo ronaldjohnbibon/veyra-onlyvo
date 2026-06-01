@@ -221,7 +221,7 @@ const updatePageSize = (event: Event): void => {
       </div>
     </div>
 
-    <div class="overflow-hidden rounded border bg-background">
+    <div class="overflow-x-auto rounded border bg-background">
       <Table>
         <TableHeader>
           <TableRow>

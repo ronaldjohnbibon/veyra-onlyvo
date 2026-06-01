@@ -58,6 +58,7 @@ defineSlots<{
 
 const templateId = computed(() => props.templateId)
 const cta = computed(() => props.cta)
+const ctaLabel = computed(() => props.cta.label || props.cta.title || props.cta.submit_label || props.cta.type)
 
 const {
   error,
@@ -67,13 +68,21 @@ const {
   payload,
   submit,
   success,
+  trackFormOpened,
   updateField,
   updateFileField,
 } = useTemplateCtaForm(templateId, cta, (submittedPayload) => emit('submitted', submittedPayload))
 </script>
 
 <template>
-  <form :class="props.formClass" @submit.prevent="submit">
+  <form
+    :class="props.formClass"
+    data-cta-track="true"
+    :data-cta-type="props.cta.type"
+    :data-cta-label="ctaLabel"
+    @focusin="trackFormOpened"
+    @submit.prevent="submit"
+  >
     <slot
       :fields="fields"
       :payload="payload"

@@ -43,6 +43,7 @@ class SidebarSeeder extends Seeder
                                 ['title' => 'Posts', 'url' => 'posts', 'is_active' => true],
                                 ['title' => 'Design Requests', 'url' => 'design-requests', 'is_active' => true],
                                 ['title' => 'Analytics', 'url' => 'analytics', 'is_active' => true],
+                                ['title' => 'Tracking Logs', 'url' => 'tracking-logs', 'is_active' => true],
                             ],
                         ],
                         [

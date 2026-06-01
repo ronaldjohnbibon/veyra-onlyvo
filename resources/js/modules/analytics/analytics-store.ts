@@ -1,7 +1,12 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { analyticsService } from '@/modules/analytics/api/analytics'
-import type { AnalyticsDashboard, AnalyticsParams, AnalyticsPeriod } from '@/types/analytics'
+import type {
+  AnalyticsDashboard,
+  AnalyticsParams,
+  AnalyticsPeriod,
+  CtaTrackingPayload,
+} from '@/types/analytics'
 
 export const useAnalyticsStore = defineStore('analytics', () => {
   const dashboard = ref<AnalyticsDashboard | null>(null)
@@ -11,8 +16,10 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     pageSize: 10,
     top_pages_page: 1,
     referrers_page: 1,
+    top_ctas_page: 1,
   })
   const trackedRoutes = ref(new Set<string>())
+  const recentCtaEvents = ref(new Map<string, number>())
 
   const index = async (newParams: Partial<AnalyticsParams> = {}): Promise<void> => {
     try {
@@ -32,6 +39,7 @@ export const useAnalyticsStore = defineStore('analytics', () => {
       period,
       top_pages_page: 1,
       referrers_page: 1,
+      top_ctas_page: 1,
     })
   }
 
@@ -55,12 +63,36 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     }
   }
 
+  const trackPublicCta = async (payload: CtaTrackingPayload): Promise<void> => {
+    const eventKey = [
+      payload.template_id,
+      payload.cta_identifier,
+      payload.event_type,
+      payload.url,
+    ].join(':')
+    const now = Date.now()
+    const lastTrackedAt = recentCtaEvents.value.get(eventKey) ?? 0
+
+    if (now - lastTrackedAt < 800) {
+      return
+    }
+
+    recentCtaEvents.value.set(eventKey, now)
+
+    try {
+      await analyticsService.trackCtaEvent(payload)
+    } catch {
+      // CTA tracking should never block public website actions.
+    }
+  }
+
   return {
     dashboard,
     index,
     loading,
     params,
     setPeriod,
+    trackPublicCta,
     trackPublicVisit,
   }
 })

@@ -7,3 +7,4 @@ require base_path('app/Modules/Sidebar/routes/api.php');
 require base_path('app/Modules/Tenant/routes/api.php');
 require base_path('app/Modules/Templates/routes/api.php');
 require base_path('app/Modules/Posts/routes/api.php');
+require base_path('app/Modules/TrackingLogs/routes/api.php');

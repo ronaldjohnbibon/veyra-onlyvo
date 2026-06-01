@@ -13,6 +13,7 @@ import adminSidebarRoutes from './modules/admin/sidebar/routes'
 import designRequestRoutes from './modules/design-requests/routes'
 import templateRoutes, { publicTemplateRoutes } from './modules/templates/routes'
 import postRoutes, { publicPostRoutes } from './modules/posts/routes'
+import trackingLogRoutes from './modules/tracking-logs/routes'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -36,6 +37,7 @@ const routes: RouteRecordRaw[] = [
   ...sidebarRoutes,
   ...templateRoutes,
   ...postRoutes,
+  ...trackingLogRoutes,
   ...publicPostRoutes,
   ...publicTemplateRoutes,
 ]
