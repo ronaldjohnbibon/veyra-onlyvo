@@ -14,18 +14,10 @@ import designRequestRoutes from './modules/design-requests/routes'
 import templateRoutes, { publicTemplateRoutes } from './modules/templates/routes'
 import postRoutes, { publicPostRoutes } from './modules/posts/routes'
 import trackingLogRoutes from './modules/tracking-logs/routes'
+import marketingRoutes from './modules/marketing/routes'
 
 const routes: RouteRecordRaw[] = [
-  {
-    path: '/',
-    name: 'public.sites.default',
-    component: () => import('@/modules/templates/pages/PublicSitePage.vue'),
-    meta: {
-      layout: 'empty',
-      title: 'Published Site',
-      description: 'Published tenant website',
-    },
-  },
+  ...marketingRoutes,
   ...authRoutes,
   ...adminRoutes,
   ...adminTenantRoutes,
