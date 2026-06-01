@@ -51,6 +51,12 @@ const normalizeUrl = (url: string): string => {
   return normalized
 }
 
+const isSilentRequest = (
+  config?: InternalAxiosRequestConfig | AxiosResponse<ApiResponse>['config']
+): boolean => {
+  return config?.headers?.['X-Silent-Request'] === 'true'
+}
+
 const http = axios.create({
   baseURL: resolveBaseURL(),
   headers: {
@@ -90,16 +96,18 @@ http.interceptors.request.use(
 
 http.interceptors.response.use(
   (response: AxiosResponse<ApiResponse>): AxiosResponse<ApiResponse> => {
-    if (response.config.method?.toLowerCase() !== 'get') {
+    if (response.config.method?.toLowerCase() !== 'get' && !isSilentRequest(response.config)) {
       notifySuccess(response.data?.message)
     }
 
     return response
   },
   (error: unknown): Promise<never> => {
-    if (axios.isAxiosError<ApiResponse>(error) && error.code !== 'ERR_CANCELED') {
+    const silent = axios.isAxiosError<ApiResponse>(error) && isSilentRequest(error.config)
+
+    if (axios.isAxiosError<ApiResponse>(error) && error.code !== 'ERR_CANCELED' && !silent) {
       notifyError(error.response?.data?.message || error.message)
-    } else if (!axios.isCancel(error)) {
+    } else if (!axios.isCancel(error) && !silent) {
       notifyError()
     }
 

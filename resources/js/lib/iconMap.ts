@@ -1,4 +1,5 @@
 import {
+  BarChart3,
   CalendarCheck,
   Circle,
   Cog,
@@ -17,6 +18,7 @@ import {
 } from 'lucide-vue-next'
 
 export const iconMap = {
+  BarChart3,
   CalendarCheck,
   Circle,
   Cog,

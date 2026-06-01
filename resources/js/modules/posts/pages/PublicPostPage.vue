@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { formatDisplayDate } from '@/lib/date'
+import { useAnalyticsStore } from '@/modules/analytics/analytics-store'
 import { usePublicPostStore } from '@/modules/posts/public-post-store'
 import { computed, onMounted, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 
 const route = useRoute()
+const analyticsStore = useAnalyticsStore()
 const publicPostStore = usePublicPostStore()
 
 const siteSlug = computed(() => String(route.params.siteSlug || ''))
@@ -12,6 +14,10 @@ const postSlug = computed(() => String(route.params.postSlug || ''))
 
 const loadPost = async (): Promise<void> => {
   await publicPostStore.loadPost(siteSlug.value, postSlug.value)
+
+  if (publicPostStore.post) {
+    await analyticsStore.trackPublicVisit(publicPostStore.post.template_id, window.location.href)
+  }
 }
 
 onMounted(loadPost)

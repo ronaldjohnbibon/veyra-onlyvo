@@ -2,6 +2,8 @@
 
 namespace App\Modules\Tenant\Models;
 
+use App\Modules\Analytics\Models\VisitorUniqueVisitor;
+use App\Modules\Analytics\Models\VisitorVisit;
 use App\Modules\Auth\Enums\UserType;
 use App\Modules\DesignRequests\Models\DesignRequest;
 use App\Modules\Sidebar\Models\Sidebar;
@@ -53,6 +55,16 @@ class Tenant extends Model implements SproutTenant
     public function templates(): HasMany
     {
         return $this->hasMany(Template::class);
+    }
+
+    public function visitorVisits(): HasMany
+    {
+        return $this->hasMany(VisitorVisit::class);
+    }
+
+    public function visitorUniqueVisitors(): HasMany
+    {
+        return $this->hasMany(VisitorUniqueVisitor::class);
     }
 
     public function users(): HasMany

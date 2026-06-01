@@ -1,13 +1,12 @@
-# ADMIN
-
-- logs ( activity | Auth | Audit | Error | Notification | System )
-- deactivate tenant
-- on/off functionality ( subscription )
-
 # TENANT
 
 - receive email
 - send email
+
+# ADMIN
+
+- logs ( activity | Auth | Audit | Error | Notification | System )
+- on/off functionality ( subscription )
 
 # CUSTOMER
 

@@ -23,4 +23,5 @@ Rules:
 - Before creating a migration, check existing migrations first. If a related migration already exists, modify and extend it instead of creating a duplicate migration.
 
 Task:
-We have custom button variants for update, create and delete. But other buttons only uses the outline. I want you to make other variants necessary for other buttons that currently inside the app but only uses outline variant.
+I want you to add this feature :
+The tenant can request a design that they want, for example the tenants can create their own template/design/mockup then submit it. Then the admin can review it.

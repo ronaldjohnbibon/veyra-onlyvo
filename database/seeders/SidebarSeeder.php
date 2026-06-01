@@ -42,6 +42,7 @@ class SidebarSeeder extends Seeder
                                 ['title' => 'Templates', 'url' => 'templates', 'is_active' => true],
                                 ['title' => 'Posts', 'url' => 'posts', 'is_active' => true],
                                 ['title' => 'Design Requests', 'url' => 'design-requests', 'is_active' => true],
+                                ['title' => 'Analytics', 'url' => 'analytics', 'is_active' => true],
                             ],
                         ],
                         [

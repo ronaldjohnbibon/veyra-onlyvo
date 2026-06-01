@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import TemplatePreview from '@/modules/templates/components/TemplatePreview.vue'
 import { formatDisplayDate } from '@/lib/date'
+import { useAnalyticsStore } from '@/modules/analytics/analytics-store'
 import { usePublicSiteStore } from '@/modules/templates/public-site-store'
 import { computed, onMounted, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 
 const route = useRoute()
+const analyticsStore = useAnalyticsStore()
 const publicSiteStore = usePublicSiteStore()
 
 const siteSlug = computed(() => {
@@ -16,6 +18,10 @@ const siteSlug = computed(() => {
 
 const loadSite = async (): Promise<void> => {
   await publicSiteStore.loadSite(siteSlug.value)
+
+  if (publicSiteStore.template) {
+    await analyticsStore.trackPublicVisit(publicSiteStore.template.id, window.location.href)
+  }
 }
 
 onMounted(loadSite)

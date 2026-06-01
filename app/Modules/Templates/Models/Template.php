@@ -2,6 +2,8 @@
 
 namespace App\Modules\Templates\Models;
 
+use App\Modules\Analytics\Models\VisitorUniqueVisitor;
+use App\Modules\Analytics\Models\VisitorVisit;
 use App\Modules\Posts\Models\Post;
 use App\Modules\Tenant\Models\Tenant;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -68,6 +70,16 @@ class Template extends Model
     public function ctaSubmissions(): HasMany
     {
         return $this->hasMany(TemplateCtaSubmission::class)->latest();
+    }
+
+    public function visitorVisits(): HasMany
+    {
+        return $this->hasMany(VisitorVisit::class);
+    }
+
+    public function visitorUniqueVisitors(): HasMany
+    {
+        return $this->hasMany(VisitorUniqueVisitor::class);
     }
 
     public function websiteType(): BelongsTo

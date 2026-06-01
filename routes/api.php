@@ -1,5 +1,6 @@
 <?php
 
+require base_path('app/Modules/Analytics/routes/api.php');
 require base_path('app/Modules/Auth/routes/api.php');
 require base_path('app/Modules/DesignRequests/routes/api.php');
 require base_path('app/Modules/Sidebar/routes/api.php');
