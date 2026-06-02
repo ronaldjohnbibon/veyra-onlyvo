@@ -4,10 +4,10 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
-import AdminLayout from '@/components/layouts/AdminLayout.vue'
-import DefaultLayout from '@/components/layouts/DefaultLayout.vue'
-import EmptyLayout from '@/components/layouts/EmptyLayout.vue'
-import TenantLayout from '@/components/layouts/TenantLayout.vue'
+import AdminLayout from '@/admin/layouts/AdminLayout.vue'
+import DefaultLayout from '@/shared/layouts/DefaultLayout.vue'
+import EmptyLayout from '@/shared/layouts/EmptyLayout.vue'
+import TenantLayout from '@/tenant/layouts/TenantLayout.vue'
 
 const app = createApp(App)
 

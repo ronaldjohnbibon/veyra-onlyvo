@@ -23,15 +23,15 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        $this->loadMigrationsFrom(app_path('Modules/Analytics/Database/Migrations'));
-        $this->loadMigrationsFrom(app_path('Modules/Auth/Database/Migrations'));
-        $this->loadMigrationsFrom(app_path('Modules/DesignRequests/Database/Migrations'));
-        $this->loadMigrationsFrom(app_path('Modules/Posts/Database/Migrations'));
-        $this->loadMigrationsFrom(app_path('Modules/Sidebar/Database/Migrations'));
+        $this->loadMigrationsFrom(app_path('Tenant/Dashboard/Database/Migrations'));
+        $this->loadMigrationsFrom(app_path('Tenant/Auth/Database/Migrations'));
+        $this->loadMigrationsFrom(app_path('Tenant/DesignRequests/Database/Migrations'));
+        $this->loadMigrationsFrom(app_path('Tenant/Templates/Posts/Database/Migrations'));
+        $this->loadMigrationsFrom(app_path('Tenant/Sidebar/Database/Migrations'));
         $this->loadMigrationsFrom($this->templateMigrationPaths());
-        $this->loadMigrationsFrom(app_path('Modules/TrackingLogs/Database/Migrations'));
-        $this->loadMigrationsFrom(app_path('Modules/Tenant/Database/Migrations'));
-        $this->loadMigrationsFrom(app_path('Modules/User/Database/Migrations'));
+        $this->loadMigrationsFrom(app_path('Tenant/TrackingLogs/Database/Migrations'));
+        $this->loadMigrationsFrom(app_path('Tenant/Tenants/Database/Migrations'));
+        $this->loadMigrationsFrom(app_path('Tenant/Users/Database/Migrations'));
 
         ResetPassword::createUrlUsing(function (object $notifiable, string $token): string {
             $tenant      = $notifiable->tenant;
@@ -55,7 +55,7 @@ class AppServiceProvider extends ServiceProvider
      */
     private function templateMigrationPaths(): array
     {
-        $basePath     = app_path('Modules/Templates/Database/Migrations');
+        $basePath     = app_path('Tenant/Templates/Database/Migrations');
         $templatePath = $basePath.DIRECTORY_SEPARATOR.'Templates';
         $paths        = [$basePath];
 

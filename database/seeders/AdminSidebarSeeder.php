@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Modules\Sidebar\Models\Sidebar;
+use App\Admin\Sidebar\Models\Sidebar;
 use Illuminate\Database\Seeder;
 
 class AdminSidebarSeeder extends Seeder

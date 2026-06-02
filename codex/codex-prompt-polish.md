@@ -2,4 +2,12 @@ Read `codex.md` first.
 
 Task:
 
-I want you to group the menus inside `SidebarSeeder` and `AdminSidebarSeeder`. Arrange the menus to it's proper position, to what should be it's parent etc.
+Why you have this function ?
+
+private function queryForTenant(): Builder
+{
+return DesignRequest::query()
+->where('tenant_id', $this->tenantId());
+}
+
+we already have BelongsToTenant on our models. You don't need that because we have sprout package that separates the tenant form other tenants.

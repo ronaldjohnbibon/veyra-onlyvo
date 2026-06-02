@@ -1,6 +1,6 @@
 import axios, { type AxiosError, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios'
-import { useConfirmStore } from '@/store/confirm-store'
-import { useToastStore } from '@/store/toast-store'
+import { useConfirmStore } from '@/shared/stores/confirm-store'
+import { useToastStore } from '@/shared/stores/toast-store'
 
 interface ApiResponse {
   message?: string

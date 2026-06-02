@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use App\Modules\Auth\Enums\UserType;
-use App\Modules\User\Models\User;
+use App\Shared\Enums\UserType;
+use App\Admin\Users\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 

@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
-use App\Modules\Auth\Enums\UserType;
-use App\Modules\Tenant\Models\Tenant;
-use App\Modules\User\Models\User;
+use App\Shared\Enums\UserType;
+use App\Tenant\Tenants\Models\Tenant;
+use App\Tenant\Users\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 

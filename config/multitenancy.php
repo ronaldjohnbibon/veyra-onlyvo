@@ -1,6 +1,6 @@
 <?php
 
-use App\Modules\Tenant\Models\Tenant;
+use App\Tenant\Tenants\Models\Tenant;
 use Sprout\TenancyOptions;
 
 return [

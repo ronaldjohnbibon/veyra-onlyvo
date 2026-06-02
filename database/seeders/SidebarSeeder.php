@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
-use App\Modules\Sidebar\Models\Sidebar;
-use App\Modules\Tenant\Models\Tenant;
+use App\Tenant\Sidebar\Models\Sidebar;
 use Illuminate\Database\Seeder;
+use App\Tenant\Tenants\Models\Tenant;
 
 class SidebarSeeder extends Seeder
 {
@@ -13,7 +13,7 @@ class SidebarSeeder extends Seeder
         Tenant::query()->each(fn (Tenant $tenant) => $this->runForTenant($tenant));
     }
 
-    public function runForTenant(Tenant $tenant): void
+    public function runForTenant(object $tenant): void
     {
         Sidebar::query()->updateOrCreate(
             [

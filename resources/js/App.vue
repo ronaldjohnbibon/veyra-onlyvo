@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import BaseLoading from '@/components/BaseLoading.vue'
-import BaseToast from '@/components/BaseToast.vue'
-import GlobalConfirmDialog from '@/components/GlobalConfirmDialog.vue'
-import { useAdminAuthStore } from '@/modules/admin/admin-auth-store'
-import { useAuthStore } from '@/modules/auth/auth-store'
-import { useToastStore } from '@/store/toast-store'
+import BaseLoading from '@/shared/components/BaseLoading.vue'
+import BaseToast from '@/shared/components/BaseToast.vue'
+import GlobalConfirmDialog from '@/shared/components/GlobalConfirmDialog.vue'
+import { useAdminAuthStore } from '@/admin/admin-auth-store'
+import { useAuthStore } from '@/tenant/auth/auth-store'
+import { useToastStore } from '@/shared/stores/toast-store'
 import { computed, onMounted, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
 
