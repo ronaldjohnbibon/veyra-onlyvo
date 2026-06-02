@@ -13,6 +13,10 @@ use Illuminate\Support\Facades\Auth;
 
 class DesignRequestController extends Controller
 {
+    public function __construct(
+        private readonly DesignRequestService $service,
+    ) {}
+
     public function index(Request $request): JsonResponse
     {
         $sorts = [
@@ -42,13 +46,13 @@ class DesignRequestController extends Controller
         return $this->success(DesignRequestResource::collection($requests), 'Design requests retrieved.');
     }
 
-    public function store(DesignRequestRequest $request, DesignRequestService $service): JsonResponse
+    public function store(DesignRequestRequest $request): JsonResponse
     {
         $user = Auth::user();
 
         abort_unless($user?->tenant_id, 403);
 
-        $designRequest = $service->create($user, $request->validated());
+        $designRequest = $this->service->create($user, $request->validated());
 
         return $this->success(new DesignRequestResource($designRequest), 'Design request submitted.', 201);
     }

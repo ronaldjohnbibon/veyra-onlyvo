@@ -7,12 +7,17 @@ use App\Modules\Sidebar\Http\Requests\SidebarRequest;
 use App\Modules\Sidebar\Http\Resources\SidebarResource;
 use App\Modules\Sidebar\Models\Sidebar;
 use App\Modules\Sidebar\Services\SidebarService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class TenantSidebarController extends Controller
 {
+    public function __construct(
+        private readonly SidebarService $service,
+    ) {}
+
     public function index(Request $request): JsonResponse
     {
         $tenantId = $this->tenantId();
@@ -32,9 +37,9 @@ class TenantSidebarController extends Controller
         return $this->success(SidebarResource::collection($sidebars), 'Sidebars retrieved.');
     }
 
-    public function store(SidebarRequest $request, SidebarService $service): JsonResponse
+    public function store(SidebarRequest $request): JsonResponse
     {
-        $sidebar = $service->create(array_merge($request->validated(), [
+        $sidebar = $this->service->create(array_merge($request->validated(), [
             'is_admin'  => false,
             'tenant_id' => $this->tenantId(),
         ]));
@@ -53,7 +58,7 @@ class TenantSidebarController extends Controller
         return $this->success(new SidebarResource($record), 'Sidebar retrieved.');
     }
 
-    public function update(SidebarRequest $request, string $sidebar, SidebarService $service): JsonResponse
+    public function update(SidebarRequest $request, string $sidebar): JsonResponse
     {
         $record = $this->queryForTenant()->find($sidebar);
 
@@ -61,7 +66,7 @@ class TenantSidebarController extends Controller
             return $this->error('Sidebar not found.', 404);
         }
 
-        $updated = $service->update($record, array_merge($request->validated(), [
+        $updated = $this->service->update($record, array_merge($request->validated(), [
             'is_admin'  => false,
             'tenant_id' => $this->tenantId(),
         ]));
@@ -82,7 +87,7 @@ class TenantSidebarController extends Controller
         return $this->success(null, 'Sidebar deleted.');
     }
 
-    private function queryForTenant()
+    private function queryForTenant(): Builder
     {
         return Sidebar::query()
             ->where('is_admin', false)

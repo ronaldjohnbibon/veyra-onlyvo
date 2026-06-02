@@ -5,6 +5,7 @@ namespace App\Modules\DesignRequests\Services;
 use App\Modules\DesignRequests\Models\DesignRequest;
 use App\Modules\User\Models\User;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class DesignRequestService
@@ -29,6 +30,25 @@ class DesignRequestService
 
             return $request->fresh(['files', 'tenant', 'requester']);
         });
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    public function review(DesignRequest $request, array $data, int|string|null $reviewerId): DesignRequest
+    {
+        $status = (string) $data['status'];
+        $now    = Carbon::now();
+
+        $request->update([
+            'status'        => $status,
+            'admin_remarks' => $data['admin_remarks'] ?? null,
+            'reviewed_by'   => $reviewerId,
+            'reviewed_at'   => $now,
+            'completed_at'  => $status === 'completed' ? $now : null,
+        ]);
+
+        return $request;
     }
 
     /**

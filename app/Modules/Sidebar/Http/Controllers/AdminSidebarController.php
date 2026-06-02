@@ -14,6 +14,10 @@ use Illuminate\Support\Facades\Auth;
 
 class AdminSidebarController extends Controller
 {
+    public function __construct(
+        private readonly SidebarService $service,
+    ) {}
+
     public function index(Request $request): JsonResponse
     {
         $this->authorizeAdmin();
@@ -32,11 +36,11 @@ class AdminSidebarController extends Controller
         return $this->success(SidebarResource::collection($sidebars), 'Sidebars retrieved.');
     }
 
-    public function store(SidebarRequest $request, SidebarService $service): JsonResponse
+    public function store(SidebarRequest $request): JsonResponse
     {
         $this->authorizeAdmin();
 
-        $sidebar = $service->create(array_merge($request->validated(), [
+        $sidebar = $this->service->create(array_merge($request->validated(), [
             'is_admin'  => true,
             'tenant_id' => null,
         ]));
@@ -57,7 +61,7 @@ class AdminSidebarController extends Controller
         return $this->success(new SidebarResource($record), 'Sidebar retrieved.');
     }
 
-    public function update(SidebarRequest $request, string $sidebar, SidebarService $service): JsonResponse
+    public function update(SidebarRequest $request, string $sidebar): JsonResponse
     {
         $this->authorizeAdmin();
 
@@ -67,7 +71,7 @@ class AdminSidebarController extends Controller
             return $this->error('Sidebar not found.', 404);
         }
 
-        $updated = $service->update($record, array_merge($request->validated(), [
+        $updated = $this->service->update($record, array_merge($request->validated(), [
             'is_admin'  => true,
             'tenant_id' => null,
         ]));

@@ -46,7 +46,13 @@ const linkEventType = (href: string): CtaEventType => {
 
   if (lowerHref.startsWith('tel:')) return 'phone_click'
   if (lowerHref.startsWith('mailto:')) return 'email_click'
-  if (lowerHref.startsWith('whatsapp:') || lowerHref.includes('wa.me/') || lowerHref.includes('whatsapp.com')) return 'whatsapp_click'
+  if (
+    lowerHref.startsWith('whatsapp:') ||
+    lowerHref.includes('wa.me/') ||
+    lowerHref.includes('whatsapp.com')
+  ) {
+    return 'whatsapp_click'
+  }
 
   try {
     const host = new URL(href, window.location.href).hostname.replace(/^www\./, '')

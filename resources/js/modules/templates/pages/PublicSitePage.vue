@@ -76,7 +76,9 @@ const observePublicCtaViews = (): void => {
         }
 
         const payload = ctaViewPayloadFromElement(template.id, element)
-        const viewKey = payload ? `${payload.template_id}:${payload.cta_identifier}:${payload.url}` : ''
+        const viewKey = payload
+          ? `${payload.template_id}:${payload.cta_identifier}:${payload.url}`
+          : ''
 
         if (payload && !viewedCtas.has(viewKey)) {
           viewedCtas.add(viewKey)

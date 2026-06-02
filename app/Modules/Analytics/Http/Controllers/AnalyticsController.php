@@ -10,9 +10,13 @@ use Illuminate\Support\Facades\Auth;
 
 class AnalyticsController extends Controller
 {
-    public function index(AnalyticsDashboardRequest $request, AnalyticsService $service): JsonResponse
+    public function __construct(
+        private readonly AnalyticsService $service,
+    ) {}
+
+    public function index(AnalyticsDashboardRequest $request): JsonResponse
     {
-        return $this->success($service->dashboard($this->tenantId(), $request->validated()), 'Analytics retrieved.');
+        return $this->success($this->service->dashboard($this->tenantId(), $request->validated()), 'Analytics retrieved.');
     }
 
     private function tenantId(): string

@@ -78,7 +78,7 @@ export const useAuthStore = defineStore('tenant-auth', () => {
       message.value = ''
 
       const data = await authService.login(loginForm)
-      setToken(data.data.token)
+      setToken(data.data.tenant_token)
       user.value = data.data.user
 
       await router.push({ name: 'sidebar.index' })

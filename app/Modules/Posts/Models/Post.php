@@ -3,6 +3,7 @@
 namespace App\Modules\Posts\Models;
 
 use App\Modules\Templates\Models\Template;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -29,7 +30,7 @@ class Post extends Model
         ];
     }
 
-    public function scopeFilter($query, array $filters)
+    public function scopeFilter(Builder $query, array $filters): Builder
     {
         return $query
             ->when($filters['search'] ?? null, function ($query, string $search): void {

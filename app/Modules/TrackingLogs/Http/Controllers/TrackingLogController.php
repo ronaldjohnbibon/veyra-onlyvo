@@ -10,9 +10,13 @@ use Illuminate\Support\Facades\Auth;
 
 class TrackingLogController extends Controller
 {
-    public function index(TrackingLogIndexRequest $request, TrackingLogService $service): JsonResponse
+    public function __construct(
+        private readonly TrackingLogService $service,
+    ) {}
+
+    public function index(TrackingLogIndexRequest $request): JsonResponse
     {
-        return $this->success($service->index($this->tenantId(), $request->validated()), 'Tracking logs retrieved.');
+        return $this->success($this->service->index($this->tenantId(), $request->validated()), 'Tracking logs retrieved.');
     }
 
     private function tenantId(): string

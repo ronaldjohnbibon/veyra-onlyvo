@@ -36,7 +36,7 @@ export const useAdminAuthStore = defineStore('admin-auth', () => {
       message.value = ''
 
       const data = await adminAuthService.login(loginForm)
-      setToken(data.data.token)
+      setToken(data.data.admin_token)
       user.value = data.data.user
 
       await router.push({ name: 'admin.dashboard' })

@@ -47,7 +47,7 @@ class AuthController extends Controller
             return $this->error(__('auth.unauthorized'), 403);
         }
 
-        return $this->loginResponse($user);
+        return $this->loginResponse($user, 'tenant_token');
     }
 
     public function adminLogin(LoginRequest $request): JsonResponse
@@ -62,7 +62,7 @@ class AuthController extends Controller
             return $this->error(__('auth.unauthorized'), 403);
         }
 
-        return $this->loginResponse($user, 'admin-token');
+        return $this->loginResponse($user, 'admin_token');
     }
 
     public function logout(): JsonResponse
@@ -145,13 +145,13 @@ class AuthController extends Controller
         return $user;
     }
 
-    private function loginResponse(User $user, string $tokenName = 'token'): JsonResponse
+    private function loginResponse(User $user, string $tokenKey): JsonResponse
     {
-        $token = $user->createToken($tokenName)->plainTextToken;
+        $token = $user->createToken($tokenKey)->plainTextToken;
 
         return $this->success([
-            'user'  => new UserResource($user),
-            'token' => $token,
+            'user'    => new UserResource($user),
+            $tokenKey => $token,
         ], __('auth.logged_in'));
     }
 }

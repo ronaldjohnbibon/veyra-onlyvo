@@ -156,7 +156,7 @@ class TemplateService
 
             if (($field['type'] ?? null) === 'repeater' && is_array($content[$key])) {
                 $nestedSchema  = is_array($field['fields'] ?? null) ? $field['fields'] : [];
-                $content[$key] = array_map(function ($row) use ($nestedSchema, $folder) {
+                $content[$key] = array_map(function (mixed $row) use ($nestedSchema, $folder): mixed {
                     return is_array($row) ? $this->storeContentImages($row, $nestedSchema, $folder) : $row;
                 }, $content[$key]);
             }
@@ -236,14 +236,14 @@ class TemplateService
         $content = $catalogItem->default_content ?? [];
 
         $payload = [
-            'business_name'    => $this->stringContent($content, ['business_name', 'display_name'], 'Onlyvo Studio'),
-            'logo'             => 'https://dummyimage.com/120x120/14b8a6/ffffff.png&text=OV',
-            'contact_info'     => [
+            'business_name' => $this->stringContent($content, ['business_name', 'display_name'], 'Onlyvo Studio'),
+            'logo'          => 'https://dummyimage.com/120x120/14b8a6/ffffff.png&text=OV',
+            'contact_info'  => [
                 'email'   => $this->stringContent($content, ['contact_email', 'email'], 'hello@example.com'),
                 'phone'   => $this->stringContent($content, ['contact_phone', 'phone'], '+1 555 0100'),
                 'address' => $this->stringContent($content, ['contact_address', 'contact_location', 'location', 'address']),
             ],
-            'social_links'     => [
+            'social_links' => [
                 'website'   => $this->stringContent($content, ['website_url', 'portfolio_url', 'reservation_link', 'chat_url'], 'https://example.com'),
                 'linkedin'  => '',
                 'instagram' => '',

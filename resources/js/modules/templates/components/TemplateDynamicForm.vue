@@ -58,7 +58,9 @@ defineSlots<{
 
 const templateId = computed(() => props.templateId)
 const cta = computed(() => props.cta)
-const ctaLabel = computed(() => props.cta.label || props.cta.title || props.cta.submit_label || props.cta.type)
+const ctaLabel = computed(
+  () => props.cta.label || props.cta.title || props.cta.submit_label || props.cta.type
+)
 
 const {
   error,

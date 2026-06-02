@@ -72,6 +72,10 @@ const [DefineMonthTemplate, ReuseMonthTemplate] = createReusableTemplate<{ date:
 const [DefineYearTemplate, ReuseYearTemplate] = createReusableTemplate<{ date: DateValue }>()
 
 const forwarded = useForwardPropsEmits(delegatedProps, emits)
+
+const selectValue = (event: Event): number => {
+  return Number((event.target as HTMLSelectElement | null)?.value)
+}
 </script>
 
 <template>
@@ -86,7 +90,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
           @change="
             (e: Event) => {
               placeholder = placeholder.set({
-                month: Number((e?.target as any)?.value),
+                month: selectValue(e),
               })
             }
           "
@@ -115,7 +119,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
           @change="
             (e: Event) => {
               placeholder = placeholder.set({
-                year: Number((e?.target as any)?.value),
+                year: selectValue(e),
               })
             }
           "

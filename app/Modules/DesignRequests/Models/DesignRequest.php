@@ -4,6 +4,7 @@ namespace App\Modules\DesignRequests\Models;
 
 use App\Modules\Tenant\Models\Tenant;
 use App\Modules\User\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -48,7 +49,7 @@ class DesignRequest extends Model
         ];
     }
 
-    public function scopeFilter($query, array $filters)
+    public function scopeFilter(Builder $query, array $filters): Builder
     {
         return $query
             ->when($filters['search'] ?? null, function ($query, string $search): void {

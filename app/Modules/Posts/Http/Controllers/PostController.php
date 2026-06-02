@@ -3,6 +3,7 @@
 namespace App\Modules\Posts\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Modules\Posts\Http\Requests\PostFeaturedImageRequest;
 use App\Modules\Posts\Http\Requests\PostRequest;
 use App\Modules\Posts\Http\Resources\PostResource;
 use App\Modules\Posts\Models\Post;
@@ -14,6 +15,10 @@ use Illuminate\Support\Facades\Auth;
 
 class PostController extends Controller
 {
+    public function __construct(
+        private readonly PostService $service,
+    ) {}
+
     public function index(Request $request, string $template): JsonResponse
     {
         $templateRecord = $this->tenantTemplate($template);
@@ -49,7 +54,7 @@ class PostController extends Controller
         return $this->success(PostResource::collection($posts), 'Posts retrieved.');
     }
 
-    public function store(PostRequest $request, string $template, PostService $service): JsonResponse
+    public function store(PostRequest $request, string $template): JsonResponse
     {
         $templateRecord = $this->tenantTemplate($template);
 
@@ -57,12 +62,12 @@ class PostController extends Controller
             return $this->error('Template not found.', 404);
         }
 
-        $post = $service->create($templateRecord, $request->validated());
+        $post = $this->service->create($templateRecord, $request->validated());
 
         return $this->success(new PostResource($post), 'Post saved.', 201);
     }
 
-    public function uploadFeaturedImage(Request $request, string $template): JsonResponse
+    public function uploadFeaturedImage(PostFeaturedImageRequest $request, string $template): JsonResponse
     {
         $templateRecord = $this->tenantTemplate($template);
 
@@ -70,11 +75,11 @@ class PostController extends Controller
             return $this->error('Template not found.', 404);
         }
 
-        $validated = $request->validate([
-            'image' => ['required', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:4096'],
-        ]);
+        $image = $request->file('image');
 
-        $path = $validated['image']->storePublicly(
+        abort_unless($image, 422);
+
+        $path = $image->storePublicly(
             "posts/{$this->tenantId()}/{$templateRecord->id}/featured-images",
             'public',
         );
@@ -97,7 +102,7 @@ class PostController extends Controller
         return $this->success(new PostResource($postRecord), 'Post retrieved.');
     }
 
-    public function update(PostRequest $request, string $template, string $post, PostService $service): JsonResponse
+    public function update(PostRequest $request, string $template, string $post): JsonResponse
     {
         $templateRecord = $this->tenantTemplate($template);
         $postRecord     = $templateRecord ? $this->templatePost($templateRecord, $post) : null;
@@ -106,7 +111,7 @@ class PostController extends Controller
             return $this->error('Post not found.', 404);
         }
 
-        $updated = $service->update($templateRecord, $postRecord, $request->validated());
+        $updated = $this->service->update($templateRecord, $postRecord, $request->validated());
 
         return $this->success(new PostResource($updated), 'Post saved.');
     }
@@ -125,7 +130,7 @@ class PostController extends Controller
         return $this->success(null, 'Post deleted.');
     }
 
-    public function publish(string $template, string $post, PostService $service): JsonResponse
+    public function publish(string $template, string $post): JsonResponse
     {
         $templateRecord = $this->tenantTemplate($template);
         $postRecord     = $templateRecord ? $this->templatePost($templateRecord, $post) : null;
@@ -134,10 +139,10 @@ class PostController extends Controller
             return $this->error('Post not found.', 404);
         }
 
-        return $this->success(new PostResource($service->publish($postRecord)), 'Post published.');
+        return $this->success(new PostResource($this->service->publish($postRecord)), 'Post published.');
     }
 
-    public function unpublish(string $template, string $post, PostService $service): JsonResponse
+    public function unpublish(string $template, string $post): JsonResponse
     {
         $templateRecord = $this->tenantTemplate($template);
         $postRecord     = $templateRecord ? $this->templatePost($templateRecord, $post) : null;
@@ -146,7 +151,7 @@ class PostController extends Controller
             return $this->error('Post not found.', 404);
         }
 
-        return $this->success(new PostResource($service->unpublish($postRecord)), 'Post unpublished.');
+        return $this->success(new PostResource($this->service->unpublish($postRecord)), 'Post unpublished.');
     }
 
     private function tenantTemplate(string $template): ?Template

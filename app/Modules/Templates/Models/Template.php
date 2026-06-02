@@ -8,6 +8,7 @@ use App\Modules\Analytics\Models\VisitorUniqueVisitor;
 use App\Modules\Analytics\Models\VisitorVisit;
 use App\Modules\Posts\Models\Post;
 use App\Modules\Tenant\Models\Tenant;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -50,7 +51,7 @@ class Template extends Model
         ];
     }
 
-    public function scopeFilter($query, array $filters)
+    public function scopeFilter(Builder $query, array $filters): Builder
     {
         return $query
             ->when($filters['search'] ?? null, function ($query, string $search): void {

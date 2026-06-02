@@ -10,9 +10,13 @@ use Sprout\Contracts\Tenant as CurrentTenant;
 
 class PublicCtaTrackingController extends Controller
 {
-    public function store(CtaEventTrackingRequest $request, CurrentTenant $tenant, CtaTrackingService $service): JsonResponse
+    public function __construct(
+        private readonly CtaTrackingService $service,
+    ) {}
+
+    public function store(CtaEventTrackingRequest $request, CurrentTenant $tenant): JsonResponse
     {
-        $event = $service->record($request, (string) $tenant->getTenantKey(), $request->validated());
+        $event = $this->service->record($request, (string) $tenant->getTenantKey(), $request->validated());
 
         if (! $event) {
             return $this->error('Published site not found.', 404);

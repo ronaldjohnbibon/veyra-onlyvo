@@ -14,6 +14,10 @@ use Illuminate\Support\Facades\Auth;
 
 class AdminTenantController extends Controller
 {
+    public function __construct(
+        private readonly TenantService $service,
+    ) {}
+
     public function index(Request $request): JsonResponse
     {
         $this->authorizeAdmin();
@@ -45,11 +49,11 @@ class AdminTenantController extends Controller
         return $this->success(TenantResource::collection($tenants), 'Tenants retrieved.');
     }
 
-    public function store(TenantRequest $request, TenantService $service): JsonResponse
+    public function store(TenantRequest $request): JsonResponse
     {
         $this->authorizeAdmin();
 
-        $tenant = $service->create($request->validated());
+        $tenant = $this->service->create($request->validated());
 
         return $this->success(new TenantResource($tenant->load('owner')), 'Tenant created.', 201);
     }
@@ -67,7 +71,7 @@ class AdminTenantController extends Controller
         return $this->success(new TenantResource($record), 'Tenant retrieved.');
     }
 
-    public function update(TenantRequest $request, string $tenant, TenantService $service): JsonResponse
+    public function update(TenantRequest $request, string $tenant): JsonResponse
     {
         $this->authorizeAdmin();
 
@@ -77,26 +81,26 @@ class AdminTenantController extends Controller
             return $this->error('Tenant not found.', 404);
         }
 
-        $updated = $service->update($record, $request->validated())->load('owner')->loadCount(['users', 'templates']);
+        $updated = $this->service->update($record, $request->validated())->load('owner')->loadCount(['users', 'templates']);
 
         return $this->success(new TenantResource($updated), 'Tenant updated.');
     }
 
-    public function deactivate(string $tenant, TenantService $service): JsonResponse
+    public function deactivate(string $tenant): JsonResponse
     {
         $this->authorizeAdmin();
 
-        return $this->statusResponse($tenant, 'inactive', 'Tenant deactivated.', $service);
+        return $this->statusResponse($tenant, 'inactive', 'Tenant deactivated.');
     }
 
-    public function reactivate(string $tenant, TenantService $service): JsonResponse
+    public function reactivate(string $tenant): JsonResponse
     {
         $this->authorizeAdmin();
 
-        return $this->statusResponse($tenant, 'active', 'Tenant reactivated.', $service);
+        return $this->statusResponse($tenant, 'active', 'Tenant reactivated.');
     }
 
-    public function destroy(string $tenant, TenantService $service): JsonResponse
+    public function destroy(string $tenant): JsonResponse
     {
         $this->authorizeAdmin();
 
@@ -106,12 +110,12 @@ class AdminTenantController extends Controller
             return $this->error('Tenant not found.', 404);
         }
 
-        $service->delete($record);
+        $this->service->delete($record);
 
         return $this->success(null, 'Tenant deleted.');
     }
 
-    private function statusResponse(string $tenant, string $status, string $message, TenantService $service): JsonResponse
+    private function statusResponse(string $tenant, string $status, string $message): JsonResponse
     {
         $record = Tenant::query()->find($tenant);
 
@@ -120,7 +124,7 @@ class AdminTenantController extends Controller
         }
 
         // Status updates keep tenant history while toggling access.
-        $updated = $service->setStatus($record, $status)->load('owner')->loadCount(['users', 'templates']);
+        $updated = $this->service->setStatus($record, $status)->load('owner')->loadCount(['users', 'templates']);
 
         return $this->success(new TenantResource($updated), $message);
     }

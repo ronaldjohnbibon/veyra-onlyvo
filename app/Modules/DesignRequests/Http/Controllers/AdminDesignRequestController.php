@@ -7,12 +7,18 @@ use App\Modules\Auth\Enums\UserType;
 use App\Modules\DesignRequests\Http\Requests\AdminDesignRequestStatusRequest;
 use App\Modules\DesignRequests\Http\Resources\DesignRequestResource;
 use App\Modules\DesignRequests\Models\DesignRequest;
+use App\Modules\DesignRequests\Services\DesignRequestService;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class AdminDesignRequestController extends Controller
 {
+    public function __construct(
+        private readonly DesignRequestService $service,
+    ) {}
+
     public function index(Request $request): JsonResponse
     {
         $this->authorizeAdmin();
@@ -26,7 +32,7 @@ class AdminDesignRequestController extends Controller
         $sortColumn = $sorts[$sort] ?? 'created_at';
         $direction  = $request->input('direction') === 'asc' ? 'asc' : 'desc';
 
-        $requests = DesignRequest::withoutTenantRestrictions(function () use ($request, $sortColumn, $direction) {
+        $requests = DesignRequest::withoutTenantRestrictions(function () use ($request, $sortColumn, $direction): LengthAwarePaginator {
             return DesignRequest::query()
                 ->with(['files', 'tenant', 'requester'])
                 ->filter([
@@ -70,17 +76,7 @@ class AdminDesignRequestController extends Controller
             return $this->error('Design request not found.', 404);
         }
 
-        $validated = $request->validated();
-        $status    = (string) $validated['status'];
-
-        // Track the admin review timestamp with every status update.
-        $record->update([
-            'status'        => $status,
-            'admin_remarks' => $validated['admin_remarks'] ?? null,
-            'reviewed_by'   => Auth::id(),
-            'reviewed_at'   => now(),
-            'completed_at'  => $status === 'completed' ? now() : null,
-        ]);
+        $this->service->review($record, $request->validated(), Auth::id());
 
         return $this->success(new DesignRequestResource($record->fresh(['files', 'tenant', 'requester'])), 'Design request updated.');
     }

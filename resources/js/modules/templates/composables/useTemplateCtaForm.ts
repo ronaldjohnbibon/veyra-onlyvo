@@ -51,7 +51,9 @@ export const useTemplateCtaForm = (
     }
 
     formOpened.value = true
-    void analyticsStore.trackPublicCta(ctaPayloadFromForm(templateId.value, cta.value, 'form_opened'))
+    void analyticsStore.trackPublicCta(
+      ctaPayloadFromForm(templateId.value, cta.value, 'form_opened')
+    )
   }
 
   const submit = async (): Promise<void> => {
@@ -67,7 +69,9 @@ export const useTemplateCtaForm = (
       if (shouldTrackCta.value) {
         const eventType = submittedEventTypeFor(cta.value.type)
 
-        void analyticsStore.trackPublicCta(ctaPayloadFromForm(templateId.value, cta.value, eventType))
+        void analyticsStore.trackPublicCta(
+          ctaPayloadFromForm(templateId.value, cta.value, eventType)
+        )
       }
 
       if (cta.value.redirect_url) {

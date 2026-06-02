@@ -10,12 +10,18 @@ use App\Modules\Templates\Models\Template;
 use App\Modules\Templates\Models\WebsiteType;
 use App\Modules\Templates\Services\TemplateCatalogService;
 use App\Modules\Templates\Services\TemplateService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class TemplateController extends Controller
 {
+    public function __construct(
+        private readonly TemplateService $service,
+        private readonly TemplateCatalogService $catalog,
+    ) {}
+
     public function index(Request $request): JsonResponse
     {
         $templates = Template::query()
@@ -36,9 +42,9 @@ class TemplateController extends Controller
         return $this->success(TemplateResource::collection($templates), 'Templates retrieved.');
     }
 
-    public function store(TemplateRequest $request, TemplateService $service): JsonResponse
+    public function store(TemplateRequest $request): JsonResponse
     {
-        $template = $service->create(array_merge($request->validated(), [
+        $template = $this->service->create(array_merge($request->validated(), [
             'tenant_id' => $this->tenantId(),
         ]));
 
@@ -56,7 +62,7 @@ class TemplateController extends Controller
         return $this->success(new TemplateResource($record), 'Template retrieved.');
     }
 
-    public function update(TemplateRequest $request, string $template, TemplateService $service): JsonResponse
+    public function update(TemplateRequest $request, string $template): JsonResponse
     {
         $record = $this->queryForTenant()->find($template);
 
@@ -64,14 +70,14 @@ class TemplateController extends Controller
             return $this->error('Template not found.', 404);
         }
 
-        $updated = $service->update($record, array_merge($request->validated(), [
+        $updated = $this->service->update($record, array_merge($request->validated(), [
             'tenant_id' => $this->tenantId(),
         ]));
 
         return $this->success(new TemplateResource($updated), 'Template saved.');
     }
 
-    public function resetDefault(string $template, TemplateService $service): JsonResponse
+    public function resetDefault(string $template): JsonResponse
     {
         $record = $this->queryForTenant()->find($template);
 
@@ -79,7 +85,7 @@ class TemplateController extends Controller
             return $this->error('Template not found.', 404);
         }
 
-        $updated = $service->resetToDefault($record);
+        $updated = $this->service->resetToDefault($record);
 
         return $this->success(new TemplateResource($updated), 'Template restored to default design.');
     }
@@ -109,13 +115,13 @@ class TemplateController extends Controller
         return $this->success(WebsiteTypeResource::collection($types), 'Website types retrieved.');
     }
 
-    public function websiteTypeTemplates(WebsiteType $websiteType, TemplateCatalogService $catalog): JsonResponse
+    public function websiteTypeTemplates(WebsiteType $websiteType): JsonResponse
     {
         if (! $websiteType->is_active) {
             return $this->error('Website type not found.', 404);
         }
 
-        return $this->success($catalog->forWebsiteType($websiteType), 'Website templates retrieved.');
+        return $this->success($this->catalog->forWebsiteType($websiteType), 'Website templates retrieved.');
     }
 
     public function published(string $template): JsonResponse
@@ -131,7 +137,7 @@ class TemplateController extends Controller
         return $this->success(new TemplateResource($record), 'Published template retrieved.');
     }
 
-    private function queryForTenant()
+    private function queryForTenant(): Builder
     {
         return Template::query()
             ->with('websiteType')
