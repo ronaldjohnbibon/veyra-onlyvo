@@ -65,6 +65,7 @@ class AdminSidebarSeeder extends Seeder
                             'is_active'   => true,
                             'items'       => [
                                 ['title' => 'Sidebars', 'url' => 'sidebar', 'is_active' => true],
+                                ['title' => 'System Settings', 'url' => 'system-settings', 'is_active' => true],
                             ],
                         ],
                     ],

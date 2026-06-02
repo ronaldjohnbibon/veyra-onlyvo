@@ -3,6 +3,7 @@
 namespace App\Tenant\DesignRequests\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Shared\SystemSettings\Services\SystemSettingService;
 use App\Tenant\DesignRequests\Http\Requests\DesignRequestRequest;
 use App\Tenant\DesignRequests\Http\Resources\DesignRequestResource;
 use App\Tenant\DesignRequests\Models\DesignRequest;
@@ -15,10 +16,15 @@ class DesignRequestController extends Controller
 {
     public function __construct(
         private readonly DesignRequestService $service,
+        private readonly SystemSettingService $settings,
     ) {}
 
     public function index(Request $request): JsonResponse
     {
+        if (! $this->settings->featureEnabled('enable_design_requests_module')) {
+            return $this->error('Design requests module is disabled.', 403);
+        }
+
         $sorts = [
             'created_at' => 'created_at',
             'status'     => 'status',
@@ -48,6 +54,10 @@ class DesignRequestController extends Controller
 
     public function store(DesignRequestRequest $request): JsonResponse
     {
+        if (! $this->settings->featureEnabled('enable_design_requests_module')) {
+            return $this->error('Design requests module is disabled.', 403);
+        }
+
         $user = Auth::user();
 
         abort_unless($user?->tenant_id, 403);
@@ -59,6 +69,10 @@ class DesignRequestController extends Controller
 
     public function show(string $designRequest): JsonResponse
     {
+        if (! $this->settings->featureEnabled('enable_design_requests_module')) {
+            return $this->error('Design requests module is disabled.', 403);
+        }
+
         $record = DesignRequest::query()
             ->with('files')
             ->whereKey($designRequest)

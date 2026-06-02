@@ -10,6 +10,7 @@ const routes: RouteRecordRaw[] = [
       layout: 'tenant',
       title: 'Templates',
       description: 'Select website types and publish tenant templates',
+      featureFlag: 'feature_flags.enable_templates_module',
     },
   },
   {
@@ -21,6 +22,7 @@ const routes: RouteRecordRaw[] = [
       layout: 'empty',
       title: 'Template',
       description: 'View and manage complete website templates',
+      featureFlag: 'feature_flags.enable_templates_module',
     },
   },
 ]
@@ -34,6 +36,7 @@ export const publicTemplateRoutes: RouteRecordRaw[] = [
       layout: 'empty',
       title: 'Published Site',
       description: 'Published tenant website',
+      featureFlag: 'feature_flags.enable_templates_module',
     },
   },
 ]

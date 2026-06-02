@@ -2,12 +2,13 @@
 
 namespace App\Admin\Tenants\Http\Requests;
 
-use App\Shared\Enums\UserType;
 use App\Admin\Users\Models\User;
+use App\Shared\Enums\UserType;
+use App\Shared\SystemSettings\Services\SystemSettingService;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class TenantRequest extends FormRequest
 {
@@ -24,6 +25,7 @@ class TenantRequest extends FormRequest
         $routeParam = $this->route('tenant');
         $tenantId   = is_object($routeParam) ? $routeParam->id : $routeParam;
         $ownerId    = $this->ownerId($tenantId);
+        $ownerPasswordRules = $this->ownerPasswordRules();
 
         return [
             'name'      => ['required', 'string', 'max:150'],
@@ -37,7 +39,7 @@ class TenantRequest extends FormRequest
             'owner_last_name'             => ['nullable', 'string', 'max:255'],
             'owner_email'                 => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($ownerId)],
             'owner_phone'                 => ['nullable', 'string', 'max:50'],
-            'owner_password'              => [$this->isMethod('post') ? 'required' : 'nullable', 'string', 'min:8', 'confirmed'],
+            'owner_password'              => $ownerPasswordRules,
             'owner_password_confirmation' => [$this->isMethod('post') ? 'required' : 'nullable', 'string'],
         ];
     }
@@ -83,5 +85,20 @@ class TenantRequest extends FormRequest
             ->where('user_type', UserType::TENANT)
             ->oldest('id')
             ->value('id');
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function ownerPasswordRules(): array
+    {
+        $settings = app(SystemSettingService::class);
+        $rules = [$this->isMethod('post') ? 'required' : 'nullable', 'string', 'min:'.$settings->integer('security.minimum_password_length', 8), 'confirmed'];
+
+        if ($settings->boolean('security.require_strong_passwords')) {
+            $rules[] = 'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).+$/';
+        }
+
+        return $rules;
     }
 }

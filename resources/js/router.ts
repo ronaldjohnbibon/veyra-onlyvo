@@ -11,6 +11,7 @@ import adminTenantRoutes from '@/admin/tenants/routes'
 import adminDesignRequestRoutes from '@/admin/design-requests/routes'
 import sidebarRoutes from '@/tenant/sidebar/routes'
 import adminSidebarRoutes from '@/admin/sidebar/routes'
+import adminSystemSettingRoutes from '@/admin/system-settings/routes'
 import designRequestRoutes from '@/tenant/design-requests/routes'
 import templateRoutes, { publicTemplateRoutes } from '@/tenant/templates/routes'
 import postRoutes, { publicPostRoutes } from '@/tenant/templates/posts/routes'
@@ -26,6 +27,7 @@ const routes: RouteRecordRaw[] = [
   ...adminDesignRequestRoutes,
   ...adminTemplateRoutes,
   ...adminSidebarRoutes,
+  ...adminSystemSettingRoutes,
   ...analyticsRoutes,
   ...designRequestRoutes,
   ...sidebarRoutes,
@@ -41,9 +43,17 @@ const router = createRouter({
   routes,
 })
 
+const runtimeSettings =
+  (
+    window as unknown as {
+      __SYSTEM_SETTINGS__?: Record<string, string | boolean | number | null>
+    }
+  ).__SYSTEM_SETTINGS__ ?? {}
+
 router.beforeEach(async (to) => {
   const auth = useAuthStore()
   const adminAuth = useAdminAuthStore()
+  const featureFlag = to.meta.featureFlag as string | undefined
 
   if (auth.token && !auth.user) {
     await auth.init()
@@ -59,6 +69,10 @@ router.beforeEach(async (to) => {
 
   if (to.meta.requiresAuth && !auth.isAuthenticated) {
     return { name: 'TenantLogin' }
+  }
+
+  if (featureFlag && runtimeSettings[featureFlag] === false) {
+    return to.meta.requiresAuth ? { name: 'sidebar.index' } : { name: 'marketing.home' }
   }
 
   if (adminAuth.isAuthenticated && to.name === 'AdminLogin') {

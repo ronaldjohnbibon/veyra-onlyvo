@@ -3,6 +3,7 @@
 namespace App\Tenant\Templates\Posts\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Shared\SystemSettings\Services\SystemSettingService;
 use App\Tenant\Templates\Posts\Http\Requests\PostFeaturedImageRequest;
 use App\Tenant\Templates\Posts\Http\Requests\PostRequest;
 use App\Tenant\Templates\Posts\Http\Resources\PostResource;
@@ -17,10 +18,15 @@ class PostController extends Controller
 {
     public function __construct(
         private readonly PostService $service,
+        private readonly SystemSettingService $settings,
     ) {}
 
     public function index(Request $request, string $template): JsonResponse
     {
+        if ($response = $this->postsDisabled()) {
+            return $response;
+        }
+
         $templateRecord = $this->tenantTemplate($template);
 
         if (! $templateRecord) {
@@ -56,6 +62,10 @@ class PostController extends Controller
 
     public function store(PostRequest $request, string $template): JsonResponse
     {
+        if ($response = $this->postsDisabled()) {
+            return $response;
+        }
+
         $templateRecord = $this->tenantTemplate($template);
 
         if (! $templateRecord) {
@@ -69,6 +79,10 @@ class PostController extends Controller
 
     public function uploadFeaturedImage(PostFeaturedImageRequest $request, string $template): JsonResponse
     {
+        if ($response = $this->postsDisabled()) {
+            return $response;
+        }
+
         $templateRecord = $this->tenantTemplate($template);
 
         if (! $templateRecord) {
@@ -92,6 +106,10 @@ class PostController extends Controller
 
     public function show(string $template, string $post): JsonResponse
     {
+        if ($response = $this->postsDisabled()) {
+            return $response;
+        }
+
         $templateRecord = $this->tenantTemplate($template);
         $postRecord     = $templateRecord ? $this->templatePost($templateRecord, $post) : null;
 
@@ -104,6 +122,10 @@ class PostController extends Controller
 
     public function update(PostRequest $request, string $template, string $post): JsonResponse
     {
+        if ($response = $this->postsDisabled()) {
+            return $response;
+        }
+
         $templateRecord = $this->tenantTemplate($template);
         $postRecord     = $templateRecord ? $this->templatePost($templateRecord, $post) : null;
 
@@ -118,6 +140,10 @@ class PostController extends Controller
 
     public function destroy(string $template, string $post): JsonResponse
     {
+        if ($response = $this->postsDisabled()) {
+            return $response;
+        }
+
         $templateRecord = $this->tenantTemplate($template);
         $postRecord     = $templateRecord ? $this->templatePost($templateRecord, $post) : null;
 
@@ -132,6 +158,10 @@ class PostController extends Controller
 
     public function publish(string $template, string $post): JsonResponse
     {
+        if ($response = $this->postsDisabled()) {
+            return $response;
+        }
+
         $templateRecord = $this->tenantTemplate($template);
         $postRecord     = $templateRecord ? $this->templatePost($templateRecord, $post) : null;
 
@@ -144,6 +174,10 @@ class PostController extends Controller
 
     public function unpublish(string $template, string $post): JsonResponse
     {
+        if ($response = $this->postsDisabled()) {
+            return $response;
+        }
+
         $templateRecord = $this->tenantTemplate($template);
         $postRecord     = $templateRecord ? $this->templatePost($templateRecord, $post) : null;
 
@@ -172,5 +206,12 @@ class PostController extends Controller
         abort_unless($tenantId, 403);
 
         return $tenantId;
+    }
+
+    private function postsDisabled(): ?JsonResponse
+    {
+        return $this->settings->featureEnabled('enable_posts_module')
+            ? null
+            : $this->error('Posts module is disabled.', 403);
     }
 }

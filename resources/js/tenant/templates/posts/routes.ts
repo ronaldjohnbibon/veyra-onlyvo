@@ -10,6 +10,7 @@ const routes: RouteRecordRaw[] = [
       layout: 'tenant',
       title: 'Posts',
       description: 'Manage website posts',
+      featureFlag: 'feature_flags.enable_posts_module',
     },
   },
 ]
@@ -23,6 +24,7 @@ export const publicPostRoutes: RouteRecordRaw[] = [
       layout: 'empty',
       title: 'Published Post',
       description: 'Published tenant website post',
+      featureFlag: 'feature_flags.enable_posts_module',
     },
   },
 ]

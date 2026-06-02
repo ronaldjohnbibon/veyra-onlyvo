@@ -19,6 +19,14 @@ import { computed } from 'vue'
 
 const tenantAuthStore = useAuthStore()
 const adminAuthStore = useAdminAuthStore()
+const runtimeSettings =
+  (
+    window as unknown as {
+      __SYSTEM_SETTINGS__?: Record<string, string | boolean | number | null>
+    }
+  ).__SYSTEM_SETTINGS__ ?? {}
+const privacyPolicyUrl = String(runtimeSettings['compliance.privacy_policy_url'] || '')
+const termsOfServiceUrl = String(runtimeSettings['compliance.terms_of_service_url'] || '')
 
 const dashboardRoute = computed(() => {
   return adminAuthStore.isAuthenticated ? { name: 'admin.dashboard' } : { name: 'sidebar.index' }
@@ -360,6 +368,24 @@ const packageFits = [
       >
         <p>Onlyvo tenant website platform</p>
         <div class="flex gap-4">
+          <a
+            v-if="privacyPolicyUrl"
+            :href="privacyPolicyUrl"
+            class="hover:text-foreground"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Privacy
+          </a>
+          <a
+            v-if="termsOfServiceUrl"
+            :href="termsOfServiceUrl"
+            class="hover:text-foreground"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Terms
+          </a>
           <a href="#features" class="hover:text-foreground">Learn More</a>
           <a href="#contact" class="hover:text-foreground">Contact Us</a>
         </div>

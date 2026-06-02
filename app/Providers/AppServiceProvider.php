@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Shared\SystemSettings\Services\SystemSettingService;
 use FilesystemIterator;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Support\ServiceProvider;
@@ -32,6 +33,8 @@ class AppServiceProvider extends ServiceProvider
         $this->loadMigrationsFrom(app_path('Tenant/TrackingLogs/Database/Migrations'));
         $this->loadMigrationsFrom(app_path('Tenant/Tenants/Database/Migrations'));
         $this->loadMigrationsFrom(app_path('Tenant/Users/Database/Migrations'));
+
+        app(SystemSettingService::class)->applyRuntimeConfig();
 
         ResetPassword::createUrlUsing(function (object $notifiable, string $token): string {
             $tenant      = $notifiable->tenant;

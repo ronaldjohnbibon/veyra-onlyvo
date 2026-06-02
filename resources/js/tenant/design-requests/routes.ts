@@ -10,6 +10,7 @@ const routes: RouteRecordRaw[] = [
       layout: 'tenant',
       title: 'Design Requests',
       description: 'Request custom website designs and templates',
+      featureFlag: 'feature_flags.enable_design_requests_module',
     },
   },
 ]

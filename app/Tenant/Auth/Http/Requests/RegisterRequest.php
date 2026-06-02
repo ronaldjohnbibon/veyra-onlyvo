@@ -4,6 +4,7 @@ namespace App\Tenant\Auth\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use App\Shared\SystemSettings\Services\SystemSettingService;
 
 class RegisterRequest extends FormRequest
 {
@@ -14,10 +15,17 @@ class RegisterRequest extends FormRequest
 
     public function rules(): array
     {
+        $settings = app(SystemSettingService::class);
+        $passwordRules = ['required', 'string', 'min:'.$settings->integer('security.minimum_password_length', 8), 'confirmed'];
+
+        if ($settings->boolean('security.require_strong_passwords')) {
+            $passwordRules[] = 'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).+$/';
+        }
+
         return [
             'email'    => ['required', 'email', 'max:255', Rule::unique('users', 'email')],
             'phone'    => ['required', 'regex:/^09\d{9}$/'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'password' => $passwordRules,
             'name'     => ['required', 'string', 'max:255', Rule::unique('tenants', 'name')],
         ];
     }

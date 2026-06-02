@@ -6,11 +6,16 @@ use App\Admin\Sidebar\Models\Sidebar;
 use App\Admin\Tenants\Models\Tenant;
 use App\Admin\Users\Models\User;
 use App\Shared\Enums\UserType;
+use App\Shared\SystemSettings\Services\SystemSettingService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 class TenantService
 {
+    public function __construct(
+        private readonly SystemSettingService $settings,
+    ) {}
+
     /**
      * @param  array<string, mixed>  $data
      */
@@ -65,9 +70,13 @@ class TenantService
         return [
             'name'      => $data['name'],
             'subdomain' => $data['subdomain'],
-            'timezone'  => $data['timezone'],
-            'status'    => $data['status'] ?? 'active',
-            'settings'  => $data['settings'] ?? [],
+            'timezone'  => $data['timezone'] ?? $this->settings->string('tenant_defaults.default_tenant_timezone', 'UTC'),
+            'status'    => $data['status'] ?? $this->settings->string('tenant_defaults.default_tenant_status', 'active'),
+            'settings'  => array_merge([
+                'trial_days'            => $this->settings->integer('tenant_defaults.default_tenant_trial_days', $this->settings->integer('authentication.default_trial_days', 14)),
+                'default_template_type' => $this->settings->string('tenant_defaults.default_tenant_template_type'),
+                'default_template_key'  => $this->settings->string('tenant_defaults.default_tenant_template_key'),
+            ], $data['settings'] ?? []),
         ];
     }
 
@@ -86,6 +95,7 @@ class TenantService
             'email'       => $data['owner_email'],
             'phone'       => $data['owner_phone'] ?? null,
             'password'    => Hash::make($data['owner_password']),
+            'email_verified_at' => $this->settings->boolean('authentication.require_email_verification') ? null : now(),
             'is_active'   => true,
             'user_type'   => UserType::TENANT,
         ]);

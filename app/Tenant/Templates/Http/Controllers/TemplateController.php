@@ -3,6 +3,7 @@
 namespace App\Tenant\Templates\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Shared\SystemSettings\Services\SystemSettingService;
 use App\Tenant\Templates\Http\Requests\TemplateRequest;
 use App\Tenant\Templates\Http\Resources\TemplateResource;
 use App\Tenant\Templates\Http\Resources\WebsiteTypeResource;
@@ -19,10 +20,15 @@ class TemplateController extends Controller
     public function __construct(
         private readonly TemplateService $service,
         private readonly TemplateCatalogService $catalog,
+        private readonly SystemSettingService $settings,
     ) {}
 
     public function index(Request $request): JsonResponse
     {
+        if ($response = $this->templatesDisabled()) {
+            return $response;
+        }
+
         $templates = Template::query()
             ->with('websiteType')
             ->filter([
@@ -42,6 +48,10 @@ class TemplateController extends Controller
 
     public function store(TemplateRequest $request): JsonResponse
     {
+        if ($response = $this->templatesDisabled()) {
+            return $response;
+        }
+
         $template = $this->service->create(array_merge($request->validated(), [
             'tenant_id' => $this->tenantId(),
         ]));
@@ -51,6 +61,10 @@ class TemplateController extends Controller
 
     public function show(string $template): JsonResponse
     {
+        if ($response = $this->templatesDisabled()) {
+            return $response;
+        }
+
         $record = Template::query()
             ->with('websiteType')
             ->find($template);
@@ -64,6 +78,10 @@ class TemplateController extends Controller
 
     public function update(TemplateRequest $request, string $template): JsonResponse
     {
+        if ($response = $this->templatesDisabled()) {
+            return $response;
+        }
+
         $record = Template::query()
             ->with('websiteType')
             ->find($template);
@@ -81,6 +99,10 @@ class TemplateController extends Controller
 
     public function resetDefault(string $template): JsonResponse
     {
+        if ($response = $this->templatesDisabled()) {
+            return $response;
+        }
+
         $record = Template::query()
             ->with('websiteType')
             ->find($template);
@@ -96,6 +118,10 @@ class TemplateController extends Controller
 
     public function destroy(string $template): JsonResponse
     {
+        if ($response = $this->templatesDisabled()) {
+            return $response;
+        }
+
         $record = Template::query()
             ->with('websiteType')
             ->find($template);
@@ -111,6 +137,10 @@ class TemplateController extends Controller
 
     public function websiteTypes(): JsonResponse
     {
+        if ($response = $this->templatesDisabled()) {
+            return $response;
+        }
+
         $types = WebsiteType::query()
             ->where('is_active', true)
             ->withCount('templates')
@@ -123,6 +153,10 @@ class TemplateController extends Controller
 
     public function websiteTypeTemplates(WebsiteType $websiteType): JsonResponse
     {
+        if ($response = $this->templatesDisabled()) {
+            return $response;
+        }
+
         if (! $websiteType->is_active) {
             return $this->error('Website type not found.', 404);
         }
@@ -132,6 +166,10 @@ class TemplateController extends Controller
 
     public function published(string $template): JsonResponse
     {
+        if ($response = $this->templatesDisabled()) {
+            return $response;
+        }
+
         $record = Template::query()
             ->with('websiteType')
             ->where('status', 'published')
@@ -151,5 +189,12 @@ class TemplateController extends Controller
         abort_unless($tenantId, 403);
 
         return $tenantId;
+    }
+
+    private function templatesDisabled(): ?JsonResponse
+    {
+        return $this->settings->featureEnabled('enable_templates_module')
+            ? null
+            : $this->error('Templates module is disabled.', 403);
     }
 }

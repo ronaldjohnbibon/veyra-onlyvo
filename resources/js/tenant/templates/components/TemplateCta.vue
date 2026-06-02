@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import TemplateDynamicForm from '@/tenant/templates/components/TemplateDynamicForm.vue'
 import type { TemplateCtaConfig, TemplateCtaField } from '@/shared/types/templates'
+import { computed } from 'vue'
 
 defineOptions({
   name: 'TemplateCta',
@@ -49,10 +50,18 @@ defineSlots<{
   'after-fields'?: () => unknown
   submit?: (props: { loading: boolean; submitLabel: string }) => unknown
 }>()
+
+const runtimeSettings =
+  (
+    window as unknown as {
+      __SYSTEM_SETTINGS__?: Record<string, string | boolean | number | null>
+    }
+  ).__SYSTEM_SETTINGS__ ?? {}
+const ctaFormsEnabled = computed(() => runtimeSettings['feature_flags.enable_cta_forms'] !== false)
 </script>
 
 <template>
-  <div :class="props.class">
+  <div v-if="ctaFormsEnabled" :class="props.class">
     <slot name="header" :cta="props.cta" />
 
     <TemplateDynamicForm

@@ -10,6 +10,7 @@ const routes: RouteRecordRaw[] = [
       layout: 'tenant',
       title: 'Analytics',
       description: 'Review public website visitor analytics',
+      featureFlag: 'feature_flags.enable_analytics_module',
     },
   },
 ]

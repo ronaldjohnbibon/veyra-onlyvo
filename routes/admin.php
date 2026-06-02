@@ -3,6 +3,7 @@
 use App\Admin\Auth\Http\Controllers\AuthController;
 use App\Admin\DesignRequests\Http\Controllers\AdminDesignRequestController;
 use App\Admin\Sidebar\Http\Controllers\AdminSidebarController;
+use App\Admin\SystemSettings\Http\Controllers\AdminSystemSettingController;
 use App\Admin\Templates\Http\Controllers\AdminTemplateCatalogController;
 use App\Admin\Templates\Http\Controllers\AdminWebsiteTypeController;
 use App\Admin\Tenants\Http\Controllers\AdminTenantController;
@@ -20,6 +21,10 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
         Route::put('design-requests/{designRequest}', [AdminDesignRequestController::class, 'update'])->name('design-requests.update');
 
         Route::apiResource('sidebars', AdminSidebarController::class);
+        Route::put('system-settings', [AdminSystemSettingController::class, 'updateBulk'])->name('system-settings.update-bulk');
+        Route::post('system-settings/images', [AdminSystemSettingController::class, 'uploadImage'])->name('system-settings.images.store');
+        Route::apiResource('system-settings', AdminSystemSettingController::class)
+            ->parameters(['system-settings' => 'systemSetting']);
 
         Route::apiResource('template-catalog-items', AdminTemplateCatalogController::class)
             ->parameters(['template-catalog-items' => 'templateCatalogItem']);

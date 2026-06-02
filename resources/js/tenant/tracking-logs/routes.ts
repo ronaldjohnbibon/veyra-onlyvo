@@ -10,6 +10,7 @@ const routes: RouteRecordRaw[] = [
       layout: 'tenant',
       title: 'Tracking Logs',
       description: 'Inspect raw public website tracking events',
+      featureFlag: 'feature_flags.enable_tracking_logs',
     },
   },
 ]

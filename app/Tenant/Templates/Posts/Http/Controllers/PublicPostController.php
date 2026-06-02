@@ -3,14 +3,23 @@
 namespace App\Tenant\Templates\Posts\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Shared\SystemSettings\Services\SystemSettingService;
 use App\Tenant\Templates\Posts\Http\Resources\PostResource;
 use App\Tenant\Templates\Models\Template;
 use Illuminate\Http\JsonResponse;
 
 class PublicPostController extends Controller
 {
+    public function __construct(
+        private readonly SystemSettingService $settings,
+    ) {}
+
     public function index(string $siteSlug): JsonResponse
     {
+        if (! $this->settings->featureEnabled('enable_posts_module')) {
+            return $this->error('Posts module is disabled.', 403);
+        }
+
         $template = $this->publishedTemplate($siteSlug);
 
         if (! $template) {
@@ -29,6 +38,10 @@ class PublicPostController extends Controller
 
     public function show(string $siteSlug, string $postSlug): JsonResponse
     {
+        if (! $this->settings->featureEnabled('enable_posts_module')) {
+            return $this->error('Posts module is disabled.', 403);
+        }
+
         $template = $this->publishedTemplate($siteSlug);
         $post     = $template
             ? $template->posts()

@@ -24,6 +24,36 @@ const sidebarStore = useSidebarStore()
 const authStore = useAuthStore()
 
 const data = computed<SidebarRecord | null>(() => sidebarStore.sidebars[0] ?? null)
+const runtimeSettings =
+  (
+    window as unknown as {
+      __SYSTEM_SETTINGS__?: Record<string, string | boolean | number | null>
+    }
+  ).__SYSTEM_SETTINGS__ ?? {}
+const hiddenUrls = computed(() => {
+  const flags: Record<string, string> = {
+    templates: 'feature_flags.enable_templates_module',
+    posts: 'feature_flags.enable_posts_module',
+    analytics: 'feature_flags.enable_analytics_module',
+    'design-requests': 'feature_flags.enable_design_requests_module',
+    'tracking-logs': 'feature_flags.enable_tracking_logs',
+  }
+
+  return new Set(
+    Object.entries(flags)
+      .filter(([, flag]) => runtimeSettings[flag] === false)
+      .map(([url]) => url)
+  )
+})
+const visibleNav = computed(() => {
+  return (data.value?.data.main_nav ?? [])
+    .map((item) => ({
+      ...item,
+      items: item.items?.filter((child) => !hiddenUrls.value.has(child.url)),
+    }))
+    .filter((item) => item.url !== '#' || item.items?.length)
+    .filter((item) => item.url === '#' || !hiddenUrls.value.has(item.url))
+})
 
 const currentUser = computed(() => {
   if (!authStore.user) return null
@@ -49,7 +79,7 @@ onMounted(() => {
         <TeamSwitcher :teams="data.data.teams" />
       </SidebarHeader>
       <SidebarContent>
-        <NavMain :items="data.data.main_nav" />
+        <NavMain :items="visibleNav" />
       </SidebarContent>
     </template>
 
