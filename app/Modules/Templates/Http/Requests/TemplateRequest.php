@@ -95,26 +95,22 @@ class TemplateRequest extends FormRequest
     {
         $routeParam = $this->route('template');
         $templateId = is_object($routeParam) ? $routeParam->id : $routeParam;
-        $tenantId   = (string) $this->input('tenant_id');
         $baseSlug   = Str::slug($value) ?: 'site';
         $slug       = $baseSlug;
         $nextIndex  = 2;
 
-        while ($this->slugExists($tenantId, $slug, $templateId)) {
+        while ($this->slugExists($slug, $templateId)) {
             $slug = $baseSlug.'-'.$nextIndex++;
         }
 
         return $slug;
     }
 
-    private function slugExists(string $tenantId, string $slug, mixed $templateId): bool
+    private function slugExists(string $slug, mixed $templateId): bool
     {
-        return Template::withoutTenantRestrictions(function () use ($tenantId, $slug, $templateId): bool {
-            return Template::query()
-                ->where('tenant_id', $tenantId)
-                ->where('slug', $slug)
-                ->when($templateId, fn ($query) => $query->whereKeyNot($templateId))
-                ->exists();
-        });
+        return Template::query()
+            ->where('slug', $slug)
+            ->when($templateId, fn ($query) => $query->whereKeyNot($templateId))
+            ->exists();
     }
 }

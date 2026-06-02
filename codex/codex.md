@@ -53,6 +53,7 @@ resources/js/modules/{feature}
 - Use Resources for API responses.
 - Use DB transactions for multi-record writes.
 - Use typed properties, constructor injection, and return types.
+- Tenant-owned Eloquent models use Sprout Multi-Tenancy with `BelongsToTenant`; rely on Sprout's automatic tenant scoping instead of adding duplicate `tenant_id` filters.
 
 ## API Conventions
 

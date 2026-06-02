@@ -7,7 +7,6 @@ use App\Modules\DesignRequests\Http\Requests\DesignRequestRequest;
 use App\Modules\DesignRequests\Http\Resources\DesignRequestResource;
 use App\Modules\DesignRequests\Models\DesignRequest;
 use App\Modules\DesignRequests\Services\DesignRequestService;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -29,7 +28,7 @@ class DesignRequestController extends Controller
         $sortColumn = $sorts[$sort] ?? 'created_at';
         $direction  = $request->input('direction') === 'asc' ? 'asc' : 'desc';
 
-        $requests = $this->queryForTenant()
+        $requests = DesignRequest::query()
             ->with('files')
             ->filter([
                 'search' => $request->input('search'),
@@ -60,7 +59,7 @@ class DesignRequestController extends Controller
 
     public function show(string $designRequest): JsonResponse
     {
-        $record = $this->queryForTenant()
+        $record = DesignRequest::query()
             ->with('files')
             ->whereKey($designRequest)
             ->first();
@@ -70,20 +69,5 @@ class DesignRequestController extends Controller
         }
 
         return $this->success(new DesignRequestResource($record), 'Design request retrieved.');
-    }
-
-    private function queryForTenant(): Builder
-    {
-        return DesignRequest::query()
-            ->where('tenant_id', $this->tenantId());
-    }
-
-    private function tenantId(): string
-    {
-        $tenantId = Auth::user()?->tenant_id;
-
-        abort_unless($tenantId, 403);
-
-        return $tenantId;
     }
 }

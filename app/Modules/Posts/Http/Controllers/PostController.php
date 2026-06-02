@@ -156,9 +156,7 @@ class PostController extends Controller
 
     private function tenantTemplate(string $template): ?Template
     {
-        // Check template ownership.
         return Template::query()
-            ->where('tenant_id', $this->tenantId())
             ->find($template);
     }
 

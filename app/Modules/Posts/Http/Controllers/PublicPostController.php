@@ -6,13 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Modules\Posts\Http\Resources\PostResource;
 use App\Modules\Templates\Models\Template;
 use Illuminate\Http\JsonResponse;
-use Sprout\Contracts\Tenant as CurrentTenant;
 
 class PublicPostController extends Controller
 {
-    public function index(CurrentTenant $tenant, string $siteSlug): JsonResponse
+    public function index(string $siteSlug): JsonResponse
     {
-        $template = $this->publishedTemplate((string) $tenant->getTenantKey(), $siteSlug);
+        $template = $this->publishedTemplate($siteSlug);
 
         if (! $template) {
             return $this->error('Published site not found.', 404);
@@ -28,9 +27,9 @@ class PublicPostController extends Controller
         return $this->success(PostResource::collection($posts), 'Published posts retrieved.');
     }
 
-    public function show(CurrentTenant $tenant, string $siteSlug, string $postSlug): JsonResponse
+    public function show(string $siteSlug, string $postSlug): JsonResponse
     {
-        $template = $this->publishedTemplate((string) $tenant->getTenantKey(), $siteSlug);
+        $template = $this->publishedTemplate($siteSlug);
         $post     = $template
             ? $template->posts()
                 ->where('status', 'published')
@@ -46,14 +45,11 @@ class PublicPostController extends Controller
         return $this->success(new PostResource($post), 'Published post retrieved.');
     }
 
-    private function publishedTemplate(string $tenantId, string $siteSlug): ?Template
+    private function publishedTemplate(string $siteSlug): ?Template
     {
-        return Template::withoutTenantRestrictions(function () use ($tenantId, $siteSlug): ?Template {
-            return Template::query()
-                ->where('tenant_id', $tenantId)
-                ->where('status', 'published')
-                ->where('slug', $siteSlug)
-                ->first();
-        });
+        return Template::query()
+            ->where('status', 'published')
+            ->where('slug', $siteSlug)
+            ->first();
     }
 }

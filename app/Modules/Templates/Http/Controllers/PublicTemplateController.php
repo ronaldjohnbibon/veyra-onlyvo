@@ -7,13 +7,12 @@ use App\Modules\Templates\Http\Resources\TemplateResource;
 use App\Modules\Templates\Models\Template;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
-use Sprout\Contracts\Tenant as CurrentTenant;
 
 class PublicTemplateController extends Controller
 {
-    public function show(CurrentTenant $tenant, string $slug): JsonResponse
+    public function show(string $slug): JsonResponse
     {
-        $template = $this->publishedQuery((string) $tenant->getTenantKey())
+        $template = $this->publishedQuery()
             ->where('slug', $slug)
             ->first();
 
@@ -24,9 +23,9 @@ class PublicTemplateController extends Controller
         return $this->success(new TemplateResource($template), 'Published site retrieved.');
     }
 
-    public function defaultSite(CurrentTenant $tenant): JsonResponse
+    public function defaultSite(): JsonResponse
     {
-        $template = $this->publishedQuery((string) $tenant->getTenantKey())
+        $template = $this->publishedQuery()
             ->where('is_default', true)
             ->first();
 
@@ -37,14 +36,10 @@ class PublicTemplateController extends Controller
         return $this->success(new TemplateResource($template), 'Published site retrieved.');
     }
 
-    private function publishedQuery(string $tenantId): Builder
+    private function publishedQuery(): Builder
     {
-        // Public visitors can only read published tenant sites.
-        return Template::withoutTenantRestrictions(function () use ($tenantId): Builder {
-            return Template::query()
-                ->with('websiteType')
-                ->where('tenant_id', $tenantId)
-                ->where('status', 'published');
-        });
+        return Template::query()
+            ->with('websiteType')
+            ->where('status', 'published');
     }
 }

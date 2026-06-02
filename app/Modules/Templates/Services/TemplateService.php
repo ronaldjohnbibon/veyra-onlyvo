@@ -20,11 +20,11 @@ class TemplateService
     {
         return DB::transaction(function () use ($data): Template {
             $data         = $this->normalizeTemplate($data);
-            $data['slug'] = $this->slugForTemplate($data['tenant_id'], $data['slug'] ?? $data['name']);
+            $data['slug'] = $this->slugForTemplate($data['slug'] ?? $data['name']);
             $data         = $this->storeUploadedImages($data);
 
             if (! empty($data['is_default'])) {
-                $this->clearTenantDefaults((string) $data['tenant_id']);
+                $this->clearTenantDefaults();
             }
 
             return Template::create($data);
@@ -43,11 +43,11 @@ class TemplateService
                 $data['slug'] = $data['name'];
             }
 
-            $data['slug'] = $this->slugForTemplate($data['tenant_id'], $data['slug'], $template->id);
+            $data['slug'] = $this->slugForTemplate($data['slug'], $template->id);
             $data         = $this->storeUploadedImages($data, $template);
 
             if (! empty($data['is_default'])) {
-                $this->clearTenantDefaults((string) $data['tenant_id'], $template->id);
+                $this->clearTenantDefaults($template->id);
             }
 
             $template->update($data);
@@ -193,39 +193,33 @@ class TemplateService
         return '/storage/'.$path;
     }
 
-    private function slugForTemplate(string $tenantId, string $value, ?string $ignoreId = null): string
+    private function slugForTemplate(string $value, ?string $ignoreId = null): string
     {
         $baseSlug  = Str::slug($value) ?: 'site';
         $slug      = $baseSlug;
         $nextIndex = 2;
 
-        while ($this->slugExists($tenantId, $slug, $ignoreId)) {
+        while ($this->slugExists($slug, $ignoreId)) {
             $slug = $baseSlug.'-'.$nextIndex++;
         }
 
         return $slug;
     }
 
-    private function slugExists(string $tenantId, string $slug, ?string $ignoreId = null): bool
+    private function slugExists(string $slug, ?string $ignoreId = null): bool
     {
-        return Template::withoutTenantRestrictions(function () use ($tenantId, $slug, $ignoreId): bool {
-            return Template::query()
-                ->where('tenant_id', $tenantId)
-                ->where('slug', $slug)
-                ->when($ignoreId, fn ($query) => $query->whereKeyNot($ignoreId))
-                ->exists();
-        });
+        return Template::query()
+            ->where('slug', $slug)
+            ->when($ignoreId, fn ($query) => $query->whereKeyNot($ignoreId))
+            ->exists();
     }
 
-    private function clearTenantDefaults(string $tenantId, ?string $ignoreId = null): void
+    private function clearTenantDefaults(?string $ignoreId = null): void
     {
         // Keep one public default per tenant by clearing older defaults first.
-        Template::withoutTenantRestrictions(function () use ($tenantId, $ignoreId): void {
-            Template::query()
-                ->where('tenant_id', $tenantId)
-                ->when($ignoreId, fn ($query) => $query->whereKeyNot($ignoreId))
-                ->update(['is_default' => false]);
-        });
+        Template::query()
+            ->when($ignoreId, fn ($query) => $query->whereKeyNot($ignoreId))
+            ->update(['is_default' => false]);
     }
 
     /**

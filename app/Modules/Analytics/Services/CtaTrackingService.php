@@ -15,7 +15,7 @@ class CtaTrackingService
      */
     public function record(Request $request, string $tenantId, array $payload): ?CtaEvent
     {
-        $template = $this->publishedTemplate($tenantId, (string) ($payload['template_id'] ?? ''));
+        $template = $this->publishedTemplate((string) ($payload['template_id'] ?? ''));
 
         if (! $template) {
             return null;
@@ -49,19 +49,15 @@ class CtaTrackingService
         return $event;
     }
 
-    private function publishedTemplate(string $tenantId, string $templateId): ?Template
+    private function publishedTemplate(string $templateId): ?Template
     {
         if ($templateId === '') {
             return null;
         }
 
-        // CTA tracking only accepts published templates owned by the current tenant.
-        return Template::withoutTenantRestrictions(function () use ($tenantId, $templateId): ?Template {
-            return Template::query()
-                ->where('tenant_id', $tenantId)
-                ->where('status', 'published')
-                ->find($templateId);
-        });
+        return Template::query()
+            ->where('status', 'published')
+            ->find($templateId);
     }
 
     private function visitorHash(string $tenantId, string $ipAddress, string $userAgent, string $ctaIdentifier, string $eventDate): string

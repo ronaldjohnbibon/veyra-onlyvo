@@ -10,7 +10,6 @@ use App\Modules\Templates\Models\Template;
 use App\Modules\Templates\Models\WebsiteType;
 use App\Modules\Templates\Services\TemplateCatalogService;
 use App\Modules\Templates\Services\TemplateService;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -26,7 +25,6 @@ class TemplateController extends Controller
     {
         $templates = Template::query()
             ->with('websiteType')
-            ->where('tenant_id', $this->tenantId())
             ->filter([
                 'search'          => $request->input('search'),
                 'website_type_id' => $request->input('website_type_id'),
@@ -53,7 +51,9 @@ class TemplateController extends Controller
 
     public function show(string $template): JsonResponse
     {
-        $record = $this->queryForTenant()->find($template);
+        $record = Template::query()
+            ->with('websiteType')
+            ->find($template);
 
         if (! $record) {
             return $this->error('Template not found.', 404);
@@ -64,7 +64,9 @@ class TemplateController extends Controller
 
     public function update(TemplateRequest $request, string $template): JsonResponse
     {
-        $record = $this->queryForTenant()->find($template);
+        $record = Template::query()
+            ->with('websiteType')
+            ->find($template);
 
         if (! $record) {
             return $this->error('Template not found.', 404);
@@ -79,7 +81,9 @@ class TemplateController extends Controller
 
     public function resetDefault(string $template): JsonResponse
     {
-        $record = $this->queryForTenant()->find($template);
+        $record = Template::query()
+            ->with('websiteType')
+            ->find($template);
 
         if (! $record) {
             return $this->error('Template not found.', 404);
@@ -92,7 +96,9 @@ class TemplateController extends Controller
 
     public function destroy(string $template): JsonResponse
     {
-        $record = $this->queryForTenant()->find($template);
+        $record = Template::query()
+            ->with('websiteType')
+            ->find($template);
 
         if (! $record) {
             return $this->error('Template not found.', 404);
@@ -126,7 +132,8 @@ class TemplateController extends Controller
 
     public function published(string $template): JsonResponse
     {
-        $record = $this->queryForTenant()
+        $record = Template::query()
+            ->with('websiteType')
             ->where('status', 'published')
             ->find($template);
 
@@ -135,13 +142,6 @@ class TemplateController extends Controller
         }
 
         return $this->success(new TemplateResource($record), 'Published template retrieved.');
-    }
-
-    private function queryForTenant(): Builder
-    {
-        return Template::query()
-            ->with('websiteType')
-            ->where('tenant_id', $this->tenantId());
     }
 
     private function tenantId(): string

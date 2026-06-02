@@ -101,13 +101,10 @@ class TemplateCtaSubmissionRequest extends FormRequest
 
     public function template(): ?Template
     {
-        return Template::withoutTenantRestrictions(function (): ?Template {
-            return Template::query()
-                ->whereKey($this->input('template_id'))
-                ->where('tenant_id', $this->tenantId())
-                ->where('status', 'published')
-                ->first();
-        });
+        return Template::query()
+            ->whereKey($this->input('template_id'))
+            ->where('status', 'published')
+            ->first();
     }
 
     /**

@@ -7,7 +7,6 @@ use App\Modules\Sidebar\Http\Requests\SidebarRequest;
 use App\Modules\Sidebar\Http\Resources\SidebarResource;
 use App\Modules\Sidebar\Models\Sidebar;
 use App\Modules\Sidebar\Services\SidebarService;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -20,11 +19,8 @@ class TenantSidebarController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $tenantId = $this->tenantId();
-
         $sidebars = Sidebar::query()
             ->where('is_admin', false)
-            ->where('tenant_id', $tenantId)
             ->filter(['search' => $request->input('search')])
             ->latest()
             ->paginate(
@@ -49,7 +45,9 @@ class TenantSidebarController extends Controller
 
     public function show(string $sidebar): JsonResponse
     {
-        $record = $this->queryForTenant()->find($sidebar);
+        $record = Sidebar::query()
+            ->where('is_admin', false)
+            ->find($sidebar);
 
         if (! $record) {
             return $this->error('Sidebar not found.', 404);
@@ -60,7 +58,9 @@ class TenantSidebarController extends Controller
 
     public function update(SidebarRequest $request, string $sidebar): JsonResponse
     {
-        $record = $this->queryForTenant()->find($sidebar);
+        $record = Sidebar::query()
+            ->where('is_admin', false)
+            ->find($sidebar);
 
         if (! $record) {
             return $this->error('Sidebar not found.', 404);
@@ -76,7 +76,9 @@ class TenantSidebarController extends Controller
 
     public function destroy(string $sidebar): JsonResponse
     {
-        $record = $this->queryForTenant()->find($sidebar);
+        $record = Sidebar::query()
+            ->where('is_admin', false)
+            ->find($sidebar);
 
         if (! $record) {
             return $this->error('Sidebar not found.', 404);
@@ -85,13 +87,6 @@ class TenantSidebarController extends Controller
         $record->delete();
 
         return $this->success(null, 'Sidebar deleted.');
-    }
-
-    private function queryForTenant(): Builder
-    {
-        return Sidebar::query()
-            ->where('is_admin', false)
-            ->where('tenant_id', $this->tenantId());
     }
 
     private function tenantId(): string
