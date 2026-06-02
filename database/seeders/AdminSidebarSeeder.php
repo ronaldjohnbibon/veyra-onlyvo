@@ -29,15 +29,42 @@ class AdminSidebarSeeder extends Seeder
                         [
                             'title'       => 'Platform',
                             'url'         => '#',
-                            'icon'        => 'Settings',
+                            'icon'        => 'LayoutDashboard',
                             'description' => '',
                             'is_active'   => true,
                             'items'       => [
                                 ['title' => 'Dashboard', 'url' => 'dashboard', 'is_active' => true],
-                                ['title' => 'Tenant', 'url' => 'tenants', 'is_active' => true],
+                                ['title' => 'Tenants', 'url' => 'tenants', 'is_active' => true],
+                            ],
+                        ],
+                        [
+                            'title'       => 'Operations',
+                            'url'         => '#',
+                            'icon'        => 'Palette',
+                            'description' => '',
+                            'is_active'   => true,
+                            'items'       => [
                                 ['title' => 'Design Requests', 'url' => 'design-requests', 'is_active' => true],
-                                ['title' => 'Sidebars', 'url' => 'sidebar', 'is_active' => true],
+                            ],
+                        ],
+                        [
+                            'title'       => 'Template Library',
+                            'url'         => '#',
+                            'icon'        => 'Package',
+                            'description' => '',
+                            'is_active'   => true,
+                            'items'       => [
                                 ['title' => 'Templates', 'url' => 'templates', 'is_active' => true],
+                            ],
+                        ],
+                        [
+                            'title'       => 'Maintenance',
+                            'url'         => '#',
+                            'icon'        => 'Wrench',
+                            'description' => '',
+                            'is_active'   => true,
+                            'items'       => [
+                                ['title' => 'Sidebars', 'url' => 'sidebar', 'is_active' => true],
                             ],
                         ],
                     ],

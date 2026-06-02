@@ -33,15 +33,33 @@ class SidebarSeeder extends Seeder
                     ],
                     'main_nav' => [
                         [
-                            'title'       => 'Workspace',
+                            'title'       => 'Site Builder',
                             'url'         => '#',
-                            'icon'        => 'LayoutDashboard',
+                            'icon'        => 'Sparkles',
                             'description' => '',
                             'is_active'   => true,
                             'items'       => [
                                 ['title' => 'Templates', 'url' => 'templates', 'is_active' => true],
                                 ['title' => 'Posts', 'url' => 'posts', 'is_active' => true],
+                            ],
+                        ],
+                        [
+                            'title'       => 'Creative',
+                            'url'         => '#',
+                            'icon'        => 'Palette',
+                            'description' => '',
+                            'is_active'   => true,
+                            'items'       => [
                                 ['title' => 'Design Requests', 'url' => 'design-requests', 'is_active' => true],
+                            ],
+                        ],
+                        [
+                            'title'       => 'Insights',
+                            'url'         => '#',
+                            'icon'        => 'BarChart3',
+                            'description' => '',
+                            'is_active'   => true,
+                            'items'       => [
                                 ['title' => 'Analytics', 'url' => 'analytics', 'is_active' => true],
                                 ['title' => 'Tracking Logs', 'url' => 'tracking-logs', 'is_active' => true],
                             ],
