@@ -1,9 +1,10 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 import { useAuthStore } from '@/tenant/auth/auth-store'
-import { useAdminAuthStore } from '@/admin/admin-auth-store'
+import { useAdminAuthStore } from '@/admin/auth/auth-store'
 import authRoutes from '@/tenant/auth/routes'
-import adminRoutes from '@/admin/routes'
+import adminAuthRoutes from '@/admin/auth/routes'
+import adminDashboardRoutes from '@/admin/dashboard/routes'
 import analyticsRoutes from '@/tenant/dashboard/routes'
 import adminTemplateRoutes from '@/admin/templates/routes'
 import adminTenantRoutes from '@/admin/tenants/routes'
@@ -19,7 +20,8 @@ import marketingRoutes from '@/shared/marketing/routes'
 const routes: RouteRecordRaw[] = [
   ...marketingRoutes,
   ...authRoutes,
-  ...adminRoutes,
+  ...adminAuthRoutes,
+  ...adminDashboardRoutes,
   ...adminTenantRoutes,
   ...adminDesignRequestRoutes,
   ...adminTemplateRoutes,

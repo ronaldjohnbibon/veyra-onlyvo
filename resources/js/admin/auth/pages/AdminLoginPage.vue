@@ -11,7 +11,7 @@ import {
 } from '@/shared/components/ui/card'
 import { Field, FieldGroup, FieldLabel } from '@/shared/components/ui/field'
 import { Input } from '@/shared/components/ui/input'
-import { useAdminAuthStore } from '../admin-auth-store'
+import { useAdminAuthStore } from '@/admin/auth/auth-store'
 
 const props = defineProps<{
   class?: HTMLAttributes['class']

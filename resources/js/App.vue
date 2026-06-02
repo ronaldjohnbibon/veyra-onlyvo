@@ -2,7 +2,7 @@
 import BaseLoading from '@/shared/components/BaseLoading.vue'
 import BaseToast from '@/shared/components/BaseToast.vue'
 import GlobalConfirmDialog from '@/shared/components/GlobalConfirmDialog.vue'
-import { useAdminAuthStore } from '@/admin/admin-auth-store'
+import { useAdminAuthStore } from '@/admin/auth/auth-store'
 import { useAuthStore } from '@/tenant/auth/auth-store'
 import { useToastStore } from '@/shared/stores/toast-store'
 import { computed, onMounted, watchEffect } from 'vue'

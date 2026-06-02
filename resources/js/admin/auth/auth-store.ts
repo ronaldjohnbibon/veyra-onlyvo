@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, reactive, ref } from 'vue'
 import router from '@/router'
-import { adminAuthService } from '@/admin/api/auth'
+import { adminAuthService } from '@/admin/auth/api/auth'
 import { apiMessageFrom, validationErrorsFrom } from '@/shared/api/errors'
 import type { LoginFormInterface } from '@/shared/types/auth'
 import type { UserInterface } from '@/shared/types/user'

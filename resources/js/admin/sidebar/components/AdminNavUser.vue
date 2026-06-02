@@ -16,7 +16,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@/shared/components/ui/sidebar'
-import { useAdminAuthStore } from '@/admin/admin-auth-store'
+import { useAdminAuthStore } from '@/admin/auth/auth-store'
 
 const props = defineProps<{
   user: {

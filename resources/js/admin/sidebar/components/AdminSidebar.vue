@@ -2,7 +2,7 @@
 import type { SidebarProps } from '@/shared/components/ui/sidebar'
 import type { SidebarRecord } from '@/shared/types/sidebar'
 import { computed, onMounted } from 'vue'
-import { useAdminAuthStore } from '@/admin/admin-auth-store'
+import { useAdminAuthStore } from '@/admin/auth/auth-store'
 import { useAdminSidebarStore } from '@/admin/sidebar/sidebar-store'
 import AdminNavUser from '@/admin/sidebar/components/AdminNavUser.vue'
 import NavMain from '@/shared/components/NavMain.vue'

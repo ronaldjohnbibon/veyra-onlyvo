@@ -2,7 +2,7 @@
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import { getStatusBadgeVariant } from '@/shared/utils/status'
-import { useAdminAuthStore } from '../admin-auth-store'
+import { useAdminAuthStore } from '@/admin/auth/auth-store'
 
 const adminAuthStore = useAdminAuthStore()
 </script>

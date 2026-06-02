@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { useAdminAuthStore } from '@/admin/admin-auth-store'
+import { useAdminAuthStore } from '@/admin/auth/auth-store'
 import { useAdminSidebarStore } from '@/admin/sidebar/sidebar-store'
 import { useTemplateMaintenanceStore } from '@/admin/templates/template-maintenance-store'
 import { useAuthStore } from '@/tenant/auth/auth-store'

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Button } from '@/shared/components/ui/button'
-import { useAdminAuthStore } from '@/admin/admin-auth-store'
+import { useAdminAuthStore } from '@/admin/auth/auth-store'
 import { useAuthStore } from '@/tenant/auth/auth-store'
 import {
   ArrowRight,
