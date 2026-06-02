@@ -45,7 +45,6 @@ export interface TrackingLogOption {
 
 export interface TrackingLogFilters {
   event_types: TrackingLogOption[]
-  tenants: TrackingLogOption[]
   templates: TrackingLogOption[]
   conversion_statuses: TrackingLogOption[]
 }
@@ -54,7 +53,6 @@ export interface TrackingLogParams {
   from?: string
   to?: string
   event_type?: TrackingLogEventType
-  tenant_id?: string
   template_id?: string
   conversion_status?: string
   search?: string

@@ -72,7 +72,7 @@ class TemplateRequest extends FormRequest
         $tenantId = Auth::user()?->tenant_id;
 
         // Templates are always saved against the authenticated tenant.
-        if (! $this->has('tenant_id') && $tenantId) {
+        if ($tenantId) {
             $this->merge(['tenant_id' => $tenantId]);
         }
 

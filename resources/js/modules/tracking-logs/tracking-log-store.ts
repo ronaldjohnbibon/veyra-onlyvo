@@ -15,7 +15,6 @@ export const useTrackingLogStore = defineStore('tracking-logs', () => {
   const total = ref(0)
   const filters = ref<TrackingLogFilters>({
     event_types: [],
-    tenants: [],
     templates: [],
     conversion_statuses: [],
   })
@@ -26,7 +25,6 @@ export const useTrackingLogStore = defineStore('tracking-logs', () => {
     direction: 'desc',
     search: '',
     event_type: '',
-    tenant_id: '',
     template_id: '',
     conversion_status: '',
   })
@@ -52,7 +50,6 @@ export const useTrackingLogStore = defineStore('tracking-logs', () => {
       from: '',
       to: '',
       event_type: '',
-      tenant_id: '',
       template_id: '',
       conversion_status: '',
       search: '',

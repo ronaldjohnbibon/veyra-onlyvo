@@ -72,8 +72,8 @@ class SidebarRequest extends FormRequest
             $this->merge(['is_admin' => $this->isAdminRoute()]);
         }
 
-        // Tenant sidebar requests inherit the authenticated tenant when it is not submitted.
-        if (! $this->isAdminRoute() && ! $this->has('tenant_id') && $tenantId) {
+        // Tenant sidebar requests are always scoped to the authenticated tenant.
+        if (! $this->isAdminRoute() && $tenantId) {
             $this->merge(['tenant_id' => $tenantId]);
         }
 

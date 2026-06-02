@@ -21,7 +21,6 @@ class TrackingLogIndexRequest extends FormRequest
             'from'              => ['nullable', 'date'],
             'to'                => ['nullable', 'date'],
             'event_type'        => ['nullable', 'string', Rule::in(['website_visit', 'cta_view', 'cta_click', 'form_submission', 'conversion'])],
-            'tenant_id'         => ['nullable', 'uuid'],
             'template_id'       => ['nullable', 'uuid'],
             'conversion_status' => ['nullable', 'string', 'max:30'],
             'search'            => ['nullable', 'string', 'max:255'],

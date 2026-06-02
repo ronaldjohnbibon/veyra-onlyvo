@@ -160,12 +160,6 @@ const eventTypeFilter = computed({
     trackingLogStore.index({ event_type: value, page: 1 })
   },
 })
-const tenantFilter = computed({
-  get: () => trackingLogStore.params.tenant_id ?? '',
-  set: (value: string) => {
-    trackingLogStore.index({ tenant_id: value, page: 1 })
-  },
-})
 const templateFilter = computed({
   get: () => trackingLogStore.params.template_id ?? '',
   set: (value: string) => {
@@ -285,17 +279,6 @@ onMounted(() => {
               :value="option.value"
             >
               {{ option.label }}
-            </option>
-          </NativeSelect>
-
-          <NativeSelect v-model="tenantFilter" class="h-9 min-w-40">
-            <option value="">All tenants</option>
-            <option
-              v-for="tenant in trackingLogStore.filters.tenants"
-              :key="tenant.id"
-              :value="tenant.id"
-            >
-              {{ tenant.name }}
             </option>
           </NativeSelect>
 

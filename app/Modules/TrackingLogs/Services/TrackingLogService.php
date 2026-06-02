@@ -142,7 +142,6 @@ class TrackingLogService
             ->when($filters['from'] ?? null, fn (Builder $query, string $from) => $query->whereDate('created_at', '>=', $from))
             ->when($filters['to'] ?? null, fn (Builder $query, string $to) => $query->whereDate('created_at', '<=', $to))
             ->when($filters['event_type'] ?? null, fn (Builder $query, string $eventType) => $query->where('event_type', $eventType))
-            ->when($filters['tenant_id'] ?? null, fn (Builder $query, string $tenantId) => $query->where('tenant_id', $tenantId))
             ->when($filters['template_id'] ?? null, fn (Builder $query, string $templateId) => $query->where('template_id', $templateId))
             ->when($filters['conversion_status'] ?? null, fn (Builder $query, string $status) => $query->where('conversion_status', $status))
             ->when($filters['search'] ?? null, function (Builder $query, string $search): void {
@@ -321,11 +320,6 @@ class TrackingLogService
      */
     private function filterOptions(string $tenantId): array
     {
-        $tenant = DB::table('tenants')
-            ->select(['id', 'name'])
-            ->where('id', $tenantId)
-            ->first();
-
         $templates = DB::table('templates')
             ->select(['id', 'name', 'business_name'])
             ->where('tenant_id', $tenantId)
@@ -355,7 +349,6 @@ class TrackingLogService
                 ['value' => 'form_submission', 'label' => 'Form Submission'],
                 ['value' => 'conversion', 'label' => 'Conversion'],
             ],
-            'tenants' => $tenant ? [['id' => (string) $tenant->id, 'name' => (string) $tenant->name]] : [],
             'templates' => $templates,
             'conversion_statuses' => Collection::make(['success'])
                 ->merge($statuses)
