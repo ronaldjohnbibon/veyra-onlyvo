@@ -1,5 +1,6 @@
 <script setup lang="ts" generic="TData extends object">
 import { Button } from '@/shared/components/ui/button'
+import FieldHelp from '@/shared/components/FieldHelp.vue'
 import { Input } from '@/shared/components/ui/input'
 import { NativeSelect } from '@/shared/components/ui/native-select'
 import {
@@ -185,27 +186,29 @@ const updatePageSize = (event: Event): void => {
       class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
     >
       <div class="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center">
-        <Input
+        <FieldHelp
           v-if="withSearch"
-          v-model="searchTerm"
-          type="search"
-          :placeholder="searchPlaceholder"
           class="sm:max-w-sm"
-        />
+          description="Search this table by keyword."
+        >
+          <Input
+            v-model="searchTerm"
+            type="search"
+            :placeholder="searchPlaceholder"
+            class="sm:max-w-sm"
+          />
+        </FieldHelp>
         <slot name="filters" />
       </div>
 
       <div class="flex flex-wrap items-center gap-2">
-        <NativeSelect
-          v-if="withPageSize"
-          :model-value="String(pageSize)"
-          class="h-8"
-          @change="updatePageSize"
-        >
-          <option v-for="option in pageSizeOptions" :key="option" :value="option">
-            {{ option }} rows
-          </option>
-        </NativeSelect>
+        <FieldHelp v-if="withPageSize" description="Choose how many rows to show.">
+          <NativeSelect :model-value="String(pageSize)" class="h-8" @change="updatePageSize">
+            <option v-for="option in pageSizeOptions" :key="option" :value="option">
+              {{ option }} rows
+            </option>
+          </NativeSelect>
+        </FieldHelp>
 
         <Button
           v-if="withCreate"

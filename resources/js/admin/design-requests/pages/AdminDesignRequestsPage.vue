@@ -11,6 +11,7 @@ import {
   DialogTitle,
 } from '@/shared/components/ui/dialog'
 import { Field, FieldError, FieldGroup, FieldLabel, FieldSet } from '@/shared/components/ui/field'
+import FieldHelp from '@/shared/components/FieldHelp.vue'
 import { NativeSelect } from '@/shared/components/ui/native-select'
 import { Textarea } from '@/shared/components/ui/textarea'
 import { formatDisplayDate } from '@/shared/utils/date'
@@ -128,14 +129,16 @@ onMounted(() => {
         @update:sort="updateSort"
       >
         <template #filters>
-          <NativeSelect v-model="statusFilter" class="h-9 min-w-40">
-            <option value="">All statuses</option>
-            <option value="pending">Pending</option>
-            <option value="under_review">Under Review</option>
-            <option value="approved">Approved</option>
-            <option value="rejected">Rejected</option>
-            <option value="completed">Completed</option>
-          </NativeSelect>
+          <FieldHelp description="Filter requests by review status.">
+            <NativeSelect v-model="statusFilter" class="h-9 min-w-40">
+              <option value="">All statuses</option>
+              <option value="pending">Pending</option>
+              <option value="under_review">Under Review</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+              <option value="completed">Completed</option>
+            </NativeSelect>
+          </FieldHelp>
         </template>
 
         <template #cell-title="{ row }">
@@ -266,13 +269,15 @@ onMounted(() => {
                 <FieldGroup>
                   <Field>
                     <FieldLabel for="request-status">Status</FieldLabel>
-                    <NativeSelect id="request-status" v-model="form.status">
-                      <option value="pending">Pending</option>
-                      <option value="under_review">Under Review</option>
-                      <option value="approved">Approved</option>
-                      <option value="rejected">Rejected</option>
-                      <option value="completed">Completed</option>
-                    </NativeSelect>
+                    <FieldHelp description="Choose the tenant-facing review status.">
+                      <NativeSelect id="request-status" v-model="form.status">
+                        <option value="pending">Pending</option>
+                        <option value="under_review">Under Review</option>
+                        <option value="approved">Approved</option>
+                        <option value="rejected">Rejected</option>
+                        <option value="completed">Completed</option>
+                      </NativeSelect>
+                    </FieldHelp>
                     <FieldError v-if="designRequestStore.errors.status">
                       {{ designRequestStore.errors.status[0] }}
                     </FieldError>
@@ -280,12 +285,14 @@ onMounted(() => {
 
                   <Field>
                     <FieldLabel for="admin-remarks">Admin Remarks / Feedback</FieldLabel>
-                    <Textarea
-                      id="admin-remarks"
-                      v-model="form.admin_remarks"
-                      class="min-h-44"
-                      placeholder="Add notes for the tenant."
-                    />
+                    <FieldHelp description="Add feedback or instructions the tenant can read.">
+                      <Textarea
+                        id="admin-remarks"
+                        v-model="form.admin_remarks"
+                        class="min-h-44"
+                        placeholder="Add notes for the tenant."
+                      />
+                    </FieldHelp>
                     <FieldError v-if="designRequestStore.errors.admin_remarks">
                       {{ designRequestStore.errors.admin_remarks[0] }}
                     </FieldError>

@@ -10,6 +10,7 @@ import {
   CardTitle,
 } from '@/shared/components/ui/card'
 import { Field, FieldGroup, FieldLabel } from '@/shared/components/ui/field'
+import FieldHelp from '@/shared/components/FieldHelp.vue'
 import { Input } from '@/shared/components/ui/input'
 import { useAdminAuthStore } from '@/admin/auth/auth-store'
 
@@ -37,25 +38,29 @@ const adminAuthStore = useAdminAuthStore()
                 </Field>
                 <Field>
                   <FieldLabel for="admin-email">Email</FieldLabel>
-                  <Input
-                    v-model="adminAuthStore.loginForm.email"
-                    id="admin-email"
-                    type="email"
-                    placeholder="admin@example.com"
-                    autocomplete="email"
-                  />
+                  <FieldHelp description="Enter the email address for your admin account.">
+                    <Input
+                      v-model="adminAuthStore.loginForm.email"
+                      id="admin-email"
+                      type="email"
+                      placeholder="admin@example.com"
+                      autocomplete="email"
+                    />
+                  </FieldHelp>
                   <span v-if="adminAuthStore.errors.email" class="text-destructive text-[12px]">
                     {{ adminAuthStore.errors.email[0] }}
                   </span>
                 </Field>
                 <Field>
                   <FieldLabel for="admin-password">Password</FieldLabel>
-                  <Input
-                    v-model="adminAuthStore.loginForm.password"
-                    id="admin-password"
-                    type="password"
-                    autocomplete="current-password"
-                  />
+                  <FieldHelp description="Enter the password for your admin account.">
+                    <Input
+                      v-model="adminAuthStore.loginForm.password"
+                      id="admin-password"
+                      type="password"
+                      autocomplete="current-password"
+                    />
+                  </FieldHelp>
                   <span v-if="adminAuthStore.errors.password" class="text-destructive text-[12px]">
                     {{ adminAuthStore.errors.password[0] }}
                   </span>

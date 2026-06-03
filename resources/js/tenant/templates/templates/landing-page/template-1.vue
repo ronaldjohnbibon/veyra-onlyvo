@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { defaultTemplateCta } from '@/shared/templates/cta-presets'
+import FieldHelp from '@/shared/components/FieldHelp.vue'
 import TemplateCta from '@/tenant/templates/components/TemplateCta.vue'
 import type { TemplateCtaConfig, TemplateCtaField, TemplateRecord } from '@/shared/types/templates'
 import {
@@ -42,6 +43,17 @@ const updateScrollState = (): void => {
 
 const stringValue = (value: unknown, fallback = ''): string => {
   return typeof value === 'string' && value.trim() ? value : fallback
+}
+
+const ctaFieldDescription = (field: TemplateCtaField): string => {
+  if (field.type === 'select') return 'Choose one option from the list.'
+  if (field.type === 'checkbox') return 'Check this box if it applies to you.'
+  if (field.type === 'file') return 'Choose a file to include with your submission.'
+  if (field.type === 'email') return 'Enter a valid email address.'
+  if (field.type === 'phone') return 'Enter a phone number where you can be reached.'
+  if (field.type === 'textarea') return 'Enter the details you want to send.'
+
+  return 'Enter the requested information for this field.'
 }
 
 const contentString = (key: string, fallback = ''): string => {
@@ -444,55 +456,57 @@ onBeforeUnmount(() => {
             }"
           >
             <template v-for="field in fields" :key="field.key">
-              <textarea
-                v-if="field.type === 'textarea'"
-                class="tm-input min-h-44"
-                :placeholder="ctaFieldPlaceholder(field)"
-                :required="field.required"
-                :value="String(payload[field.key] ?? '')"
-                @input="updateField(field, ($event.target as HTMLTextAreaElement).value)"
-              />
-              <select
-                v-else-if="field.type === 'select'"
-                class="tm-input"
-                :required="field.required"
-                :value="String(payload[field.key] ?? '')"
-                @change="updateField(field, ($event.target as HTMLSelectElement).value)"
-              >
-                <option value="">{{ ctaFieldPlaceholder(field) }}</option>
-                <option
-                  v-for="option in field.options ?? []"
-                  :key="String(option.value)"
-                  :value="String(option.value)"
-                >
-                  {{ option.label }}
-                </option>
-              </select>
-              <label v-else-if="field.type === 'checkbox'" class="tm-checkbox">
-                <input
-                  type="checkbox"
+              <FieldHelp :description="ctaFieldDescription(field)">
+                <textarea
+                  v-if="field.type === 'textarea'"
+                  class="tm-input min-h-44"
+                  :placeholder="ctaFieldPlaceholder(field)"
                   :required="field.required"
-                  :checked="Boolean(payload[field.key])"
-                  @change="updateField(field, ($event.target as HTMLInputElement).checked)"
+                  :value="String(payload[field.key] ?? '')"
+                  @input="updateField(field, ($event.target as HTMLTextAreaElement).value)"
                 />
-                <span>{{ field.label }}</span>
-              </label>
-              <input
-                v-else-if="field.type === 'file'"
-                class="tm-input"
-                type="file"
-                :required="field.required"
-                @change="updateFileField(field, $event)"
-              />
-              <input
-                v-else
-                class="tm-input"
-                :type="inputTypeFor(field)"
-                :placeholder="ctaFieldPlaceholder(field)"
-                :required="field.required"
-                :value="String(payload[field.key] ?? '')"
-                @input="updateField(field, ($event.target as HTMLInputElement).value)"
-              />
+                <select
+                  v-else-if="field.type === 'select'"
+                  class="tm-input"
+                  :required="field.required"
+                  :value="String(payload[field.key] ?? '')"
+                  @change="updateField(field, ($event.target as HTMLSelectElement).value)"
+                >
+                  <option value="">{{ ctaFieldPlaceholder(field) }}</option>
+                  <option
+                    v-for="option in field.options ?? []"
+                    :key="String(option.value)"
+                    :value="String(option.value)"
+                  >
+                    {{ option.label }}
+                  </option>
+                </select>
+                <label v-else-if="field.type === 'checkbox'" class="tm-checkbox">
+                  <input
+                    type="checkbox"
+                    :required="field.required"
+                    :checked="Boolean(payload[field.key])"
+                    @change="updateField(field, ($event.target as HTMLInputElement).checked)"
+                  />
+                  <span>{{ field.label }}</span>
+                </label>
+                <input
+                  v-else-if="field.type === 'file'"
+                  class="tm-input"
+                  type="file"
+                  :required="field.required"
+                  @change="updateFileField(field, $event)"
+                />
+                <input
+                  v-else
+                  class="tm-input"
+                  :type="inputTypeFor(field)"
+                  :placeholder="ctaFieldPlaceholder(field)"
+                  :required="field.required"
+                  :value="String(payload[field.key] ?? '')"
+                  @input="updateField(field, ($event.target as HTMLInputElement).value)"
+                />
+              </FieldHelp>
             </template>
             <button class="tm-btn-submit" type="submit" :disabled="loading">
               {{ loading ? 'Sending...' : submitLabel }}

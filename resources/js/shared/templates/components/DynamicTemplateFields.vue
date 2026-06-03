@@ -15,13 +15,8 @@ import {
   DialogScrollContent,
   DialogTitle,
 } from '@/shared/components/ui/dialog'
-import {
-  Field,
-  FieldDescription,
-  FieldGroup,
-  FieldLabel,
-  FieldSet,
-} from '@/shared/components/ui/field'
+import { Field, FieldGroup, FieldLabel, FieldSet } from '@/shared/components/ui/field'
+import FieldHelp from '@/shared/components/FieldHelp.vue'
 import { Input } from '@/shared/components/ui/input'
 import { NativeSelect, NativeSelectOption } from '@/shared/components/ui/native-select'
 import { Textarea } from '@/shared/components/ui/textarea'
@@ -126,6 +121,18 @@ const fieldSections = computed<TemplateFieldSection[]>(() => {
 })
 
 const fieldId = (field: TemplateFieldSchema): string => `template-content-${field.key}`
+
+const descriptionForField = (field: TemplateFieldSchema): string => {
+  if (field.description) return field.description
+  if (field.type === 'image') return 'Enter an image URL or upload an image file.'
+  if (field.type === 'repeater') return 'Add and manage repeatable content items.'
+  if (field.type === 'select') return 'Choose one option for this template field.'
+  if (field.type === 'boolean') return 'Turn this template option on or off.'
+  if (field.type === 'number') return 'Enter a numeric value for this template field.'
+  if (field.type === 'cta') return 'Configure the call-to-action shown on the public site.'
+
+  return 'Enter the content shown in this part of the template.'
+}
 
 const asRecord = (value: unknown): TemplateContent => {
   return value && typeof value === 'object' && !Array.isArray(value)
@@ -401,12 +408,9 @@ const removeCtaCustomField = (field: TemplateFieldSchema, index: number): void =
                     :model-value="Boolean(valueFor(field))"
                     @update:model-value="updateField(field, Boolean($event))"
                   />
-                  <div>
+                  <FieldHelp :description="descriptionForField(field)">
                     <FieldLabel :for="fieldId(field)">{{ field.label }}</FieldLabel>
-                    <FieldDescription v-if="field.description">
-                      {{ field.description }}
-                    </FieldDescription>
-                  </div>
+                  </FieldHelp>
                 </Field>
 
                 <Field
@@ -414,40 +418,38 @@ const removeCtaCustomField = (field: TemplateFieldSchema, index: number): void =
                   class="md:col-span-2"
                 >
                   <FieldLabel :for="fieldId(field)">{{ field.label }}</FieldLabel>
-                  <Textarea
-                    :id="fieldId(field)"
-                    :model-value="String(valueFor(field) ?? '')"
-                    :placeholder="field.placeholder"
-                    class="min-h-28"
-                    :required="field.required"
-                    @update:model-value="updateField(field, $event)"
-                  />
-                  <FieldDescription v-if="field.description">{{
-                    field.description
-                  }}</FieldDescription>
+                  <FieldHelp :description="descriptionForField(field)">
+                    <Textarea
+                      :id="fieldId(field)"
+                      :model-value="String(valueFor(field) ?? '')"
+                      :placeholder="field.placeholder"
+                      class="min-h-28"
+                      :required="field.required"
+                      @update:model-value="updateField(field, $event)"
+                    />
+                  </FieldHelp>
                 </Field>
 
                 <Field v-else-if="field.type === 'select'">
                   <FieldLabel :for="fieldId(field)">{{ field.label }}</FieldLabel>
-                  <NativeSelect
-                    :id="fieldId(field)"
-                    class="w-full"
-                    :model-value="String(valueFor(field) ?? '')"
-                    :required="field.required"
-                    @update:model-value="updateField(field, $event)"
-                  >
-                    <NativeSelectOption value="">Select...</NativeSelectOption>
-                    <NativeSelectOption
-                      v-for="option in field.options ?? []"
-                      :key="String(option.value)"
-                      :value="String(option.value)"
+                  <FieldHelp :description="descriptionForField(field)">
+                    <NativeSelect
+                      :id="fieldId(field)"
+                      class="w-full"
+                      :model-value="String(valueFor(field) ?? '')"
+                      :required="field.required"
+                      @update:model-value="updateField(field, $event)"
                     >
-                      {{ option.label }}
-                    </NativeSelectOption>
-                  </NativeSelect>
-                  <FieldDescription v-if="field.description">{{
-                    field.description
-                  }}</FieldDescription>
+                      <NativeSelectOption value="">Select...</NativeSelectOption>
+                      <NativeSelectOption
+                        v-for="option in field.options ?? []"
+                        :key="String(option.value)"
+                        :value="String(option.value)"
+                      >
+                        {{ option.label }}
+                      </NativeSelectOption>
+                    </NativeSelect>
+                  </FieldHelp>
                 </Field>
 
                 <Field v-else-if="field.type === 'cta'" class="md:col-span-2">
@@ -455,9 +457,7 @@ const removeCtaCustomField = (field: TemplateFieldSchema, index: number): void =
                     <div class="flex flex-wrap items-start justify-between gap-3">
                       <div>
                         <FieldLabel>{{ field.label }}</FieldLabel>
-                        <FieldDescription v-if="field.description">
-                          {{ field.description }}
-                        </FieldDescription>
+                        <FieldHelp :description="descriptionForField(field)" />
                       </div>
                       <Button
                         size="sm"
@@ -472,89 +472,107 @@ const removeCtaCustomField = (field: TemplateFieldSchema, index: number): void =
                     <div class="grid gap-4 md:grid-cols-2">
                       <Field>
                         <FieldLabel :for="`${fieldId(field)}-type`">CTA Type</FieldLabel>
-                        <NativeSelect
-                          :id="`${fieldId(field)}-type`"
-                          class="w-full"
-                          :model-value="ctaConfigFor(field).type"
-                          @update:model-value="loadCtaPresetFromValue(field, $event)"
-                        >
-                          <NativeSelectOption
-                            v-for="type in templateCtaTypes"
-                            :key="type"
-                            :value="type"
+                        <FieldHelp description="Choose what this call-to-action should do.">
+                          <NativeSelect
+                            :id="`${fieldId(field)}-type`"
+                            class="w-full"
+                            :model-value="ctaConfigFor(field).type"
+                            @update:model-value="loadCtaPresetFromValue(field, $event)"
                           >
-                            {{ templateCtaPresets[type].label }}
-                          </NativeSelectOption>
-                        </NativeSelect>
+                            <NativeSelectOption
+                              v-for="type in templateCtaTypes"
+                              :key="type"
+                              :value="type"
+                            >
+                              {{ templateCtaPresets[type].label }}
+                            </NativeSelectOption>
+                          </NativeSelect>
+                        </FieldHelp>
                       </Field>
 
                       <Field>
                         <FieldLabel :for="`${fieldId(field)}-title`">Title</FieldLabel>
-                        <Input
-                          :id="`${fieldId(field)}-title`"
-                          :model-value="ctaConfigFor(field).title"
-                          @update:model-value="updateCta(field, { title: String($event) })"
-                        />
+                        <FieldHelp description="Enter the headline shown above the CTA.">
+                          <Input
+                            :id="`${fieldId(field)}-title`"
+                            :model-value="ctaConfigFor(field).title"
+                            @update:model-value="updateCta(field, { title: String($event) })"
+                          />
+                        </FieldHelp>
                       </Field>
 
                       <Field class="md:col-span-2">
                         <FieldLabel :for="`${fieldId(field)}-description`">Description</FieldLabel>
-                        <Textarea
-                          :id="`${fieldId(field)}-description`"
-                          :model-value="ctaConfigFor(field).description"
-                          class="min-h-20"
-                          @update:model-value="updateCta(field, { description: String($event) })"
-                        />
+                        <FieldHelp description="Enter short supporting text for the CTA.">
+                          <Textarea
+                            :id="`${fieldId(field)}-description`"
+                            :model-value="ctaConfigFor(field).description"
+                            class="min-h-20"
+                            @update:model-value="updateCta(field, { description: String($event) })"
+                          />
+                        </FieldHelp>
                       </Field>
 
                       <Field>
                         <FieldLabel :for="`${fieldId(field)}-submit-label`"
                           >Submit Label</FieldLabel
                         >
-                        <Input
-                          :id="`${fieldId(field)}-submit-label`"
-                          :model-value="ctaConfigFor(field).submit_label"
-                          @update:model-value="updateCta(field, { submit_label: String($event) })"
-                        />
+                        <FieldHelp description="Enter the text shown on the submit button.">
+                          <Input
+                            :id="`${fieldId(field)}-submit-label`"
+                            :model-value="ctaConfigFor(field).submit_label"
+                            @update:model-value="updateCta(field, { submit_label: String($event) })"
+                          />
+                        </FieldHelp>
                       </Field>
 
                       <Field>
                         <FieldLabel :for="`${fieldId(field)}-success-message`"
                           >Success Message</FieldLabel
                         >
-                        <Input
-                          :id="`${fieldId(field)}-success-message`"
-                          :model-value="ctaConfigFor(field).success_message"
-                          @update:model-value="
-                            updateCta(field, { success_message: String($event) })
-                          "
-                        />
+                        <FieldHelp
+                          description="Enter the message shown after a successful submission."
+                        >
+                          <Input
+                            :id="`${fieldId(field)}-success-message`"
+                            :model-value="ctaConfigFor(field).success_message"
+                            @update:model-value="
+                              updateCta(field, { success_message: String($event) })
+                            "
+                          />
+                        </FieldHelp>
                       </Field>
 
                       <Field>
                         <FieldLabel :for="`${fieldId(field)}-recipient-email`"
                           >Recipient Email</FieldLabel
                         >
-                        <Input
-                          :id="`${fieldId(field)}-recipient-email`"
-                          type="email"
-                          :model-value="ctaConfigFor(field).recipient_email ?? ''"
-                          @update:model-value="
-                            updateCta(field, { recipient_email: String($event) })
-                          "
-                        />
+                        <FieldHelp
+                          description="Enter the email address that receives form submissions."
+                        >
+                          <Input
+                            :id="`${fieldId(field)}-recipient-email`"
+                            type="email"
+                            :model-value="ctaConfigFor(field).recipient_email ?? ''"
+                            @update:model-value="
+                              updateCta(field, { recipient_email: String($event) })
+                            "
+                          />
+                        </FieldHelp>
                       </Field>
 
                       <Field>
                         <FieldLabel :for="`${fieldId(field)}-redirect-url`"
                           >Redirect URL</FieldLabel
                         >
-                        <Input
-                          :id="`${fieldId(field)}-redirect-url`"
-                          type="url"
-                          :model-value="ctaConfigFor(field).redirect_url ?? ''"
-                          @update:model-value="updateCta(field, { redirect_url: String($event) })"
-                        />
+                        <FieldHelp description="Enter the URL visitors should open after clicking.">
+                          <Input
+                            :id="`${fieldId(field)}-redirect-url`"
+                            type="url"
+                            :model-value="ctaConfigFor(field).redirect_url ?? ''"
+                            @update:model-value="updateCta(field, { redirect_url: String($event) })"
+                          />
+                        </FieldHelp>
                       </Field>
 
                       <Field
@@ -564,14 +582,16 @@ const removeCtaCustomField = (field: TemplateFieldSchema, index: number): void =
                         <FieldLabel :for="`${fieldId(field)}-downloadable-file`">
                           Downloadable File
                         </FieldLabel>
-                        <Input
-                          :id="`${fieldId(field)}-downloadable-file`"
-                          type="url"
-                          :model-value="ctaConfigFor(field).downloadable_file ?? ''"
-                          @update:model-value="
-                            updateCta(field, { downloadable_file: String($event) })
-                          "
-                        />
+                        <FieldHelp description="Enter the file URL visitors can download.">
+                          <Input
+                            :id="`${fieldId(field)}-downloadable-file`"
+                            type="url"
+                            :model-value="ctaConfigFor(field).downloadable_file ?? ''"
+                            @update:model-value="
+                              updateCta(field, { downloadable_file: String($event) })
+                            "
+                          />
+                        </FieldHelp>
                       </Field>
                     </div>
 
@@ -619,44 +639,59 @@ const removeCtaCustomField = (field: TemplateFieldSchema, index: number): void =
                         >
                           <Field>
                             <FieldLabel>Label</FieldLabel>
-                            <Input
-                              :model-value="ctaField.label"
-                              @update:model-value="
-                                updateCtaCustomField(field, ctaFieldIndex, 'label', String($event))
-                              "
-                            />
+                            <FieldHelp description="Enter the label visitors see for this field.">
+                              <Input
+                                :model-value="ctaField.label"
+                                @update:model-value="
+                                  updateCtaCustomField(
+                                    field,
+                                    ctaFieldIndex,
+                                    'label',
+                                    String($event)
+                                  )
+                                "
+                              />
+                            </FieldHelp>
                           </Field>
                           <Field>
                             <FieldLabel>Key</FieldLabel>
-                            <Input
-                              :model-value="ctaField.key"
-                              @update:model-value="
-                                updateCtaCustomField(
-                                  field,
-                                  ctaFieldIndex,
-                                  'key',
-                                  slugKey(String($event))
-                                )
-                              "
-                            />
+                            <FieldHelp
+                              description="Enter the internal field name used in submissions."
+                            >
+                              <Input
+                                :model-value="ctaField.key"
+                                @update:model-value="
+                                  updateCtaCustomField(
+                                    field,
+                                    ctaFieldIndex,
+                                    'key',
+                                    slugKey(String($event))
+                                  )
+                                "
+                              />
+                            </FieldHelp>
                           </Field>
                           <Field>
                             <FieldLabel>Type</FieldLabel>
-                            <NativeSelect
-                              class="w-full"
-                              :model-value="ctaField.type"
-                              @update:model-value="
-                                updateCtaCustomField(field, ctaFieldIndex, 'type', $event)
-                              "
+                            <FieldHelp
+                              description="Choose the kind of value visitors should enter."
                             >
-                              <NativeSelectOption
-                                v-for="type in templateCtaFieldTypes"
-                                :key="type"
-                                :value="type"
+                              <NativeSelect
+                                class="w-full"
+                                :model-value="ctaField.type"
+                                @update:model-value="
+                                  updateCtaCustomField(field, ctaFieldIndex, 'type', $event)
+                                "
                               >
-                                {{ type }}
-                              </NativeSelectOption>
-                            </NativeSelect>
+                                <NativeSelectOption
+                                  v-for="type in templateCtaFieldTypes"
+                                  :key="type"
+                                  :value="type"
+                                >
+                                  {{ type }}
+                                </NativeSelectOption>
+                              </NativeSelect>
+                            </FieldHelp>
                           </Field>
                           <Field orientation="horizontal" class="items-center gap-3 self-end">
                             <Checkbox
@@ -670,37 +705,45 @@ const removeCtaCustomField = (field: TemplateFieldSchema, index: number): void =
                                 )
                               "
                             />
-                            <FieldLabel>Required</FieldLabel>
+                            <FieldHelp description="Require visitors to complete this field.">
+                              <FieldLabel>Required</FieldLabel>
+                            </FieldHelp>
                           </Field>
                           <Field>
                             <FieldLabel>Placeholder</FieldLabel>
-                            <Input
-                              :model-value="ctaField.placeholder ?? ''"
-                              @update:model-value="
-                                updateCtaCustomField(
-                                  field,
-                                  ctaFieldIndex,
-                                  'placeholder',
-                                  String($event)
-                                )
-                              "
-                            />
+                            <FieldHelp description="Enter example text shown before visitors type.">
+                              <Input
+                                :model-value="ctaField.placeholder ?? ''"
+                                @update:model-value="
+                                  updateCtaCustomField(
+                                    field,
+                                    ctaFieldIndex,
+                                    'placeholder',
+                                    String($event)
+                                  )
+                                "
+                              />
+                            </FieldHelp>
                           </Field>
                           <Field v-if="ctaField.type === 'select'">
                             <FieldLabel>Options</FieldLabel>
-                            <Textarea
-                              :model-value="ctaFieldOptionsText(ctaField)"
-                              placeholder="Label:value"
-                              class="min-h-20"
-                              @update:model-value="
-                                updateCtaCustomField(
-                                  field,
-                                  ctaFieldIndex,
-                                  'options',
-                                  parseCtaFieldOptions(String($event))
-                                )
-                              "
-                            />
+                            <FieldHelp
+                              description="Enter choices as Label:value, one per line or comma."
+                            >
+                              <Textarea
+                                :model-value="ctaFieldOptionsText(ctaField)"
+                                placeholder="Label:value"
+                                class="min-h-20"
+                                @update:model-value="
+                                  updateCtaCustomField(
+                                    field,
+                                    ctaFieldIndex,
+                                    'options',
+                                    parseCtaFieldOptions(String($event))
+                                  )
+                                "
+                              />
+                            </FieldHelp>
                           </Field>
                           <div class="md:col-span-2">
                             <Button
@@ -723,9 +766,7 @@ const removeCtaCustomField = (field: TemplateFieldSchema, index: number): void =
                   <div class="flex items-start justify-between gap-3">
                     <div>
                       <FieldLabel>{{ field.label }}</FieldLabel>
-                      <FieldDescription v-if="field.description">{{
-                        field.description
-                      }}</FieldDescription>
+                      <FieldHelp :description="descriptionForField(field)" />
                     </div>
                     <Button
                       size="sm"
@@ -774,52 +815,51 @@ const removeCtaCustomField = (field: TemplateFieldSchema, index: number): void =
 
                 <Field v-else>
                   <FieldLabel :for="fieldId(field)">{{ field.label }}</FieldLabel>
-                  <Input
-                    v-if="field.type === 'number'"
-                    :id="fieldId(field)"
-                    type="number"
-                    :model-value="String(valueFor(field) ?? '')"
-                    :placeholder="field.placeholder"
-                    :min="field.min"
-                    :max="field.max"
-                    :step="field.step"
-                    :required="field.required"
-                    @input="updateNumberField(field, $event)"
-                  />
-                  <div v-else-if="field.type === 'image'" class="space-y-2">
+                  <FieldHelp :description="descriptionForField(field)">
                     <Input
+                      v-if="field.type === 'number'"
                       :id="fieldId(field)"
-                      type="url"
+                      type="number"
+                      :model-value="String(valueFor(field) ?? '')"
+                      :placeholder="field.placeholder"
+                      :min="field.min"
+                      :max="field.max"
+                      :step="field.step"
+                      :required="field.required"
+                      @input="updateNumberField(field, $event)"
+                    />
+                    <div v-else-if="field.type === 'image'" class="space-y-0.5">
+                      <Input
+                        :id="fieldId(field)"
+                        type="url"
+                        :model-value="String(valueFor(field) ?? '')"
+                        :placeholder="field.placeholder"
+                        :required="field.required"
+                        @update:model-value="updateField(field, $event)"
+                      />
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        class="cursor-pointer text-muted-foreground"
+                        @change="updateImageField(field, $event)"
+                      />
+                    </div>
+                    <Input
+                      v-else
+                      :id="fieldId(field)"
+                      :type="
+                        field.type === 'url' || field.type === 'email' || field.type === 'color'
+                          ? field.type
+                          : field.type === 'phone'
+                            ? 'tel'
+                            : 'text'
+                      "
                       :model-value="String(valueFor(field) ?? '')"
                       :placeholder="field.placeholder"
                       :required="field.required"
                       @update:model-value="updateField(field, $event)"
                     />
-                    <Input
-                      type="file"
-                      accept="image/*"
-                      class="cursor-pointer text-muted-foreground"
-                      @change="updateImageField(field, $event)"
-                    />
-                  </div>
-                  <Input
-                    v-else
-                    :id="fieldId(field)"
-                    :type="
-                      field.type === 'url' || field.type === 'email' || field.type === 'color'
-                        ? field.type
-                        : field.type === 'phone'
-                          ? 'tel'
-                          : 'text'
-                    "
-                    :model-value="String(valueFor(field) ?? '')"
-                    :placeholder="field.placeholder"
-                    :required="field.required"
-                    @update:model-value="updateField(field, $event)"
-                  />
-                  <FieldDescription v-if="field.description">{{
-                    field.description
-                  }}</FieldDescription>
+                  </FieldHelp>
                 </Field>
               </template>
             </div>

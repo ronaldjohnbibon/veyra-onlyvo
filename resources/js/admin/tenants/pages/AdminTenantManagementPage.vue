@@ -11,6 +11,7 @@ import {
   DialogTitle,
 } from '@/shared/components/ui/dialog'
 import { Field, FieldError, FieldGroup, FieldLabel, FieldSet } from '@/shared/components/ui/field'
+import FieldHelp from '@/shared/components/FieldHelp.vue'
 import { Input } from '@/shared/components/ui/input'
 import { NativeSelect } from '@/shared/components/ui/native-select'
 import { Textarea } from '@/shared/components/ui/textarea'
@@ -205,11 +206,13 @@ onMounted(async () => {
         @update:sort="updateSort"
       >
         <template #filters>
-          <NativeSelect v-model="statusFilter" class="h-9 min-w-36">
-            <option value="">All statuses</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-          </NativeSelect>
+          <FieldHelp description="Filter tenants by current account status.">
+            <NativeSelect v-model="statusFilter" class="h-9 min-w-36">
+              <option value="">All statuses</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </NativeSelect>
+          </FieldHelp>
         </template>
 
         <template #cell-name="{ row }">
@@ -274,7 +277,9 @@ onMounted(async () => {
               <FieldGroup>
                 <Field>
                   <FieldLabel for="tenant-name">Name</FieldLabel>
-                  <Input id="tenant-name" v-model="form.name" placeholder="Onlyvo Demo" />
+                  <FieldHelp description="Enter the tenant or company display name.">
+                    <Input id="tenant-name" v-model="form.name" placeholder="Onlyvo Demo" />
+                  </FieldHelp>
                   <FieldError v-if="tenantStore.errors.name">
                     {{ tenantStore.errors.name[0] }}
                   </FieldError>
@@ -282,7 +287,9 @@ onMounted(async () => {
 
                 <Field>
                   <FieldLabel for="tenant-subdomain">Subdomain</FieldLabel>
-                  <Input id="tenant-subdomain" v-model="form.subdomain" placeholder="onlyvo" />
+                  <FieldHelp description="Enter the subdomain used for this tenant site.">
+                    <Input id="tenant-subdomain" v-model="form.subdomain" placeholder="onlyvo" />
+                  </FieldHelp>
                   <FieldError v-if="tenantStore.errors.subdomain">
                     {{ tenantStore.errors.subdomain[0] }}
                   </FieldError>
@@ -291,7 +298,9 @@ onMounted(async () => {
                 <div class="grid gap-4 sm:grid-cols-2">
                   <Field>
                     <FieldLabel for="tenant-timezone">Timezone</FieldLabel>
-                    <Input id="tenant-timezone" v-model="form.timezone" placeholder="UTC" />
+                    <FieldHelp description="Enter a valid timezone such as UTC or Asia/Shanghai.">
+                      <Input id="tenant-timezone" v-model="form.timezone" placeholder="UTC" />
+                    </FieldHelp>
                     <FieldError v-if="tenantStore.errors.timezone">
                       {{ tenantStore.errors.timezone[0] }}
                     </FieldError>
@@ -299,10 +308,12 @@ onMounted(async () => {
 
                   <Field>
                     <FieldLabel for="tenant-status">Status</FieldLabel>
-                    <NativeSelect id="tenant-status" v-model="form.status" class="w-full">
-                      <option value="active">Active</option>
-                      <option value="inactive">Inactive</option>
-                    </NativeSelect>
+                    <FieldHelp description="Choose whether this tenant can actively use the app.">
+                      <NativeSelect id="tenant-status" v-model="form.status" class="w-full">
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                      </NativeSelect>
+                    </FieldHelp>
                     <FieldError v-if="tenantStore.errors.status">
                       {{ tenantStore.errors.status[0] }}
                     </FieldError>
@@ -311,12 +322,14 @@ onMounted(async () => {
 
                 <Field>
                   <FieldLabel for="tenant-settings">Settings JSON</FieldLabel>
-                  <Textarea
-                    id="tenant-settings"
-                    v-model="settingsText"
-                    class="min-h-36 font-mono text-xs"
-                    spellcheck="false"
-                  />
+                  <FieldHelp description="Enter optional tenant metadata as valid JSON.">
+                    <Textarea
+                      id="tenant-settings"
+                      v-model="settingsText"
+                      class="min-h-36 font-mono text-xs"
+                      spellcheck="false"
+                    />
+                  </FieldHelp>
                   <FieldError v-if="tenantStore.errors.settings">
                     {{ tenantStore.errors.settings[0] }}
                   </FieldError>
@@ -331,7 +344,9 @@ onMounted(async () => {
 
                 <Field>
                   <FieldLabel for="owner-name">Owner Name</FieldLabel>
-                  <Input id="owner-name" v-model="form.owner_name" placeholder="Onlyvo Tenant" />
+                  <FieldHelp description="Enter the full display name for the tenant owner.">
+                    <Input id="owner-name" v-model="form.owner_name" placeholder="Onlyvo Tenant" />
+                  </FieldHelp>
                   <FieldError v-if="tenantStore.errors.owner_name">
                     {{ tenantStore.errors.owner_name[0] }}
                   </FieldError>
@@ -340,7 +355,9 @@ onMounted(async () => {
                 <div class="grid gap-4 sm:grid-cols-2">
                   <Field>
                     <FieldLabel for="owner-first-name">First Name</FieldLabel>
-                    <Input id="owner-first-name" v-model="form.owner_first_name" />
+                    <FieldHelp description="Enter the owner's first name.">
+                      <Input id="owner-first-name" v-model="form.owner_first_name" />
+                    </FieldHelp>
                     <FieldError v-if="tenantStore.errors.owner_first_name">
                       {{ tenantStore.errors.owner_first_name[0] }}
                     </FieldError>
@@ -348,7 +365,9 @@ onMounted(async () => {
 
                   <Field>
                     <FieldLabel for="owner-last-name">Last Name</FieldLabel>
-                    <Input id="owner-last-name" v-model="form.owner_last_name" />
+                    <FieldHelp description="Enter the owner's last name.">
+                      <Input id="owner-last-name" v-model="form.owner_last_name" />
+                    </FieldHelp>
                     <FieldError v-if="tenantStore.errors.owner_last_name">
                       {{ tenantStore.errors.owner_last_name[0] }}
                     </FieldError>
@@ -358,12 +377,14 @@ onMounted(async () => {
                 <div class="grid gap-4 sm:grid-cols-2">
                   <Field>
                     <FieldLabel for="owner-email">Email</FieldLabel>
-                    <Input
-                      id="owner-email"
-                      v-model="form.owner_email"
-                      type="email"
-                      placeholder="tenant@example.com"
-                    />
+                    <FieldHelp description="Enter the email the owner uses to sign in.">
+                      <Input
+                        id="owner-email"
+                        v-model="form.owner_email"
+                        type="email"
+                        placeholder="tenant@example.com"
+                      />
+                    </FieldHelp>
                     <FieldError v-if="tenantStore.errors.owner_email">
                       {{ tenantStore.errors.owner_email[0] }}
                     </FieldError>
@@ -371,7 +392,13 @@ onMounted(async () => {
 
                   <Field>
                     <FieldLabel for="owner-phone">Phone</FieldLabel>
-                    <Input id="owner-phone" v-model="form.owner_phone" placeholder="09123456789" />
+                    <FieldHelp description="Enter the owner's contact phone number.">
+                      <Input
+                        id="owner-phone"
+                        v-model="form.owner_phone"
+                        placeholder="09123456789"
+                      />
+                    </FieldHelp>
                     <FieldError v-if="tenantStore.errors.owner_phone">
                       {{ tenantStore.errors.owner_phone[0] }}
                     </FieldError>
@@ -383,7 +410,15 @@ onMounted(async () => {
                     <FieldLabel for="owner-password">
                       {{ editingTenant ? 'New Password' : 'Password' }}
                     </FieldLabel>
-                    <Input id="owner-password" v-model="form.owner_password" type="password" />
+                    <FieldHelp
+                      :description="
+                        editingTenant
+                          ? 'Enter a new password only if it should be changed.'
+                          : 'Enter the password for the owner account.'
+                      "
+                    >
+                      <Input id="owner-password" v-model="form.owner_password" type="password" />
+                    </FieldHelp>
                     <FieldError v-if="tenantStore.errors.owner_password">
                       {{ tenantStore.errors.owner_password[0] }}
                     </FieldError>
@@ -391,11 +426,13 @@ onMounted(async () => {
 
                   <Field>
                     <FieldLabel for="owner-password-confirmation">Confirm Password</FieldLabel>
-                    <Input
-                      id="owner-password-confirmation"
-                      v-model="form.owner_password_confirmation"
-                      type="password"
-                    />
+                    <FieldHelp description="Enter the same password again to confirm it.">
+                      <Input
+                        id="owner-password-confirmation"
+                        v-model="form.owner_password_confirmation"
+                        type="password"
+                      />
+                    </FieldHelp>
                     <FieldError v-if="tenantStore.errors.owner_password_confirmation">
                       {{ tenantStore.errors.owner_password_confirmation[0] }}
                     </FieldError>

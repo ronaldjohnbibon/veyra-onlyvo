@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { validationErrorsFrom } from '@/shared/api/errors'
 import { adminSystemSettingService } from '@/admin/system-settings/api/system-settings'
+import { useFieldDescriptions } from '@/shared/composables/useFieldDescriptions'
 import type {
   SystemSettingGroup,
   SystemSettingHistoryRecord,
@@ -10,6 +11,7 @@ import type {
 } from '@/shared/types/system-settings'
 
 export const useAdminSystemSettingStore = defineStore('admin-system-settings', () => {
+  const { setShowFieldDescriptions } = useFieldDescriptions()
   const groups = ref<SystemSettingGroup[]>([])
   const history = ref<SystemSettingHistoryRecord[]>([])
   const values = ref<SystemSettingsValues>({})
@@ -23,6 +25,7 @@ export const useAdminSystemSettingStore = defineStore('admin-system-settings', (
       groups.value = response.data.groups
       history.value = response.data.history
       values.value = response.data.values
+      setShowFieldDescriptions(values.value['general.show_field_descriptions'])
     } finally {
       loading.value = false
     }
@@ -36,6 +39,7 @@ export const useAdminSystemSettingStore = defineStore('admin-system-settings', (
       groups.value = response.data.groups
       history.value = response.data.history
       values.value = response.data.values
+      setShowFieldDescriptions(values.value['general.show_field_descriptions'])
     } catch (err) {
       // Keep grouped Laravel validation errors beside their fields.
       errors.value = validationErrorsFrom(err)

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import FieldHelp from '@/shared/components/FieldHelp.vue'
 import { useTemplateCtaForm } from '@/tenant/templates/composables/useTemplateCtaForm'
 import type { TemplateCtaConfig, TemplateCtaField } from '@/shared/types/templates'
 import { computed } from 'vue'
@@ -62,6 +63,17 @@ const ctaLabel = computed(
   () => props.cta.label || props.cta.title || props.cta.submit_label || props.cta.type
 )
 
+const descriptionForField = (field: TemplateCtaField): string => {
+  if (field.type === 'select') return 'Choose one option from the list.'
+  if (field.type === 'checkbox') return 'Check this box if it applies to you.'
+  if (field.type === 'file') return 'Choose a file to include with your submission.'
+  if (field.type === 'email') return 'Enter a valid email address.'
+  if (field.type === 'phone') return 'Enter a phone number where you can be reached.'
+  if (field.type === 'textarea') return 'Enter the details you want to send.'
+
+  return 'Enter the requested information for this field.'
+}
+
 const {
   error,
   fields,
@@ -104,63 +116,65 @@ const {
           {{ field.label }}
         </label>
 
-        <textarea
-          v-if="field.type === 'textarea'"
-          :id="`cta-${props.templateId}-${field.key}`"
-          :class="props.textareaClass"
-          :placeholder="field.placeholder || field.label"
-          :required="field.required"
-          :value="String(payload[field.key] ?? '')"
-          @input="updateField(field, ($event.target as HTMLTextAreaElement).value)"
-        />
+        <FieldHelp :description="descriptionForField(field)">
+          <textarea
+            v-if="field.type === 'textarea'"
+            :id="`cta-${props.templateId}-${field.key}`"
+            :class="props.textareaClass"
+            :placeholder="field.placeholder || field.label"
+            :required="field.required"
+            :value="String(payload[field.key] ?? '')"
+            @input="updateField(field, ($event.target as HTMLTextAreaElement).value)"
+          />
 
-        <select
-          v-else-if="field.type === 'select'"
-          :id="`cta-${props.templateId}-${field.key}`"
-          :class="props.selectClass"
-          :required="field.required"
-          :value="String(payload[field.key] ?? '')"
-          @change="updateField(field, ($event.target as HTMLSelectElement).value)"
-        >
-          <option value="">Select...</option>
-          <option
-            v-for="option in field.options ?? []"
-            :key="String(option.value)"
-            :value="String(option.value)"
+          <select
+            v-else-if="field.type === 'select'"
+            :id="`cta-${props.templateId}-${field.key}`"
+            :class="props.selectClass"
+            :required="field.required"
+            :value="String(payload[field.key] ?? '')"
+            @change="updateField(field, ($event.target as HTMLSelectElement).value)"
           >
-            {{ option.label }}
-          </option>
-        </select>
+            <option value="">Select...</option>
+            <option
+              v-for="option in field.options ?? []"
+              :key="String(option.value)"
+              :value="String(option.value)"
+            >
+              {{ option.label }}
+            </option>
+          </select>
 
-        <input
-          v-else-if="field.type === 'checkbox'"
-          :id="`cta-${props.templateId}-${field.key}`"
-          :class="props.checkboxClass"
-          type="checkbox"
-          :required="field.required"
-          :checked="Boolean(payload[field.key])"
-          @change="updateField(field, ($event.target as HTMLInputElement).checked)"
-        />
+          <input
+            v-else-if="field.type === 'checkbox'"
+            :id="`cta-${props.templateId}-${field.key}`"
+            :class="props.checkboxClass"
+            type="checkbox"
+            :required="field.required"
+            :checked="Boolean(payload[field.key])"
+            @change="updateField(field, ($event.target as HTMLInputElement).checked)"
+          />
 
-        <input
-          v-else-if="field.type === 'file'"
-          :id="`cta-${props.templateId}-${field.key}`"
-          :class="props.inputClass"
-          type="file"
-          :required="field.required"
-          @change="updateFileField(field, $event)"
-        />
+          <input
+            v-else-if="field.type === 'file'"
+            :id="`cta-${props.templateId}-${field.key}`"
+            :class="props.inputClass"
+            type="file"
+            :required="field.required"
+            @change="updateFileField(field, $event)"
+          />
 
-        <input
-          v-else
-          :id="`cta-${props.templateId}-${field.key}`"
-          :class="props.inputClass"
-          :type="inputTypeFor(field)"
-          :placeholder="field.placeholder || field.label"
-          :required="field.required"
-          :value="String(payload[field.key] ?? '')"
-          @input="updateField(field, ($event.target as HTMLInputElement).value)"
-        />
+          <input
+            v-else
+            :id="`cta-${props.templateId}-${field.key}`"
+            :class="props.inputClass"
+            :type="inputTypeFor(field)"
+            :placeholder="field.placeholder || field.label"
+            :required="field.required"
+            :value="String(payload[field.key] ?? '')"
+            @input="updateField(field, ($event.target as HTMLInputElement).value)"
+          />
+        </FieldHelp>
       </div>
 
       <slot name="after-fields" />

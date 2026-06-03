@@ -6,6 +6,7 @@ import { useTemplateStore } from '@/tenant/templates/template-store'
 import type { PostParams, PostRecord, PostStatus } from '@/shared/types/posts'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
+import FieldHelp from '@/shared/components/FieldHelp.vue'
 import { NativeSelect, NativeSelectOption } from '@/shared/components/ui/native-select'
 import { formatDisplayDate } from '@/shared/utils/date'
 import { getStatusBadgeVariant, getStatusLabel } from '@/shared/utils/status'
@@ -141,26 +142,30 @@ watch(selectedTemplateId, (templateId) => {
           @update:sort="updateSort"
         >
           <template #filters>
-            <NativeSelect v-model="selectedTemplateId" class="h-8 sm:max-w-56">
-              <NativeSelectOption value="" disabled>Select template</NativeSelectOption>
-              <NativeSelectOption
-                v-for="template in templateStore.templates"
-                :key="template.id"
-                :value="template.id"
-              >
-                {{ template.name }}
-              </NativeSelectOption>
-            </NativeSelect>
+            <FieldHelp description="Choose the template whose posts you want to manage.">
+              <NativeSelect v-model="selectedTemplateId" class="h-8 sm:max-w-56">
+                <NativeSelectOption value="" disabled>Select template</NativeSelectOption>
+                <NativeSelectOption
+                  v-for="template in templateStore.templates"
+                  :key="template.id"
+                  :value="template.id"
+                >
+                  {{ template.name }}
+                </NativeSelectOption>
+              </NativeSelect>
+            </FieldHelp>
 
-            <NativeSelect
-              :model-value="postStore.params.status ?? ''"
-              class="h-8 sm:max-w-40"
-              @change="updateStatus"
-            >
-              <NativeSelectOption value="">All statuses</NativeSelectOption>
-              <NativeSelectOption value="draft">Draft</NativeSelectOption>
-              <NativeSelectOption value="published">Published</NativeSelectOption>
-            </NativeSelect>
+            <FieldHelp description="Filter posts by draft or published status.">
+              <NativeSelect
+                :model-value="postStore.params.status ?? ''"
+                class="h-8 sm:max-w-40"
+                @change="updateStatus"
+              >
+                <NativeSelectOption value="">All statuses</NativeSelectOption>
+                <NativeSelectOption value="draft">Draft</NativeSelectOption>
+                <NativeSelectOption value="published">Published</NativeSelectOption>
+              </NativeSelect>
+            </FieldHelp>
           </template>
 
           <template #cell-title="{ row }">
