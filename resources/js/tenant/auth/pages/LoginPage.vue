@@ -18,6 +18,13 @@ const props = defineProps<{
 }>()
 
 const authStore = useAuthStore()
+const runtimeSettings =
+  (
+    window as unknown as {
+      __SYSTEM_SETTINGS__?: Record<string, string | boolean | number | null>
+    }
+  ).__SYSTEM_SETTINGS__ ?? {}
+const registrationEnabled = runtimeSettings['authentication.allow_tenant_registration'] !== false
 </script>
 
 <template>
@@ -72,8 +79,7 @@ const authStore = useAuthStore()
                   <Button size="sm" type="submit" :disabled="authStore.loading">
                     {{ authStore.loading ? 'Logging in...' : 'Login' }}
                   </Button>
-                  <Button variant="secondary" size="sm" type="button"> Login with Google </Button>
-                  <FieldDescription class="text-center">
+                  <FieldDescription v-if="registrationEnabled" class="text-center">
                     Don't have an account?
                     <router-link to="/register"> Sign up </router-link>
                   </FieldDescription>

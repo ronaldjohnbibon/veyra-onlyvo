@@ -19,6 +19,16 @@ const props = defineProps<{
 }>()
 
 const authStore = useAuthStore()
+const runtimeSettings =
+  (
+    window as unknown as {
+      __SYSTEM_SETTINGS__?: Record<string, string | boolean | number | null>
+    }
+  ).__SYSTEM_SETTINGS__ ?? {}
+const applicationName = String(runtimeSettings['general.application_name'] || 'Onlyvo')
+const logoUrl = String(runtimeSettings['general.logo'] || '')
+const privacyPolicyUrl = String(runtimeSettings['compliance.privacy_policy_url'] || '')
+const termsOfServiceUrl = String(runtimeSettings['compliance.terms_of_service_url'] || '')
 </script>
 
 <template>
@@ -26,11 +36,13 @@ const authStore = useAuthStore()
     <div class="flex w-full max-w-sm flex-col gap-6">
       <a href="#" class="flex items-center gap-2 self-center font-medium">
         <div
+          v-if="!logoUrl"
           class="bg-primary text-primary-foreground flex size-6 items-center justify-center rounded"
         >
           <GalleryVerticalEnd class="size-4" />
         </div>
-        Acme Inc.
+        <img v-else :src="logoUrl" :alt="applicationName" class="size-6 rounded object-contain" />
+        {{ applicationName }}
       </a>
       <div :class="cn('flex flex-col', props.class)">
         <Card>
@@ -114,7 +126,9 @@ const authStore = useAuthStore()
                       </span>
                     </Field>
                   </Field>
-                  <FieldDescription> Must be at least 8 characters long. </FieldDescription>
+                  <FieldDescription>
+                    Use a password that meets the platform policy.
+                  </FieldDescription>
                 </Field>
                 <Field>
                   <Button type="submit" size="sm" :disabled="authStore.loading">
@@ -130,8 +144,16 @@ const authStore = useAuthStore()
           </CardContent>
         </Card>
         <FieldDescription class="px-6 text-center">
-          By clicking continue, you agree to our <a href="#">Terms of Service</a> and
-          <a href="#">Privacy Policy</a>.
+          By clicking continue, you agree to our
+          <a v-if="termsOfServiceUrl" :href="termsOfServiceUrl" target="_blank" rel="noreferrer">
+            Terms of Service
+          </a>
+          <span v-else>Terms of Service</span>
+          and
+          <a v-if="privacyPolicyUrl" :href="privacyPolicyUrl" target="_blank" rel="noreferrer">
+            Privacy Policy
+          </a>
+          <span v-else>Privacy Policy</span>.
         </FieldDescription>
       </div>
     </div>

@@ -18,11 +18,19 @@ class SystemSettingImageUploadRequest extends FormRequest
      */
     public function rules(): array
     {
-        $settings = app(SystemSettingService::class);
+        $settings  = app(SystemSettingService::class);
+        $imageKeys = collect($settings->definitions())
+            ->filter(fn (array $definition): bool => $definition['type'] === 'image')
+            ->keys()
+            ->all();
+        $mimes = collect(explode(',', $settings->string('storage.allowed_file_types', 'jpg,jpeg,png,webp,gif')))
+            ->map(fn (string $mime): string => trim(strtolower($mime)))
+            ->filter(fn (string $mime): bool => in_array($mime, ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'ico'], true))
+            ->implode(',') ?: 'jpg,jpeg,png,webp,gif';
 
         return [
-            'key'   => ['required', 'string', Rule::in(['general.logo', 'general.favicon', 'seo.open_graph_image'])],
-            'image' => ['required', 'file', 'mimes:jpg,jpeg,png,webp,gif,svg,ico', 'max:'.$settings->integer('storage.maximum_upload_size', 4096)],
+            'key'   => ['required', 'string', Rule::in($imageKeys)],
+            'image' => ['required', 'file', "mimes:{$mimes}", 'max:'.$settings->integer('storage.maximum_upload_size', 4096)],
         ];
     }
 }

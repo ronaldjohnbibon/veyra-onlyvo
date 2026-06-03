@@ -3,12 +3,16 @@
 namespace App\Admin\Tenants\Services;
 
 use App\Admin\Sidebar\Models\Sidebar;
+use App\Admin\Templates\Models\Template;
+use App\Admin\Templates\Models\TemplateCatalogItem;
+use App\Admin\Templates\Models\WebsiteType;
 use App\Admin\Tenants\Models\Tenant;
 use App\Admin\Users\Models\User;
 use App\Shared\Enums\UserType;
 use App\Shared\SystemSettings\Services\SystemSettingService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class TenantService
 {
@@ -27,6 +31,7 @@ class TenantService
             $this->createOwner($tenant, $data);
 
             $this->createDefaultSidebar($tenant);
+            $this->createDefaultTemplate($tenant);
 
             return $tenant;
         });
@@ -71,9 +76,9 @@ class TenantService
             'name'      => $data['name'],
             'subdomain' => $data['subdomain'],
             'timezone'  => $data['timezone'] ?? $this->settings->string('tenant_defaults.default_tenant_timezone', 'UTC'),
-            'status'    => $data['status'] ?? $this->settings->string('tenant_defaults.default_tenant_status', 'active'),
+            'status'    => $data['status']   ?? $this->settings->string('tenant_defaults.default_tenant_status', 'active'),
             'settings'  => array_merge([
-                'trial_days'            => $this->settings->integer('tenant_defaults.default_tenant_trial_days', $this->settings->integer('authentication.default_trial_days', 14)),
+                'trial_days'            => $this->settings->integer('tenant_defaults.default_tenant_trial_days', 14),
                 'default_template_type' => $this->settings->string('tenant_defaults.default_tenant_template_type'),
                 'default_template_key'  => $this->settings->string('tenant_defaults.default_tenant_template_key'),
             ], $data['settings'] ?? []),
@@ -88,16 +93,16 @@ class TenantService
     private function createOwner(Tenant $tenant, array $data): void
     {
         User::query()->create([
-            'tenant_id'   => $tenant->id,
-            'name'        => $data['owner_name'],
-            'first_name'  => $data['owner_first_name'] ?? null,
-            'last_name'   => $data['owner_last_name'] ?? null,
-            'email'       => $data['owner_email'],
-            'phone'       => $data['owner_phone'] ?? null,
-            'password'    => Hash::make($data['owner_password']),
+            'tenant_id'         => $tenant->id,
+            'name'              => $data['owner_name'],
+            'first_name'        => $data['owner_first_name'] ?? null,
+            'last_name'         => $data['owner_last_name']  ?? null,
+            'email'             => $data['owner_email'],
+            'phone'             => $data['owner_phone'] ?? null,
+            'password'          => Hash::make($data['owner_password']),
             'email_verified_at' => $this->settings->boolean('authentication.require_email_verification') ? null : now(),
-            'is_active'   => true,
-            'user_type'   => UserType::TENANT,
+            'is_active'         => true,
+            'user_type'         => UserType::TENANT,
         ]);
     }
 
@@ -169,6 +174,66 @@ class TenantService
         );
     }
 
+    private function createDefaultTemplate(Tenant $tenant): void
+    {
+        $websiteTypeKey = $this->settings->string('tenant_defaults.default_tenant_template_type');
+        $templateKey    = $this->settings->string('tenant_defaults.default_tenant_template_key');
+
+        if ($websiteTypeKey === '' || $templateKey === '') {
+            return;
+        }
+
+        $websiteType = WebsiteType::query()
+            ->where(function ($query) use ($websiteTypeKey): void {
+                $query->where('slug', $websiteTypeKey)
+                    ->orWhereKey($websiteTypeKey);
+            })
+            ->where('is_active', true)
+            ->first();
+
+        $catalogItem = $websiteType
+            ? TemplateCatalogItem::query()
+                ->where('website_type_id', $websiteType->id)
+                ->where('key', $templateKey)
+                ->where('is_active', true)
+                ->first()
+            : null;
+
+        if (! $websiteType || ! $catalogItem) {
+            return;
+        }
+
+        Template::query()->create([
+            'tenant_id'       => $tenant->id,
+            'website_type_id' => $websiteType->id,
+            'name'            => $catalogItem->name,
+            'slug'            => Str::slug($catalogItem->name) ?: 'site',
+            'template_key'    => $catalogItem->key,
+            'business_name'   => $tenant->name,
+            'logo'            => $this->settings->string('general.logo'),
+            'contact_info'    => [
+                'email'   => $this->settings->string('general.support_email'),
+                'phone'   => $this->settings->string('general.support_phone'),
+                'address' => $this->settings->string('general.company_address'),
+            ],
+            'social_links' => [
+                'facebook'  => $this->settings->string('social.facebook_url'),
+                'instagram' => $this->settings->string('social.instagram_url'),
+                'linkedin'  => $this->settings->string('social.linkedin_url'),
+                'twitter'   => $this->settings->string('social.twitter_url'),
+                'youtube'   => $this->settings->string('social.youtube_url'),
+            ],
+            'content'          => $catalogItem->default_content ?? [],
+            'font_family'      => 'Inter',
+            'primary_color'    => '#14b8a6',
+            'secondary_color'  => '#0f766e',
+            'background_color' => '#ffffff',
+            'text_color'       => '#111827',
+            'status'           => 'published',
+            'is_default'       => true,
+        ]);
+    }
+
     /**
      * Update the linked tenant user used for tenant login.
      *
@@ -187,7 +252,7 @@ class TenantService
         $payload = [
             'name'       => $data['owner_name'],
             'first_name' => $data['owner_first_name'] ?? null,
-            'last_name'  => $data['owner_last_name'] ?? null,
+            'last_name'  => $data['owner_last_name']  ?? null,
             'email'      => $data['owner_email'],
             'phone'      => $data['owner_phone'] ?? null,
             'is_active'  => true,

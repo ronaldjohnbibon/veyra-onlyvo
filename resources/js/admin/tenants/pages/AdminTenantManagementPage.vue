@@ -16,6 +16,7 @@ import { NativeSelect } from '@/shared/components/ui/native-select'
 import { Textarea } from '@/shared/components/ui/textarea'
 import { formatDisplayDate } from '@/shared/utils/date'
 import { getStatusBadgeVariant, getStatusLabel } from '@/shared/utils/status'
+import { useAdminSystemSettingStore } from '@/admin/system-settings/system-setting-store'
 import { useAdminTenantStore } from '@/admin/tenants/tenant-store'
 import { useConfirmStore } from '@/shared/stores/confirm-store'
 import type { TenantPayload, TenantRecord, TenantStatus } from '@/shared/types/tenants'
@@ -25,6 +26,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 type SortDirection = 'asc' | 'desc' | ''
 
 const tenantStore = useAdminTenantStore()
+const systemSettingStore = useAdminSystemSettingStore()
 const confirmStore = useConfirmStore()
 const dialogOpen = ref(false)
 const editingTenant = ref<TenantRecord | null>(null)
@@ -67,12 +69,21 @@ const statusFilter = computed({
     tenantStore.index({ status: value, page: 1 })
   },
 })
+const defaultTenantTimezone = computed(() =>
+  String(systemSettingStore.values['tenant_defaults.default_tenant_timezone'] || 'UTC')
+)
+const defaultTenantStatus = computed(
+  () =>
+    String(
+      systemSettingStore.values['tenant_defaults.default_tenant_status'] || 'active'
+    ) as TenantStatus
+)
 
 const resetForm = (): void => {
   form.name = ''
   form.subdomain = ''
-  form.timezone = 'UTC'
-  form.status = 'active'
+  form.timezone = defaultTenantTimezone.value
+  form.status = defaultTenantStatus.value
   form.settings = {}
   form.owner_name = ''
   form.owner_first_name = ''
@@ -153,8 +164,9 @@ const updateSort = (key: string, direction: SortDirection): void => {
   })
 }
 
-onMounted(() => {
-  tenantStore.index()
+onMounted(async () => {
+  await Promise.all([tenantStore.index(), systemSettingStore.index()])
+  resetForm()
 })
 </script>
 

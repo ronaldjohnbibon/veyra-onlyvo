@@ -2,6 +2,7 @@
 
 namespace App\Admin\SystemSettings\Http\Requests;
 
+use App\Shared\SystemSettings\Services\SystemSettingService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -18,87 +19,22 @@ class SystemSettingBulkRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
+        $rules = [
             'settings' => ['required', 'array'],
-
-            'settings.general.application_name'        => ['required', 'string', 'max:150'],
-            'settings.general.application_description' => ['nullable', 'string', 'max:1000'],
-            'settings.general.logo'                    => ['nullable', 'string', 'max:2048'],
-            'settings.general.favicon'                 => ['nullable', 'string', 'max:2048'],
-            'settings.general.support_email'           => ['nullable', 'email', 'max:255'],
-            'settings.general.support_phone'           => ['nullable', 'string', 'max:50'],
-            'settings.general.company_address'         => ['nullable', 'string', 'max:1000'],
-
-            'settings.authentication.allow_tenant_registration' => ['required', 'boolean'],
-            'settings.authentication.require_email_verification' => ['required', 'boolean'],
-            'settings.authentication.default_trial_days'         => ['required', 'integer', 'min:0', 'max:365'],
-
-            'settings.security.session_lifetime_minutes'        => ['required', 'integer', 'min:5', 'max:10080'],
-            'settings.security.login_rate_limit_attempts'       => ['required', 'integer', 'min:1', 'max:100'],
-            'settings.security.login_rate_limit_window_minutes' => ['required', 'integer', 'min:1', 'max:1440'],
-            'settings.security.require_strong_passwords'        => ['required', 'boolean'],
-            'settings.security.minimum_password_length'         => ['required', 'integer', 'min:8', 'max:128'],
-            'settings.security.enable_admin_two_factor'         => ['required', 'boolean'],
-            'settings.security.allowed_admin_ips'               => ['nullable', 'string', 'max:2000'],
-
-            'settings.tenant_defaults.default_tenant_timezone'      => ['required', 'string', 'max:100', 'timezone'],
-            'settings.tenant_defaults.default_tenant_status'        => ['required', Rule::in(['active', 'inactive'])],
-            'settings.tenant_defaults.default_tenant_trial_days'    => ['required', 'integer', 'min:0', 'max:365'],
-            'settings.tenant_defaults.default_tenant_template_type' => ['nullable', 'string', 'max:100', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/'],
-            'settings.tenant_defaults.default_tenant_template_key'  => ['nullable', 'string', 'max:100', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/'],
-
-            'settings.feature_flags.enable_templates_module'       => ['required', 'boolean'],
-            'settings.feature_flags.enable_posts_module'           => ['required', 'boolean'],
-            'settings.feature_flags.enable_analytics_module'       => ['required', 'boolean'],
-            'settings.feature_flags.enable_design_requests_module' => ['required', 'boolean'],
-            'settings.feature_flags.enable_cta_forms'              => ['required', 'boolean'],
-            'settings.feature_flags.enable_tracking_logs'          => ['required', 'boolean'],
-
-            'settings.email.mail_driver'   => ['required', 'string', Rule::in(['smtp', 'sendmail', 'mailgun', 'ses', 'ses-v2', 'postmark', 'log', 'array', 'failover', 'roundrobin'])],
-            'settings.email.smtp_host'     => ['nullable', 'string', 'max:255'],
-            'settings.email.smtp_port'     => ['nullable', 'integer', 'min:1', 'max:65535'],
-            'settings.email.smtp_username' => ['nullable', 'string', 'max:255'],
-            'settings.email.smtp_password' => ['nullable', 'string', 'max:255'],
-            'settings.email.sender_name'   => ['required', 'string', 'max:150'],
-            'settings.email.sender_email'  => ['required', 'email', 'max:255'],
-
-            'settings.analytics.enable_visitor_tracking' => ['required', 'boolean'],
-            'settings.analytics.enable_cta_tracking'     => ['required', 'boolean'],
-
-            'settings.storage.maximum_upload_size' => ['required', 'integer', 'min:1', 'max:102400'],
-            'settings.storage.allowed_file_types'  => ['required', 'string', 'max:500', 'regex:/^[a-z0-9,\\s]+$/i'],
-
-            'settings.maintenance.maintenance_mode'    => ['required', 'boolean'],
-            'settings.maintenance.maintenance_message' => ['nullable', 'string', 'max:1000'],
-            'settings.maintenance.maintenance_start_time'    => ['nullable', 'date'],
-            'settings.maintenance.maintenance_end_time'      => ['nullable', 'date'],
-            'settings.maintenance.allow_admin_bypass'        => ['required', 'boolean'],
-            'settings.maintenance.maintenance_affected_areas' => ['nullable', 'string', 'max:1000'],
-
-            'settings.seo.default_meta_title'           => ['nullable', 'string', 'max:150'],
-            'settings.seo.default_meta_description'     => ['nullable', 'string', 'max:500'],
-            'settings.seo.open_graph_image'             => ['nullable', 'string', 'max:2048'],
-            'settings.seo.allow_search_engine_indexing' => ['required', 'boolean'],
-            'settings.seo.canonical_domain'             => ['nullable', 'string', 'max:255', 'regex:/^(https?:\\/\\/)?[a-z0-9][a-z0-9.-]*\\.[a-z]{2,}(?:\\/)?$/i'],
-
-            'settings.compliance.privacy_policy_url'    => ['nullable', 'url', 'max:2048'],
-            'settings.compliance.terms_of_service_url'  => ['nullable', 'url', 'max:2048'],
-            'settings.compliance.cookie_notice_enabled' => ['required', 'boolean'],
-            'settings.compliance.data_retention_days'   => ['required', 'integer', 'min:1', 'max:3650'],
-
-            'settings.social.facebook_url'  => ['nullable', 'url', 'max:2048'],
-            'settings.social.instagram_url' => ['nullable', 'url', 'max:2048'],
-            'settings.social.linkedin_url'  => ['nullable', 'url', 'max:2048'],
-            'settings.social.twitter_url'   => ['nullable', 'url', 'max:2048'],
-            'settings.social.youtube_url'   => ['nullable', 'url', 'max:2048'],
         ];
+
+        foreach (app(SystemSettingService::class)->definitions() as $key => $definition) {
+            $rules['settings.'.$key] = $this->rulesFor($key, $definition);
+        }
+
+        return $rules;
     }
 
     public function after(): array
     {
         return [
             function (Validator $validator): void {
-                $this->validateAllowedAdminIps($validator);
+                $this->validateIpList($validator, 'security.allowed_admin_ips');
                 $this->validateMaintenanceWindow($validator);
             },
         ];
@@ -121,22 +57,70 @@ class SystemSettingBulkRequest extends FormRequest
         $this->merge(['settings' => $settings]);
     }
 
-    private function validateAllowedAdminIps(Validator $validator): void
+    /**
+     * @param  array<string, mixed>  $definition
+     * @return array<int, mixed>
+     */
+    private function rulesFor(string $key, array $definition): array
     {
-        $value = (string) $this->input('settings.security.allowed_admin_ips', '');
+        $type  = (string) $definition['type'];
+        $rules = match ($type) {
+            'boolean'  => ['required', 'boolean'],
+            'integer'  => ['required', 'integer', 'min:0', 'max:100000'],
+            'email'    => ['nullable', 'email', 'max:255'],
+            'url'      => ['nullable', 'url', 'max:2048'],
+            'image'    => ['nullable', 'string', 'max:2048'],
+            'color'    => ['required', 'string', 'regex:/^#[0-9a-f]{6}$/i'],
+            'text'     => ['nullable', 'string', 'max:10000'],
+            'password' => ['nullable', 'string', 'max:5000'],
+            default    => ['nullable', 'string', 'max:255'],
+        };
 
-        if (trim($value) === '') {
-            return;
+        $rules = match ($key) {
+            'general.application_name'                  => ['required', 'string', 'max:150'],
+            'general.application_description'           => ['nullable', 'string', 'max:1000'],
+            'general.support_phone'                     => ['nullable', 'string', 'max:50'],
+            'general.company_address'                   => ['nullable', 'string', 'max:1000'],
+            'security.session_lifetime_minutes'         => ['required', 'integer', 'min:5', 'max:10080'],
+            'security.login_rate_limit_attempts'        => ['required', 'integer', 'min:1', 'max:100'],
+            'security.login_rate_limit_window_minutes'  => ['required', 'integer', 'min:1', 'max:1440'],
+            'security.minimum_password_length'          => ['required', 'integer', 'min:8', 'max:128'],
+            'tenant_defaults.default_tenant_timezone'   => ['required', 'string', 'max:100', 'timezone'],
+            'tenant_defaults.default_tenant_trial_days' => ['required', 'integer', 'min:0', 'max:365'],
+            'tenant_defaults.default_tenant_template_type',
+            'tenant_defaults.default_tenant_template_key' => ['nullable', 'string', 'max:100', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/'],
+            'email.smtp_port'                             => ['nullable', 'integer', 'min:1', 'max:65535'],
+            'email.sender_name'                           => ['required', 'string', 'max:150'],
+            'email.sender_email'                          => ['required', 'email', 'max:255'],
+            'storage.maximum_upload_size'                 => ['required', 'integer', 'min:1', 'max:102400'],
+            'storage.allowed_file_types'                  => ['required', 'string', 'max:500', 'regex:/^[a-z0-9,\s]+$/i'],
+            'maintenance.maintenance_message'             => ['nullable', 'string', 'max:1000'],
+            'maintenance.maintenance_start_time',
+            'maintenance.maintenance_end_time'       => ['nullable', 'date'],
+            'maintenance.maintenance_affected_areas' => ['nullable', 'string', 'max:1000'],
+            'seo.default_meta_title'                 => ['nullable', 'string', 'max:150'],
+            'seo.default_meta_description'           => ['nullable', 'string', 'max:500'],
+            'seo.canonical_domain'                   => ['nullable', 'string', 'max:255', 'regex:/^(https?:\/\/)?[a-z0-9][a-z0-9.-]*\.[a-z]{2,}(?:\/)?$/i'],
+            default                                  => $rules,
+        };
+
+        if ($type === 'select' && isset($definition['options']) && is_array($definition['options'])) {
+            $rules = ['required', 'string', Rule::in(array_keys($definition['options']))];
         }
 
-        $ips = preg_split('/[\s,]+/', $value) ?: [];
+        return $rules;
+    }
 
-        foreach ($ips as $ip) {
-            if ($ip === '' || $this->validIpOrCidr($ip)) {
+    private function validateIpList(Validator $validator, string $key): void
+    {
+        $value = (string) $this->input('settings.'.$key, '');
+
+        foreach ($this->listFromText($value) as $ip) {
+            if ($this->validIpOrCidr($ip)) {
                 continue;
             }
 
-            $validator->errors()->add('settings.security.allowed_admin_ips', 'Allowed admin IPs must contain valid IP addresses or CIDR ranges.');
+            $validator->errors()->add('settings.'.$key, 'This field must contain valid IP addresses or CIDR ranges.');
 
             return;
         }
@@ -169,5 +153,17 @@ class SystemSettingBulkRequest extends FormRequest
         $maxPrefix = str_contains($ip, ':') ? 128 : 32;
 
         return (int) $prefix >= 0 && (int) $prefix <= $maxPrefix;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function listFromText(string $value): array
+    {
+        return collect(preg_split('/[\s,]+/', $value) ?: [])
+            ->map(fn (string $item): string => trim($item))
+            ->filter()
+            ->values()
+            ->all();
     }
 }

@@ -1,5 +1,7 @@
 <?php
 
+use App\Admin\Auth\Http\Middleware\EnsureAdminIpAllowed;
+use App\Shared\SystemSettings\Http\Middleware\EnsureNotInMaintenance;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
@@ -18,12 +20,17 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->alias([
+            'admin.ip' => EnsureAdminIpAllowed::class,
+        ]);
+
         $middleware->group('api.auth', [
             'auth:sanctum',
         ]);
 
         $middleware->api(prepend: [
             EnsureFrontendRequestsAreStateful::class,
+            EnsureNotInMaintenance::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

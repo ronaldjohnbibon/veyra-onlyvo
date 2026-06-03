@@ -27,6 +27,29 @@ const runtimeSettings =
   ).__SYSTEM_SETTINGS__ ?? {}
 const privacyPolicyUrl = String(runtimeSettings['compliance.privacy_policy_url'] || '')
 const termsOfServiceUrl = String(runtimeSettings['compliance.terms_of_service_url'] || '')
+const applicationName = String(runtimeSettings['general.application_name'] || 'Onlyvo')
+const applicationDescription = String(
+  runtimeSettings['general.application_description'] ||
+    'Launch tenant websites, manage content, collect leads, and understand visitor activity without stitching together separate tools.'
+)
+const logoUrl = String(runtimeSettings['general.logo'] || '')
+const supportEmail = String(runtimeSettings['general.support_email'] || '')
+const supportPhone = String(runtimeSettings['general.support_phone'] || '')
+const companyAddress = String(runtimeSettings['general.company_address'] || '')
+const registrationEnabled = computed(
+  () => runtimeSettings['authentication.allow_tenant_registration'] !== false
+)
+const socialLinks = computed(() =>
+  [
+    { label: 'Facebook', url: runtimeSettings['social.facebook_url'] },
+    { label: 'Instagram', url: runtimeSettings['social.instagram_url'] },
+    { label: 'LinkedIn', url: runtimeSettings['social.linkedin_url'] },
+    { label: 'X', url: runtimeSettings['social.twitter_url'] },
+    { label: 'YouTube', url: runtimeSettings['social.youtube_url'] },
+  ]
+    .map((item) => ({ label: item.label, url: String(item.url || '') }))
+    .filter((item) => item.url)
+)
 
 const dashboardRoute = computed(() => {
   return adminAuthStore.isAuthenticated ? { name: 'admin.dashboard' } : { name: 'sidebar.index' }
@@ -106,11 +129,13 @@ const packageFits = [
       <nav class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-3 lg:px-8">
         <a href="#home" class="flex items-center gap-2 font-semibold">
           <span
+            v-if="!logoUrl"
             class="flex size-9 items-center justify-center rounded bg-primary text-primary-foreground"
           >
             <Sparkles class="size-4" />
           </span>
-          <span class="text-base">Onlyvo</span>
+          <img v-else :src="logoUrl" :alt="applicationName" class="size-9 rounded object-contain" />
+          <span class="text-base">{{ applicationName }}</span>
         </a>
 
         <div class="hidden items-center gap-6 text-sm font-medium text-white/80 md:flex">
@@ -146,7 +171,8 @@ const packageFits = [
             <RouterLink to="/login">Login</RouterLink>
           </Button>
           <Button as-child size="sm">
-            <RouterLink to="/register">Register</RouterLink>
+            <RouterLink v-if="registrationEnabled" to="/register">Register</RouterLink>
+            <a v-else href="#contact">Contact</a>
           </Button>
         </div>
       </nav>
@@ -173,19 +199,22 @@ const packageFits = [
           </p>
 
           <h1 class="max-w-4xl text-5xl font-bold leading-tight text-white md:text-6xl lg:text-7xl">
-            Onlyvo
+            {{ applicationName }}
           </h1>
           <p class="mt-5 max-w-2xl text-lg leading-8 text-white/80 md:text-xl">
-            Launch tenant websites, manage content, collect leads, and understand visitor activity
-            without stitching together separate tools.
+            {{ applicationDescription }}
           </p>
 
           <div class="mt-8 flex flex-col gap-3 sm:flex-row">
             <Button as-child size="lg">
-              <RouterLink to="/register">
+              <RouterLink v-if="registrationEnabled" to="/register">
                 Register
                 <ArrowRight class="size-4" />
               </RouterLink>
+              <a v-else href="#contact">
+                Contact Us
+                <ArrowRight class="size-4" />
+              </a>
             </Button>
             <Button
               as-child
@@ -216,9 +245,9 @@ const packageFits = [
             A practical website platform for tenant-led businesses.
           </h2>
           <p class="mt-4 max-w-2xl leading-7 text-muted-foreground">
-            Onlyvo gives each tenant an authenticated workspace for templates, posts, design
-            requests, navigation, and analytics while keeping public visitor pages available without
-            login.
+            {{ applicationName }} gives each tenant an authenticated workspace for templates, posts,
+            design requests, navigation, and analytics while keeping public visitor pages available
+            without login.
           </p>
         </div>
 
@@ -343,13 +372,23 @@ const packageFits = [
             Ready to bring tenants onto a clearer website workflow?
           </h2>
           <p class="mt-4 max-w-2xl leading-7 text-muted-foreground">
-            Register to create a tenant account, or sign in if your workspace is already set up. The
-            app will keep authenticated tenant and admin areas on their existing routes.
+            Register to create a tenant account when registration is open, or sign in if your
+            workspace is already set up. The app will keep authenticated tenant and admin areas on
+            their existing routes.
           </p>
+          <div class="mt-5 space-y-2 text-sm text-muted-foreground">
+            <p v-if="supportEmail">
+              <a :href="`mailto:${supportEmail}`" class="font-medium text-primary">
+                {{ supportEmail }}
+              </a>
+            </p>
+            <p v-if="supportPhone">{{ supportPhone }}</p>
+            <p v-if="companyAddress" class="whitespace-pre-line">{{ companyAddress }}</p>
+          </div>
         </div>
 
         <div class="flex flex-col gap-3 sm:flex-row lg:justify-end">
-          <Button as-child size="lg">
+          <Button v-if="registrationEnabled" as-child size="lg">
             <RouterLink to="/register">
               Register
               <ArrowRight class="size-4" />
@@ -366,7 +405,7 @@ const packageFits = [
       <div
         class="mx-auto flex max-w-7xl flex-col gap-3 text-sm text-muted-foreground md:flex-row md:items-center md:justify-between"
       >
-        <p>Onlyvo tenant website platform</p>
+        <p>{{ applicationName }} tenant website platform</p>
         <div class="flex gap-4">
           <a
             v-if="privacyPolicyUrl"
@@ -388,6 +427,16 @@ const packageFits = [
           </a>
           <a href="#features" class="hover:text-foreground">Learn More</a>
           <a href="#contact" class="hover:text-foreground">Contact Us</a>
+          <a
+            v-for="link in socialLinks"
+            :key="link.label"
+            :href="link.url"
+            class="hover:text-foreground"
+            target="_blank"
+            rel="noreferrer"
+          >
+            {{ link.label }}
+          </a>
         </div>
       </div>
     </footer>

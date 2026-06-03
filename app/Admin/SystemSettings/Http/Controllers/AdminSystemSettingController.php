@@ -23,6 +23,7 @@ class AdminSystemSettingController extends Controller
     public function index(): JsonResponse
     {
         $this->authorizeAdmin();
+        $this->service->reconcileStoredSettings();
 
         return $this->success([
             'groups'  => $this->service->groups(),
@@ -82,8 +83,10 @@ class AdminSystemSettingController extends Controller
     {
         $this->authorizeAdmin();
 
+        $this->service->reconcileStoredSettings();
         $this->service->upsertGrouped($request->validated('settings'), Auth::user());
         $this->service->applyRuntimeConfig();
+        $this->service->reconcileStoredSettings();
 
         return $this->success([
             'groups'  => $this->service->groups(),

@@ -23,13 +23,22 @@ const props = defineProps<{
 
 const { isMobile } = useSidebar()
 const activeIndex = ref(0)
+const runtimeSettings =
+  (
+    window as unknown as {
+      __SYSTEM_SETTINGS__?: Record<string, string | boolean | number | null>
+    }
+  ).__SYSTEM_SETTINGS__ ?? {}
+const applicationName = computed(() =>
+  String(runtimeSettings['general.application_name'] || 'Onlyvo')
+)
 
 const teams = computed(() =>
   props.teams?.length
     ? props.teams
     : [
         {
-          name: 'Onlyvo',
+          name: applicationName.value,
           logo: 'Sparkles',
           plan: 'Workspace',
         },

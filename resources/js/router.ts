@@ -75,6 +75,13 @@ router.beforeEach(async (to) => {
     return to.meta.requiresAuth ? { name: 'sidebar.index' } : { name: 'marketing.home' }
   }
 
+  if (
+    to.name === 'TenantRegister' &&
+    runtimeSettings['authentication.allow_tenant_registration'] === false
+  ) {
+    return { name: 'TenantLogin' }
+  }
+
   if (adminAuth.isAuthenticated && to.name === 'AdminLogin') {
     return { name: 'admin.dashboard' }
   }
