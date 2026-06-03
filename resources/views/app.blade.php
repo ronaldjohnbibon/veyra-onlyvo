@@ -1,6 +1,6 @@
 <!doctype html>
 @php
-    $settings = app(\App\Shared\SystemSettings\Services\SystemSettingService::class);
+    $settings = app(\App\Admin\SystemSettings\Services\SystemSettingService::class);
     $publicSettings = $settings->values(true);
     $applicationName = $settings->string('general.application_name', 'Onlyvo');
     $applicationDescription = $settings->string('general.application_description', 'Onlyvo tenant platform');

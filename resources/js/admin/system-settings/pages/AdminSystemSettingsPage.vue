@@ -5,13 +5,14 @@ import { Field, FieldError, FieldGroup, FieldLabel, FieldSet } from '@/shared/co
 import { Input } from '@/shared/components/ui/input'
 import { NativeSelect, NativeSelectOption } from '@/shared/components/ui/native-select'
 import { Textarea } from '@/shared/components/ui/textarea'
+import SystemSettingHistoryTable from '@/admin/system-settings/components/SystemSettingHistoryTable.vue'
 import { useAdminSystemSettingStore } from '@/admin/system-settings/system-setting-store'
 import type {
   SystemSettingGroup,
   SystemSettingItem,
   SystemSettingValue,
   SystemSettingsPayload,
-} from '@/shared/types/system-settings'
+} from '@/admin/system-settings/types'
 import {
   AppWindow,
   BarChart3,
@@ -125,22 +126,6 @@ const sectionErrorCount = (section: string): number => {
   const prefix = `settings.${section}.`
 
   return Object.keys(settingStore.errors).filter((key) => key.startsWith(prefix)).length
-}
-
-const formatSettingValue = (value: SystemSettingValue): string => {
-  if (value === null || value === '') return 'Empty'
-  if (typeof value === 'boolean') return value ? 'Enabled' : 'Disabled'
-
-  return String(value)
-}
-
-const formatChangedAt = (value: string | null): string => {
-  if (!value) return ''
-
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(new Date(value))
 }
 
 const stringValue = (setting: SystemSettingItem): string => {
@@ -467,39 +452,13 @@ onMounted(async () => {
               </section>
 
               <section v-else-if="activeSection === 'history'">
-                <div v-if="settingStore.history.length" class="divide-y rounded border">
-                  <article
-                    v-for="record in settingStore.history"
-                    :key="record.id"
-                    class="grid gap-3 p-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1fr)_minmax(0,1fr)]"
-                  >
-                    <div>
-                      <p class="break-all text-sm font-semibold">{{ record.setting_key }}</p>
-                      <p class="mt-1 text-xs text-muted-foreground">
-                        {{ record.changed_by.name || record.changed_by.email || 'System' }}
-                      </p>
-                      <p class="mt-1 text-xs text-muted-foreground">
-                        {{ formatChangedAt(record.changed_at) }}
-                      </p>
-                    </div>
-                    <div class="rounded bg-muted/40 p-3">
-                      <p class="text-xs font-medium text-muted-foreground">Previous</p>
-                      <p class="mt-1 break-words text-sm">
-                        {{ formatSettingValue(record.previous_value) }}
-                      </p>
-                    </div>
-                    <div class="rounded bg-muted/40 p-3">
-                      <p class="text-xs font-medium text-muted-foreground">New</p>
-                      <p class="mt-1 break-words text-sm">
-                        {{ formatSettingValue(record.new_value) }}
-                      </p>
-                    </div>
-                  </article>
-                </div>
-
-                <div v-else class="rounded border bg-muted/20 p-6 text-sm text-muted-foreground">
-                  No settings changes recorded yet.
-                </div>
+                <SystemSettingHistoryTable
+                  :records="settingStore.history"
+                  :total="settingStore.historyTotal"
+                  :params="settingStore.historyParams"
+                  :loading="settingStore.loading"
+                  @load="settingStore.loadHistory"
+                />
               </section>
             </FieldSet>
           </main>

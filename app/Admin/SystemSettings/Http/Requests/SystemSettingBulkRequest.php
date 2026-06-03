@@ -2,7 +2,7 @@
 
 namespace App\Admin\SystemSettings\Http\Requests;
 
-use App\Shared\SystemSettings\Services\SystemSettingService;
+use App\Admin\SystemSettings\Services\SystemSettingService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;

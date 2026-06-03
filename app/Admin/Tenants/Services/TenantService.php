@@ -3,13 +3,13 @@
 namespace App\Admin\Tenants\Services;
 
 use App\Admin\Sidebar\Models\Sidebar;
+use App\Admin\SystemSettings\Services\SystemSettingService;
 use App\Admin\Templates\Models\Template;
 use App\Admin\Templates\Models\TemplateCatalogItem;
 use App\Admin\Templates\Models\WebsiteType;
 use App\Admin\Tenants\Models\Tenant;
 use App\Admin\Users\Models\User;
 use App\Shared\Enums\UserType;
-use App\Shared\SystemSettings\Services\SystemSettingService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;

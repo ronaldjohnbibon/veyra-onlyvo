@@ -1,12 +1,15 @@
 <?php
 
-namespace App\Shared\SystemSettings\Services;
+namespace App\Admin\SystemSettings\Services;
 
-use App\Shared\SystemSettings\Models\SystemSetting;
-use App\Shared\SystemSettings\Models\SystemSettingHistory;
+use App\Admin\SystemSettings\Models\SystemSetting;
+use App\Admin\SystemSettings\Models\SystemSettingHistory;
 use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\IpUtils;
 
 class SystemSettingService
@@ -283,7 +286,7 @@ class SystemSettingService
         );
 
         if (! $existing || $existing->value !== $newValue) {
-            $this->recordHistory($key, $existing?->value, $newValue, $actor);
+            $this->recordHistory($key, $existing?->value, $newValue, $actor, $existing ? 'updated' : 'created');
         }
 
         Cache::forget(self::CACHE_KEY);
@@ -291,8 +294,9 @@ class SystemSettingService
         return $setting;
     }
 
-    public function delete(SystemSetting $setting): void
+    public function delete(SystemSetting $setting, ?Authenticatable $actor = null): void
     {
+        $this->recordHistory($setting->key, $setting->value, null, $actor, 'deleted');
         $setting->delete();
         Cache::forget(self::CACHE_KEY);
     }
@@ -359,19 +363,35 @@ class SystemSettingService
     }
 
     /**
-     * @return array<int, SystemSettingHistory>
+     * @param  array<string, mixed>  $filters
+     * @return array<string, mixed>
      */
-    public function history(int $limit = 25): array
+    public function history(array $filters = []): array
     {
         if (! $this->historyTableExists()) {
-            return [];
+            return [
+                'data'       => [],
+                'pagination' => $this->emptyPagination(),
+            ];
         }
 
-        return SystemSettingHistory::query()
-            ->latest('changed_at')
-            ->limit($limit)
-            ->get()
-            ->all();
+        $query = SystemSettingHistory::query();
+
+        $this->applyHistoryFilters($query, $filters);
+        $this->applyHistorySorting($query, $filters);
+
+        /** @var LengthAwarePaginator $paginator */
+        $paginator = $query->paginate(
+            (int) ($filters['pageSize'] ?? 15),
+            ['*'],
+            'page',
+            (int) ($filters['page'] ?? 1),
+        );
+
+        return [
+            'data'       => $paginator->getCollection(),
+            'pagination' => $this->pagination($paginator),
+        ];
     }
 
     public function featureEnabled(string $key, bool $fallback = true): bool
@@ -473,7 +493,7 @@ class SystemSettingService
         }
     }
 
-    private function recordHistory(string $key, mixed $previousValue, mixed $newValue, ?Authenticatable $actor): void
+    private function recordHistory(string $key, mixed $previousValue, mixed $newValue, ?Authenticatable $actor, string $action): void
     {
         if (! $this->historyTableExists()) {
             return;
@@ -481,6 +501,7 @@ class SystemSettingService
 
         SystemSettingHistory::query()->create([
             'setting_key'        => $key,
+            'action'             => $action,
             'previous_value'     => $previousValue,
             'new_value'          => $newValue,
             'changed_by_user_id' => $actor?->getAuthIdentifier(),
@@ -522,6 +543,75 @@ class SystemSettingService
             'integer' => (int) $value,
             default   => is_string($value) ? trim($value) : $value,
         };
+    }
+
+    /**
+     * @param  Builder<SystemSettingHistory>  $query
+     * @param  array<string, mixed>  $filters
+     */
+    private function applyHistoryFilters(Builder $query, array $filters): void
+    {
+        $query
+            ->when($filters['setting_key'] ?? null, fn (Builder $query, string $key) => $query->where('setting_key', $key))
+            ->when($filters['action'] ?? null, fn (Builder $query, string $action) => $query->where('action', $action))
+            ->when($filters['search'] ?? null, function (Builder $query, string $search): void {
+                $like = '%'.Str::lower($search).'%';
+
+                $query->where(function (Builder $query) use ($like): void {
+                    foreach (['setting_key', 'action', 'changed_by_name', 'changed_by_email'] as $column) {
+                        $query->orWhereRaw('lower(coalesce('.$column.", '')) like ?", [$like]);
+                    }
+                });
+            });
+    }
+
+    /**
+     * @param  Builder<SystemSettingHistory>  $query
+     * @param  array<string, mixed>  $filters
+     */
+    private function applyHistorySorting(Builder $query, array $filters): void
+    {
+        $sortMap = [
+            'setting_key' => 'setting_key',
+            'action'      => 'action',
+            'changed_by'  => 'changed_by_name',
+            'changed_at'  => 'changed_at',
+        ];
+
+        $sort      = $sortMap[(string) ($filters['sort'] ?? 'changed_at')] ?? 'changed_at';
+        $direction = (string) ($filters['direction'] ?? 'desc') === 'asc' ? 'asc' : 'desc';
+
+        $query->orderBy($sort, $direction)->orderBy('id', 'desc');
+    }
+
+    /**
+     * @return array<string, int|null>
+     */
+    private function pagination(LengthAwarePaginator $paginator): array
+    {
+        return [
+            'total'        => $paginator->total(),
+            'per_page'     => $paginator->perPage(),
+            'current_page' => $paginator->currentPage(),
+            'last_page'    => $paginator->lastPage(),
+            'from'         => $paginator->firstItem(),
+            'to'           => $paginator->lastItem(),
+        ];
+    }
+
+    /**
+     * @return array<string, int|null>
+     */
+    private function emptyPagination(): array
+    {
+        return [
+            'total'        => 0,
+            'per_page'     => 15,
+            'current_page' => 1,
+            'last_page'    => 1,
+            'from'         => null,
+            'to'           => null,
+        ];
     }
 
     /**

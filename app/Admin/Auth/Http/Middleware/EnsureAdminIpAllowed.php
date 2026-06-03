@@ -2,7 +2,7 @@
 
 namespace App\Admin\Auth\Http\Middleware;
 
-use App\Shared\SystemSettings\Services\SystemSettingService;
+use App\Admin\SystemSettings\Services\SystemSettingService;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;

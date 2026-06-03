@@ -21,6 +21,7 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
         Route::put('design-requests/{designRequest}', [AdminDesignRequestController::class, 'update'])->name('design-requests.update');
 
         Route::apiResource('sidebars', AdminSidebarController::class);
+        Route::get('system-settings/history', [AdminSystemSettingController::class, 'history'])->name('system-settings.history');
         Route::put('system-settings', [AdminSystemSettingController::class, 'updateBulk'])->name('system-settings.update-bulk');
         Route::post('system-settings/images', [AdminSystemSettingController::class, 'uploadImage'])->name('system-settings.images.store');
         Route::apiResource('system-settings', AdminSystemSettingController::class)

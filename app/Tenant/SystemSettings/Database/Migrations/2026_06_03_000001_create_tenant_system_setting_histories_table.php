@@ -8,8 +8,9 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('system_setting_histories', function (Blueprint $table): void {
+        Schema::create('tenant_system_setting_histories', function (Blueprint $table): void {
             $table->uuid('id')->primary();
+            $table->foreignUuid('tenant_id')->constrained('tenants')->cascadeOnDelete();
             $table->string('setting_key', 150)->index();
             $table->string('action', 50)->default('updated')->index();
             $table->json('previous_value')->nullable();
@@ -19,11 +20,13 @@ return new class extends Migration
             $table->string('changed_by_email')->nullable();
             $table->timestamp('changed_at')->index();
             $table->timestamp('created_at')->nullable();
+
+            $table->index(['tenant_id', 'changed_at']);
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('system_setting_histories');
+        Schema::dropIfExists('tenant_system_setting_histories');
     }
 };

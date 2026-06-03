@@ -2,11 +2,13 @@
 
 namespace App\Tenant\Tenants\Models;
 
+use App\Shared\Enums\UserType;
 use App\Tenant\Dashboard\Models\VisitorUniqueVisitor;
 use App\Tenant\Dashboard\Models\VisitorVisit;
-use App\Shared\Enums\UserType;
 use App\Tenant\DesignRequests\Models\DesignRequest;
 use App\Tenant\Sidebar\Models\Sidebar;
+use App\Tenant\SystemSettings\Models\TenantSystemSetting;
+use App\Tenant\SystemSettings\Models\TenantSystemSettingHistory;
 use App\Tenant\Templates\Models\Template;
 use App\Tenant\Users\Models\User;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -55,6 +57,16 @@ class Tenant extends Model implements SproutTenant
     public function templates(): HasMany
     {
         return $this->hasMany(Template::class);
+    }
+
+    public function systemSettings(): HasMany
+    {
+        return $this->hasMany(TenantSystemSetting::class);
+    }
+
+    public function systemSettingHistories(): HasMany
+    {
+        return $this->hasMany(TenantSystemSettingHistory::class);
     }
 
     public function visitorVisits(): HasMany

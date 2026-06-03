@@ -2,7 +2,7 @@
 
 namespace App\Providers;
 
-use App\Shared\SystemSettings\Services\SystemSettingService;
+use App\Admin\SystemSettings\Services\SystemSettingService;
 use FilesystemIterator;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Support\ServiceProvider;
@@ -29,6 +29,7 @@ class AppServiceProvider extends ServiceProvider
         $this->loadMigrationsFrom(app_path('Tenant/DesignRequests/Database/Migrations'));
         $this->loadMigrationsFrom(app_path('Tenant/Templates/Posts/Database/Migrations'));
         $this->loadMigrationsFrom(app_path('Tenant/Sidebar/Database/Migrations'));
+        $this->loadMigrationsFrom(app_path('Tenant/SystemSettings/Database/Migrations'));
         $this->loadMigrationsFrom($this->templateMigrationPaths());
         $this->loadMigrationsFrom(app_path('Tenant/TrackingLogs/Database/Migrations'));
         $this->loadMigrationsFrom(app_path('Tenant/Tenants/Database/Migrations'));

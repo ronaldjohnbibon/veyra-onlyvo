@@ -3,14 +3,15 @@
 namespace App\Admin\SystemSettings\Http\Controllers;
 
 use App\Admin\SystemSettings\Http\Requests\SystemSettingBulkRequest;
+use App\Admin\SystemSettings\Http\Requests\SystemSettingHistoryIndexRequest;
 use App\Admin\SystemSettings\Http\Requests\SystemSettingImageUploadRequest;
 use App\Admin\SystemSettings\Http\Requests\SystemSettingRequest;
 use App\Admin\SystemSettings\Http\Resources\SystemSettingHistoryResource;
 use App\Admin\SystemSettings\Http\Resources\SystemSettingResource;
+use App\Admin\SystemSettings\Models\SystemSetting;
+use App\Admin\SystemSettings\Services\SystemSettingService;
 use App\Http\Controllers\Controller;
 use App\Shared\Enums\UserType;
-use App\Shared\SystemSettings\Models\SystemSetting;
-use App\Shared\SystemSettings\Services\SystemSettingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 
@@ -24,12 +25,20 @@ class AdminSystemSettingController extends Controller
     {
         $this->authorizeAdmin();
         $this->service->reconcileStoredSettings();
+        $history = $this->historyPayload();
 
         return $this->success([
             'groups'  => $this->service->groups(),
             'values'  => $this->service->values(),
-            'history' => SystemSettingHistoryResource::collection($this->service->history()),
+            'history' => $history,
         ], 'System settings retrieved.');
+    }
+
+    public function history(SystemSettingHistoryIndexRequest $request): JsonResponse
+    {
+        $this->authorizeAdmin();
+
+        return $this->success($this->historyPayload($request->validated()), 'System settings history retrieved.');
     }
 
     public function store(SystemSettingRequest $request): JsonResponse
@@ -87,11 +96,12 @@ class AdminSystemSettingController extends Controller
         $this->service->upsertGrouped($request->validated('settings'), Auth::user());
         $this->service->applyRuntimeConfig();
         $this->service->reconcileStoredSettings();
+        $history = $this->historyPayload();
 
         return $this->success([
             'groups'  => $this->service->groups(),
             'values'  => $this->service->values(),
-            'history' => SystemSettingHistoryResource::collection($this->service->history()),
+            'history' => $history,
         ], 'System settings updated.');
     }
 
@@ -125,9 +135,23 @@ class AdminSystemSettingController extends Controller
             return $this->error('System setting not found.', 404);
         }
 
-        $this->service->delete($setting);
+        $this->service->delete($setting, Auth::user());
 
         return $this->success(null, 'System setting reset.');
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return array<string, mixed>
+     */
+    private function historyPayload(array $filters = []): array
+    {
+        $history = $this->service->history($filters);
+
+        return [
+            'data'       => SystemSettingHistoryResource::collection($history['data'])->resolve(),
+            'pagination' => $history['pagination'],
+        ];
     }
 
     private function authorizeAdmin(): void

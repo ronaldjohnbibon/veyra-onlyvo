@@ -1,13 +1,12 @@
-Read `codex.md` first.
+I want you to polish the prompt below.
 
-Task:
+Requirements:
 
-Why you have this function ?
+- Make it one complete copy-paste format.
+- Keep it clear and direct.
+- Avoid nested code blocks so the output stays complete.
+- Include `Read codex.md first`.
 
-private function queryForTenant(): Builder
-{
-return DesignRequest::query()
-->where('tenant_id', $this->tenantId());
-}
+Prompt:
 
-we already have BelongsToTenant on our models. You don't need that because we have sprout package that separates the tenant form other tenants.
+Tenant System Settings does not have history and the admin systems settings history is not working properly.

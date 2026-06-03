@@ -3,7 +3,7 @@
 namespace App\Tenant\Auth\Services;
 
 use App\Shared\Enums\UserType;
-use App\Shared\SystemSettings\Services\SystemSettingService;
+use App\Tenant\SystemSettings\Services\SystemSettingService;
 use App\Tenant\Templates\Models\Template;
 use App\Tenant\Templates\Models\TemplateCatalogItem;
 use App\Tenant\Templates\Models\WebsiteType;

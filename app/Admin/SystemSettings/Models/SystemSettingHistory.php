@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Shared\SystemSettings\Models;
+namespace App\Admin\SystemSettings\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,6 +14,7 @@ class SystemSettingHistory extends Model
 
     protected $fillable = [
         'setting_key',
+        'action',
         'previous_value',
         'new_value',
         'changed_by_user_id',

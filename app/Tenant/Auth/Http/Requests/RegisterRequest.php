@@ -2,9 +2,9 @@
 
 namespace App\Tenant\Auth\Http\Requests;
 
+use App\Tenant\SystemSettings\Services\SystemSettingService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
-use App\Shared\SystemSettings\Services\SystemSettingService;
 
 class RegisterRequest extends FormRequest
 {
@@ -15,7 +15,7 @@ class RegisterRequest extends FormRequest
 
     public function rules(): array
     {
-        $settings = app(SystemSettingService::class);
+        $settings      = app(SystemSettingService::class);
         $passwordRules = ['required', 'string', 'min:'.$settings->integer('security.minimum_password_length', 8), 'confirmed'];
 
         if ($settings->boolean('security.require_strong_passwords')) {

@@ -1,7 +1,7 @@
 <?php
 
 use App\Admin\Auth\Http\Middleware\EnsureAdminIpAllowed;
-use App\Shared\SystemSettings\Http\Middleware\EnsureNotInMaintenance;
+use App\Admin\SystemSettings\Http\Middleware\EnsureNotInMaintenance;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;

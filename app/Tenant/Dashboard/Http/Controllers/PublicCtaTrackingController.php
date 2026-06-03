@@ -3,9 +3,9 @@
 namespace App\Tenant\Dashboard\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Shared\SystemSettings\Services\SystemSettingService;
 use App\Tenant\Dashboard\Http\Requests\CtaEventTrackingRequest;
 use App\Tenant\Dashboard\Services\CtaTrackingService;
+use App\Tenant\SystemSettings\Services\SystemSettingService;
 use App\Tenant\SystemSettings\Services\TenantSystemSettingService;
 use Illuminate\Http\JsonResponse;
 use Sprout\Contracts\Tenant as CurrentTenant;

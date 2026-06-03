@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Admin\SystemSettings\Http\Resources;
+namespace App\Tenant\SystemSettings\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class SystemSettingHistoryResource extends JsonResource
+class TenantSystemSettingHistoryResource extends JsonResource
 {
     /**
      * @return array<string, mixed>

@@ -3,7 +3,7 @@
 namespace App\Tenant\Templates\Posts\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Shared\SystemSettings\Services\SystemSettingService;
+use App\Tenant\SystemSettings\Services\SystemSettingService;
 use App\Tenant\SystemSettings\Services\TenantSystemSettingService;
 use App\Tenant\Templates\Models\Template;
 use App\Tenant\Templates\Posts\Http\Resources\PostResource;

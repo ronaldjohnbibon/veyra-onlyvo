@@ -2,8 +2,15 @@
 
 namespace App\Tenant\SystemSettings\Services;
 
+use App\Tenant\SystemSettings\Models\TenantSystemSetting;
+use App\Tenant\SystemSettings\Models\TenantSystemSettingHistory;
 use App\Tenant\Tenants\Models\Tenant;
+use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 class TenantSystemSettingService
 {
@@ -99,7 +106,7 @@ class TenantSystemSettingService
      */
     public function values(Tenant $tenant): array
     {
-        $stored = $tenant->settings ?? [];
+        $stored = $this->storedValues($tenant);
 
         return collect(self::DEFINITIONS)
             ->mapWithKeys(function (array $definition, string $key) use ($stored, $tenant): array {
@@ -137,29 +144,90 @@ class TenantSystemSettingService
     /**
      * @param  array<string, mixed>  $payload
      */
-    public function upsertGrouped(Tenant $tenant, array $payload): Tenant
+    public function upsertGrouped(Tenant $tenant, array $payload, ?Authenticatable $actor = null): Tenant
     {
-        return DB::transaction(function () use ($tenant, $payload): Tenant {
-            $settings = $tenant->settings ?? [];
+        return DB::transaction(function () use ($tenant, $payload, $actor): Tenant {
+            $currentValues  = $this->values($tenant);
+            $storedValues   = $this->storedValues($tenant);
+            $changedEntries = [];
 
             foreach ($this->flattenGroupedPayload($payload) as $key => $value) {
-                $settings[$key] = $this->castValue(self::DEFINITIONS[$key]['type'], $value);
+                $definition    = self::DEFINITIONS[$key];
+                $newValue      = $this->castValue(self::DEFINITIONS[$key]['type'], $value);
+                $previousValue = $currentValues[$key] ?? self::DEFINITIONS[$key]['default'];
+
+                TenantSystemSetting::query()->updateOrCreate(
+                    [
+                        'tenant_id' => $tenant->id,
+                        'key'       => $key,
+                    ],
+                    [
+                        'group'     => $definition['group'],
+                        'label'     => $definition['label'],
+                        'type'      => $definition['type'],
+                        'value'     => $newValue,
+                        'is_public' => $definition['public'],
+                    ],
+                );
+
+                if ($previousValue !== $newValue) {
+                    $changedEntries[] = [
+                        'key'            => $key,
+                        'previous_value' => $previousValue,
+                        'new_value'      => $newValue,
+                        'action'         => array_key_exists($key, $storedValues) ? 'updated' : 'created',
+                    ];
+                }
             }
 
-            $tenant->settings = $settings;
+            $values = $this->values($tenant);
 
-            if (array_key_exists('profile.business_name', $settings)) {
-                $tenant->name = (string) $settings['profile.business_name'];
+            if (array_key_exists('profile.business_name', $values)) {
+                $tenant->name = (string) $values['profile.business_name'];
             }
 
-            if (array_key_exists('profile.timezone', $settings)) {
-                $tenant->timezone = (string) $settings['profile.timezone'];
+            if (array_key_exists('profile.timezone', $values)) {
+                $tenant->timezone = (string) $values['profile.timezone'];
             }
 
             $tenant->save();
+            $this->recordHistory($tenant, $changedEntries, $actor);
 
             return $tenant->refresh();
         });
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return array<string, mixed>
+     */
+    public function history(Tenant $tenant, array $filters = []): array
+    {
+        if (! $this->historyTableExists()) {
+            return [
+                'data'       => [],
+                'pagination' => $this->emptyPagination(),
+            ];
+        }
+
+        $query = TenantSystemSettingHistory::query()
+            ->where('tenant_id', $tenant->id);
+
+        $this->applyHistoryFilters($query, $filters);
+        $this->applyHistorySorting($query, $filters);
+
+        /** @var LengthAwarePaginator $paginator */
+        $paginator = $query->paginate(
+            (int) ($filters['pageSize'] ?? 15),
+            ['*'],
+            'page',
+            (int) ($filters['page'] ?? 1),
+        );
+
+        return [
+            'data'       => $paginator->getCollection(),
+            'pagination' => $this->pagination($paginator),
+        ];
     }
 
     /**
@@ -196,6 +264,22 @@ class TenantSystemSettingService
         };
     }
 
+    /**
+     * @return array<string, mixed>
+     */
+    private function storedValues(Tenant $tenant): array
+    {
+        if (! $this->settingsTableExists()) {
+            return is_array($tenant->settings) ? $tenant->settings : [];
+        }
+
+        return TenantSystemSetting::query()
+            ->where('tenant_id', $tenant->id)
+            ->get(['key', 'value'])
+            ->mapWithKeys(fn (TenantSystemSetting $setting): array => [$setting->key => $setting->value])
+            ->all();
+    }
+
     private function castValue(string $type, mixed $value): mixed
     {
         return match ($type) {
@@ -203,6 +287,117 @@ class TenantSystemSettingService
             'integer' => (int) $value,
             default   => is_string($value) ? trim($value) : $value,
         };
+    }
+
+    /**
+     * @param  array<int, array{key: string, previous_value: mixed, new_value: mixed, action: string}>  $entries
+     */
+    private function recordHistory(Tenant $tenant, array $entries, ?Authenticatable $actor): void
+    {
+        if ($entries === [] || ! $this->historyTableExists()) {
+            return;
+        }
+
+        foreach ($entries as $entry) {
+            TenantSystemSettingHistory::query()->create([
+                'tenant_id'          => $tenant->id,
+                'setting_key'        => $entry['key'],
+                'action'             => $entry['action'],
+                'previous_value'     => $entry['previous_value'],
+                'new_value'          => $entry['new_value'],
+                'changed_by_user_id' => $actor?->getAuthIdentifier(),
+                'changed_by_name'    => data_get($actor, 'name'),
+                'changed_by_email'   => data_get($actor, 'email'),
+                'changed_at'         => now(),
+            ]);
+        }
+    }
+
+    /**
+     * @param  Builder<TenantSystemSettingHistory>  $query
+     * @param  array<string, mixed>  $filters
+     */
+    private function applyHistoryFilters(Builder $query, array $filters): void
+    {
+        $query
+            ->when($filters['setting_key'] ?? null, fn (Builder $query, string $key) => $query->where('setting_key', $key))
+            ->when($filters['action'] ?? null, fn (Builder $query, string $action) => $query->where('action', $action))
+            ->when($filters['search'] ?? null, function (Builder $query, string $search): void {
+                $like = '%'.Str::lower($search).'%';
+
+                $query->where(function (Builder $query) use ($like): void {
+                    foreach (['setting_key', 'action', 'changed_by_name', 'changed_by_email'] as $column) {
+                        $query->orWhereRaw('lower(coalesce('.$column.", '')) like ?", [$like]);
+                    }
+                });
+            });
+    }
+
+    /**
+     * @param  Builder<TenantSystemSettingHistory>  $query
+     * @param  array<string, mixed>  $filters
+     */
+    private function applyHistorySorting(Builder $query, array $filters): void
+    {
+        $sortMap = [
+            'setting_key' => 'setting_key',
+            'action'      => 'action',
+            'changed_by'  => 'changed_by_name',
+            'changed_at'  => 'changed_at',
+        ];
+
+        $sort      = $sortMap[(string) ($filters['sort'] ?? 'changed_at')] ?? 'changed_at';
+        $direction = (string) ($filters['direction'] ?? 'desc') === 'asc' ? 'asc' : 'desc';
+
+        $query->orderBy($sort, $direction)->orderBy('id', 'desc');
+    }
+
+    private function historyTableExists(): bool
+    {
+        try {
+            return Schema::hasTable('tenant_system_setting_histories');
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
+    private function settingsTableExists(): bool
+    {
+        try {
+            return Schema::hasTable('tenant_system_settings');
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
+    /**
+     * @return array<string, int|null>
+     */
+    private function pagination(LengthAwarePaginator $paginator): array
+    {
+        return [
+            'total'        => $paginator->total(),
+            'per_page'     => $paginator->perPage(),
+            'current_page' => $paginator->currentPage(),
+            'last_page'    => $paginator->lastPage(),
+            'from'         => $paginator->firstItem(),
+            'to'           => $paginator->lastItem(),
+        ];
+    }
+
+    /**
+     * @return array<string, int|null>
+     */
+    private function emptyPagination(): array
+    {
+        return [
+            'total'        => 0,
+            'per_page'     => 15,
+            'current_page' => 1,
+            'last_page'    => 1,
+            'from'         => null,
+            'to'           => null,
+        ];
     }
 
     private function groupLabel(string $group): string

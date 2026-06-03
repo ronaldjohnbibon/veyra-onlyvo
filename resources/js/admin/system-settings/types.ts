@@ -32,6 +32,7 @@ export interface SystemSettingGroup {
 export interface SystemSettingHistoryRecord {
   id: string
   setting_key: string
+  action: 'created' | 'updated' | 'deleted'
   previous_value: SystemSettingValue
   new_value: SystemSettingValue
   changed_by: {
@@ -40,6 +41,30 @@ export interface SystemSettingHistoryRecord {
     email: string | null
   }
   changed_at: string | null
+}
+
+export interface SystemSettingHistoryPagination {
+  total: number
+  per_page?: number
+  current_page?: number
+  last_page?: number
+  from?: number | null
+  to?: number | null
+}
+
+export interface SystemSettingHistoryPayload {
+  data: SystemSettingHistoryRecord[]
+  pagination: SystemSettingHistoryPagination
+}
+
+export interface SystemSettingHistoryParams {
+  setting_key?: string
+  action?: string
+  search?: string
+  sort?: string
+  direction?: 'asc' | 'desc' | ''
+  page?: number
+  pageSize?: number
 }
 
 export interface SystemSettingsValues {

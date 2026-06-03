@@ -3,7 +3,7 @@
 namespace App\Tenant\Templates\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Shared\SystemSettings\Services\SystemSettingService;
+use App\Tenant\SystemSettings\Services\SystemSettingService;
 use App\Tenant\Templates\Http\Requests\TemplateRequest;
 use App\Tenant\Templates\Http\Resources\TemplateResource;
 use App\Tenant\Templates\Http\Resources\WebsiteTypeResource;

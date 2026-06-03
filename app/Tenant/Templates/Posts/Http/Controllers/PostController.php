@@ -3,13 +3,13 @@
 namespace App\Tenant\Templates\Posts\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Shared\SystemSettings\Services\SystemSettingService;
+use App\Tenant\SystemSettings\Services\SystemSettingService;
+use App\Tenant\Templates\Models\Template;
 use App\Tenant\Templates\Posts\Http\Requests\PostFeaturedImageRequest;
 use App\Tenant\Templates\Posts\Http\Requests\PostRequest;
 use App\Tenant\Templates\Posts\Http\Resources\PostResource;
 use App\Tenant\Templates\Posts\Models\Post;
 use App\Tenant\Templates\Posts\Services\PostService;
-use App\Tenant\Templates\Models\Template;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;

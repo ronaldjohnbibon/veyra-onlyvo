@@ -4,10 +4,10 @@ namespace App\Admin\Auth\Http\Controllers;
 
 use App\Admin\Auth\Http\Requests\LoginRequest;
 use App\Admin\Auth\Http\Resources\UserResource;
+use App\Admin\SystemSettings\Services\SystemSettingService;
 use App\Admin\Users\Models\User;
 use App\Http\Controllers\Controller;
 use App\Shared\Enums\UserType;
-use App\Shared\SystemSettings\Services\SystemSettingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -28,7 +28,7 @@ class AuthController extends Controller
         }
 
         $rateLimitKey = $this->loginRateLimitKey($request);
-        $maxAttempts = $this->settings->integer('security.login_rate_limit_attempts', 5);
+        $maxAttempts  = $this->settings->integer('security.login_rate_limit_attempts', 5);
 
         if (RateLimiter::tooManyAttempts($rateLimitKey, $maxAttempts)) {
             return $this->error('Too many login attempts. Please try again later.', 429);
@@ -94,7 +94,7 @@ class AuthController extends Controller
     private function loginResponse(User $user): JsonResponse
     {
         $expiresAt = now()->addMinutes($this->settings->integer('security.session_lifetime_minutes', 120));
-        $token = $user->createToken('admin_token', ['*'], $expiresAt)->plainTextToken;
+        $token     = $user->createToken('admin_token', ['*'], $expiresAt)->plainTextToken;
 
         return $this->success([
             'user'        => new UserResource($user),

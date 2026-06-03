@@ -2,7 +2,7 @@
 
 namespace App\Tenant\DesignRequests\Http\Requests;
 
-use App\Shared\SystemSettings\Services\SystemSettingService;
+use App\Tenant\SystemSettings\Services\SystemSettingService;
 use Illuminate\Foundation\Http\FormRequest;
 
 class DesignRequestRequest extends FormRequest

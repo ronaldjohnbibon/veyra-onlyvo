@@ -2,9 +2,9 @@
 
 namespace App\Admin\Tenants\Http\Requests;
 
+use App\Admin\SystemSettings\Services\SystemSettingService;
 use App\Admin\Users\Models\User;
 use App\Shared\Enums\UserType;
-use App\Shared\SystemSettings\Services\SystemSettingService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -22,9 +22,9 @@ class TenantRequest extends FormRequest
      */
     public function rules(): array
     {
-        $routeParam = $this->route('tenant');
-        $tenantId   = is_object($routeParam) ? $routeParam->id : $routeParam;
-        $ownerId    = $this->ownerId($tenantId);
+        $routeParam         = $this->route('tenant');
+        $tenantId           = is_object($routeParam) ? $routeParam->id : $routeParam;
+        $ownerId            = $this->ownerId($tenantId);
         $ownerPasswordRules = $this->ownerPasswordRules();
 
         return [
@@ -93,7 +93,7 @@ class TenantRequest extends FormRequest
     private function ownerPasswordRules(): array
     {
         $settings = app(SystemSettingService::class);
-        $rules = [$this->isMethod('post') ? 'required' : 'nullable', 'string', 'min:'.$settings->integer('security.minimum_password_length', 8), 'confirmed'];
+        $rules    = [$this->isMethod('post') ? 'required' : 'nullable', 'string', 'min:'.$settings->integer('security.minimum_password_length', 8), 'confirmed'];
 
         if ($settings->boolean('security.require_strong_passwords')) {
             $rules[] = 'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).+$/';

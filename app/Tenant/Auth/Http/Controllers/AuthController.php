@@ -4,7 +4,6 @@ namespace App\Tenant\Auth\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Shared\Enums\UserType;
-use App\Shared\SystemSettings\Services\SystemSettingService;
 use App\Tenant\Auth\Http\Requests\ForgotPasswordRequest;
 use App\Tenant\Auth\Http\Requests\LoginRequest;
 use App\Tenant\Auth\Http\Requests\RegisterRequest;
@@ -12,6 +11,7 @@ use App\Tenant\Auth\Http\Requests\ResetPasswordRequest;
 use App\Tenant\Auth\Http\Resources\TenantResource;
 use App\Tenant\Auth\Http\Resources\UserResource;
 use App\Tenant\Auth\Services\AuthService;
+use App\Tenant\SystemSettings\Services\SystemSettingService;
 use App\Tenant\Users\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
@@ -41,7 +41,7 @@ class AuthController extends Controller
     public function login(LoginRequest $request): JsonResponse
     {
         $rateLimitKey = $this->loginRateLimitKey($request);
-        $maxAttempts = $this->settings->integer('security.login_rate_limit_attempts', 5);
+        $maxAttempts  = $this->settings->integer('security.login_rate_limit_attempts', 5);
 
         if (RateLimiter::tooManyAttempts($rateLimitKey, $maxAttempts)) {
             return $this->error('Too many login attempts. Please try again later.', 429);
@@ -135,7 +135,7 @@ class AuthController extends Controller
     private function loginResponse(User $user, string $tokenKey): JsonResponse
     {
         $expiresAt = now()->addMinutes($this->settings->integer('security.session_lifetime_minutes', 120));
-        $token = $user->createToken($tokenKey, ['*'], $expiresAt)->plainTextToken;
+        $token     = $user->createToken($tokenKey, ['*'], $expiresAt)->plainTextToken;
 
         return $this->success([
             'user'    => new UserResource($user),

@@ -3,11 +3,11 @@
 namespace App\Tenant\DesignRequests\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Shared\SystemSettings\Services\SystemSettingService;
 use App\Tenant\DesignRequests\Http\Requests\DesignRequestRequest;
 use App\Tenant\DesignRequests\Http\Resources\DesignRequestResource;
 use App\Tenant\DesignRequests\Models\DesignRequest;
 use App\Tenant\DesignRequests\Services\DesignRequestService;
+use App\Tenant\SystemSettings\Services\SystemSettingService;
 use App\Tenant\SystemSettings\Services\TenantNotificationService;
 use App\Tenant\Tenants\Models\Tenant;
 use Illuminate\Http\JsonResponse;

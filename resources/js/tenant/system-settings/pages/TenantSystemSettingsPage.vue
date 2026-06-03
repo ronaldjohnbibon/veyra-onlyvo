@@ -5,19 +5,21 @@ import { Field, FieldError, FieldGroup, FieldLabel, FieldSet } from '@/shared/co
 import { Input } from '@/shared/components/ui/input'
 import { NativeSelect, NativeSelectOption } from '@/shared/components/ui/native-select'
 import { Textarea } from '@/shared/components/ui/textarea'
+import SystemSettingHistoryTable from '@/tenant/system-settings/components/SystemSettingHistoryTable.vue'
 import { useTenantSystemSettingStore } from '@/tenant/system-settings/system-setting-store'
 import type {
   SystemSettingGroup,
   SystemSettingItem,
   SystemSettingValue,
   SystemSettingsPayload,
-} from '@/shared/types/system-settings'
+} from '@/tenant/system-settings/types'
 import {
   BarChart3,
   Bell,
   Brush,
   FileText,
   Globe2,
+  History,
   IdCard,
   Save,
   Search,
@@ -44,15 +46,17 @@ const iconMap: Record<string, Component> = {
   analytics: BarChart3,
   notifications: Bell,
   compliance: FileText,
+  history: History,
 }
 
-const sections = computed(() =>
-  settingStore.groups.map((group) => ({
+const sections = computed(() => [
+  ...settingStore.groups.map((group) => ({
     key: group.key,
     label: group.label,
     icon: iconMap[group.key] ?? SlidersHorizontal,
-  }))
-)
+  })),
+  { key: 'history', label: 'History', icon: History },
+])
 
 const currentGroup = computed<SystemSettingGroup | null>(() => {
   return settingStore.groups.find((group) => group.key === activeSection.value) ?? null
@@ -107,6 +111,8 @@ const fieldError = (setting: SystemSettingItem): string | null => {
 }
 
 const sectionErrorCount = (section: string): number => {
+  if (section === 'history') return 0
+
   const prefix = `settings.${section}.`
 
   return Object.keys(settingStore.errors).filter((key) => key.startsWith(prefix)).length
@@ -446,6 +452,17 @@ onMounted(async () => {
                     </template>
                   </div>
                 </FieldGroup>
+              </section>
+
+              <section v-else-if="activeSection === 'history'">
+                <SystemSettingHistoryTable
+                  :records="settingStore.history"
+                  :total="settingStore.historyTotal"
+                  :params="settingStore.historyParams"
+                  :loading="settingStore.loading"
+                  :action-options="['created', 'updated']"
+                  @load="settingStore.loadHistory"
+                />
               </section>
             </FieldSet>
           </main>

@@ -1,17 +1,22 @@
 import http from '@/shared/api/http'
 import type {
   SystemSettingGroup,
-  SystemSettingHistoryRecord,
+  SystemSettingHistoryParams,
+  SystemSettingHistoryPayload,
   SystemSettingsPayload,
   SystemSettingsValues,
-} from '@/shared/types/system-settings'
+} from '@/admin/system-settings/types'
 
 interface SystemSettingsResponse {
   data: {
     groups: SystemSettingGroup[]
     values: SystemSettingsValues
-    history: SystemSettingHistoryRecord[]
+    history: SystemSettingHistoryPayload
   }
+}
+
+interface SystemSettingHistoryResponse {
+  data: SystemSettingHistoryPayload
 }
 
 interface SystemSettingImageUploadResponse {
@@ -32,6 +37,12 @@ export const adminSystemSettingService = {
   update(settings: SystemSettingsPayload) {
     return http
       .put<SystemSettingsResponse>('admin/system-settings', { settings })
+      .then((response) => response.data)
+  },
+
+  history(params: SystemSettingHistoryParams = {}) {
+    return http
+      .get<SystemSettingHistoryResponse>('admin/system-settings/history', { params })
       .then((response) => response.data)
   },
 

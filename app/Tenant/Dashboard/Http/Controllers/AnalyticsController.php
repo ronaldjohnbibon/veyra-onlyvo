@@ -3,9 +3,9 @@
 namespace App\Tenant\Dashboard\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Shared\SystemSettings\Services\SystemSettingService;
 use App\Tenant\Dashboard\Http\Requests\AnalyticsDashboardRequest;
 use App\Tenant\Dashboard\Services\AnalyticsService;
+use App\Tenant\SystemSettings\Services\SystemSettingService;
 use App\Tenant\SystemSettings\Services\TenantSystemSettingService;
 use App\Tenant\Tenants\Models\Tenant;
 use Illuminate\Http\JsonResponse;

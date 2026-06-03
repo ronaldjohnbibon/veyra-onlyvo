@@ -2,7 +2,7 @@
 
 namespace App\Tenant\Templates\Posts\Http\Requests;
 
-use App\Shared\SystemSettings\Services\SystemSettingService;
+use App\Tenant\SystemSettings\Services\SystemSettingService;
 use Illuminate\Foundation\Http\FormRequest;
 
 class PostFeaturedImageRequest extends FormRequest
@@ -18,7 +18,7 @@ class PostFeaturedImageRequest extends FormRequest
     public function rules(): array
     {
         $settings = app(SystemSettingService::class);
-        $mimes = collect(explode(',', $settings->string('storage.allowed_file_types', 'jpg,jpeg,png,webp,gif')))
+        $mimes    = collect(explode(',', $settings->string('storage.allowed_file_types', 'jpg,jpeg,png,webp,gif')))
             ->map(fn (string $mime): string => trim(strtolower($mime)))
             ->filter()
             ->implode(',');

@@ -3,7 +3,7 @@
 namespace App\Tenant\TrackingLogs\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Shared\SystemSettings\Services\SystemSettingService;
+use App\Tenant\SystemSettings\Services\SystemSettingService;
 use App\Tenant\TrackingLogs\Http\Requests\TrackingLogIndexRequest;
 use App\Tenant\TrackingLogs\Services\TrackingLogService;
 use Illuminate\Http\JsonResponse;
