@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
-import FieldHelp from '@/shared/components/FieldHelp.vue'
 import { Input } from '@/shared/components/ui/input'
 import { NativeSelect } from '@/shared/components/ui/native-select'
 import {
@@ -202,28 +201,39 @@ onMounted(() => {
       <div class="mb-4 flex flex-col gap-3 rounded border bg-card p-3 sm:flex-row sm:items-end">
         <div class="w-full sm:max-w-48">
           <label class="mb-1 block text-xs font-medium text-muted-foreground">Date Range</label>
-          <FieldHelp description="Choose the time period used for analytics.">
-            <NativeSelect v-model="period" class="h-9">
-              <option value="today">Today</option>
-              <option value="last_7_days">Last 7 Days</option>
-              <option value="last_30_days">Last 30 Days</option>
-              <option value="custom">Custom Date Range</option>
-            </NativeSelect>
-          </FieldHelp>
+
+          <NativeSelect
+            v-field-help="'Choose the time period used for analytics.'"
+            v-model="period"
+            class="h-9"
+          >
+            <option value="today">Today</option>
+            <option value="last_7_days">Last 7 Days</option>
+            <option value="last_30_days">Last 30 Days</option>
+            <option value="custom">Custom Date Range</option>
+          </NativeSelect>
         </div>
 
         <template v-if="period === 'custom'">
           <div class="w-full sm:max-w-44">
             <label class="mb-1 block text-xs font-medium text-muted-foreground">From</label>
-            <FieldHelp description="Select the first date in the custom range.">
-              <Input v-model="customFrom" type="date" class="h-9" />
-            </FieldHelp>
+
+            <Input
+              v-field-help="'Select the first date in the custom range.'"
+              v-model="customFrom"
+              type="date"
+              class="h-9"
+            />
           </div>
           <div class="w-full sm:max-w-44">
             <label class="mb-1 block text-xs font-medium text-muted-foreground">To</label>
-            <FieldHelp description="Select the last date in the custom range.">
-              <Input v-model="customTo" type="date" class="h-9" />
-            </FieldHelp>
+
+            <Input
+              v-field-help="'Select the last date in the custom range.'"
+              v-model="customTo"
+              type="date"
+              class="h-9"
+            />
           </div>
           <Button type="button" size="sm" class="h-9" @click="applyCustomRange">Apply</Button>
         </template>

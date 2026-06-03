@@ -11,7 +11,6 @@ import {
   DialogTitle,
 } from '@/shared/components/ui/dialog'
 import { Field, FieldError, FieldGroup, FieldLabel, FieldSet } from '@/shared/components/ui/field'
-import FieldHelp from '@/shared/components/FieldHelp.vue'
 import { Input } from '@/shared/components/ui/input'
 import { NativeSelect } from '@/shared/components/ui/native-select'
 import { Textarea } from '@/shared/components/ui/textarea'
@@ -183,16 +182,18 @@ onMounted(() => {
         @update:sort="updateSort"
       >
         <template #filters>
-          <FieldHelp description="Filter requests by review status.">
-            <NativeSelect v-model="statusFilter" class="h-9 min-w-40">
-              <option value="">All statuses</option>
-              <option value="pending">Pending</option>
-              <option value="under_review">Under Review</option>
-              <option value="approved">Approved</option>
-              <option value="rejected">Rejected</option>
-              <option value="completed">Completed</option>
-            </NativeSelect>
-          </FieldHelp>
+          <NativeSelect
+            v-field-help="'Filter requests by review status.'"
+            v-model="statusFilter"
+            class="h-9 min-w-40"
+          >
+            <option value="">All statuses</option>
+            <option value="pending">Pending</option>
+            <option value="under_review">Under Review</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+            <option value="completed">Completed</option>
+          </NativeSelect>
         </template>
 
         <template #cell-title="{ row }">
@@ -244,9 +245,14 @@ onMounted(() => {
               <FieldGroup>
                 <Field>
                   <FieldLabel for="design-title">Title</FieldLabel>
-                  <FieldHelp description="Enter a short name for this design request.">
-                    <Input id="design-title" v-model="form.title" placeholder="Homepage refresh" />
-                  </FieldHelp>
+
+                  <Input
+                    v-field-help="'Enter a short name for this design request.'"
+                    id="design-title"
+                    v-model="form.title"
+                    placeholder="Homepage refresh"
+                  />
+
                   <FieldError v-if="designRequestStore.errors.title">
                     {{ designRequestStore.errors.title[0] }}
                   </FieldError>
@@ -254,14 +260,15 @@ onMounted(() => {
 
                 <Field>
                   <FieldLabel for="design-description">Description</FieldLabel>
-                  <FieldHelp description="Describe the website or template changes you need.">
-                    <Textarea
-                      id="design-description"
-                      v-model="form.description"
-                      class="min-h-32"
-                      placeholder="Describe the website or template you want."
-                    />
-                  </FieldHelp>
+
+                  <Textarea
+                    v-field-help="'Describe the website or template changes you need.'"
+                    id="design-description"
+                    v-model="form.description"
+                    class="min-h-32"
+                    placeholder="Describe the website or template you want."
+                  />
+
                   <FieldError v-if="designRequestStore.errors.description">
                     {{ designRequestStore.errors.description[0] }}
                   </FieldError>
@@ -269,28 +276,27 @@ onMounted(() => {
 
                 <Field>
                   <FieldLabel for="design-notes">Notes / Instructions</FieldLabel>
-                  <FieldHelp
-                    description="Add optional brand, layout, color, or content instructions."
-                  >
-                    <Textarea
-                      id="design-notes"
-                      v-model="form.notes"
-                      class="min-h-24"
-                      placeholder="Brand tone, layout preferences, required sections, or color notes."
-                    />
-                  </FieldHelp>
+
+                  <Textarea
+                    v-field-help="'Add optional brand, layout, color, or content instructions.'"
+                    id="design-notes"
+                    v-model="form.notes"
+                    class="min-h-24"
+                    placeholder="Brand tone, layout preferences, required sections, or color notes."
+                  />
                 </Field>
 
                 <Field>
                   <FieldLabel for="design-links">Reference Links</FieldLabel>
-                  <FieldHelp description="Add helpful website references, one URL per line.">
-                    <Textarea
-                      id="design-links"
-                      v-model="referenceLinksText"
-                      class="min-h-24"
-                      placeholder="Add one URL per line."
-                    />
-                  </FieldHelp>
+
+                  <Textarea
+                    v-field-help="'Add helpful website references, one URL per line.'"
+                    id="design-links"
+                    v-model="referenceLinksText"
+                    class="min-h-24"
+                    placeholder="Add one URL per line."
+                  />
+
                   <FieldError v-if="referenceLinksError">
                     {{ referenceLinksError }}
                   </FieldError>
@@ -298,33 +304,30 @@ onMounted(() => {
 
                 <Field>
                   <FieldLabel for="design-concept">Mockup / Template Concept</FieldLabel>
-                  <FieldHelp
-                    description="Outline any mockup idea or template concept you already have."
-                  >
-                    <Textarea
-                      id="design-concept"
-                      v-model="form.mockup_concept"
-                      class="min-h-32"
-                      placeholder="Outline your own concept before submitting."
-                    />
-                  </FieldHelp>
+
+                  <Textarea
+                    v-field-help="'Outline any mockup idea or template concept you already have.'"
+                    id="design-concept"
+                    v-model="form.mockup_concept"
+                    class="min-h-32"
+                    placeholder="Outline your own concept before submitting."
+                  />
                 </Field>
 
                 <Field>
                   <FieldLabel for="design-files">Mockup Files / Images</FieldLabel>
-                  <FieldHelp
-                    description="Upload mockups, images, documents, or presentation files."
-                  >
-                    <Input
-                      id="design-files"
-                      type="file"
-                      multiple
-                      accept="image/*,.svg,.pdf,.doc,.docx,.ppt,.pptx"
-                      class="cursor-pointer text-muted-foreground"
-                      :disabled="designRequestStore.loading"
-                      @change="handleFiles"
-                    />
-                  </FieldHelp>
+
+                  <Input
+                    v-field-help="'Upload mockups, images, documents, or presentation files.'"
+                    id="design-files"
+                    type="file"
+                    multiple
+                    accept="image/*,.svg,.pdf,.doc,.docx,.ppt,.pptx"
+                    class="cursor-pointer text-muted-foreground"
+                    :disabled="designRequestStore.loading"
+                    @change="handleFiles"
+                  />
+
                   <FieldError v-if="filesError">
                     {{ filesError }}
                   </FieldError>

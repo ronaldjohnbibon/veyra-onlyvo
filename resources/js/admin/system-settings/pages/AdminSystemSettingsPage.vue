@@ -2,7 +2,6 @@
 import { Button } from '@/shared/components/ui/button'
 import { Checkbox } from '@/shared/components/ui/checkbox'
 import { Field, FieldError, FieldGroup, FieldLabel, FieldSet } from '@/shared/components/ui/field'
-import FieldHelp from '@/shared/components/FieldHelp.vue'
 import { Input } from '@/shared/components/ui/input'
 import { NativeSelect, NativeSelectOption } from '@/shared/components/ui/native-select'
 import { Textarea } from '@/shared/components/ui/textarea'
@@ -312,10 +311,9 @@ onMounted(async () => {
                         :for="fieldId(setting)"
                         class="flex min-h-20 cursor-pointer items-center justify-between gap-4 rounded border bg-muted/20 p-4"
                       >
-                        <FieldHelp :description="settingHelp(setting)" class="min-w-0">
-                          <span class="block text-sm font-semibold">{{ setting.label }}</span>
-                        </FieldHelp>
+                        <span class="block text-sm font-semibold">{{ setting.label }}</span>
                         <Checkbox
+                          v-field-help="settingHelp(setting)"
                           :id="fieldId(setting)"
                           :model-value="Boolean(getSettingValue(setting))"
                           @update:model-value="setSettingValue(setting, Boolean($event))"
@@ -324,14 +322,15 @@ onMounted(async () => {
 
                       <Field v-else-if="setting.type === 'text'" class="lg:col-span-2">
                         <FieldLabel :for="fieldId(setting)">{{ setting.label }}</FieldLabel>
-                        <FieldHelp :description="settingHelp(setting)">
-                          <Textarea
-                            :id="fieldId(setting)"
-                            :model-value="stringValue(setting)"
-                            class="min-h-28"
-                            @update:model-value="setSettingValue(setting, String($event ?? ''))"
-                          />
-                        </FieldHelp>
+
+                        <Textarea
+                          v-field-help="settingHelp(setting)"
+                          :id="fieldId(setting)"
+                          :model-value="stringValue(setting)"
+                          class="min-h-28"
+                          @update:model-value="setSettingValue(setting, String($event ?? ''))"
+                        />
+
                         <FieldError v-if="fieldError(setting)">
                           {{ fieldError(setting) }}
                         </FieldError>
@@ -357,13 +356,13 @@ onMounted(async () => {
                           </div>
 
                           <div class="flex flex-col justify-center gap-3">
-                            <FieldHelp :description="settingHelp(setting)">
-                              <Input
-                                :model-value="stringValue(setting)"
-                                placeholder="/storage/system-settings/logo.png"
-                                @update:model-value="setSettingValue(setting, String($event ?? ''))"
-                              />
-                            </FieldHelp>
+                            <Input
+                              v-field-help="settingHelp(setting)"
+                              :model-value="stringValue(setting)"
+                              placeholder="/storage/system-settings/logo.png"
+                              @update:model-value="setSettingValue(setting, String($event ?? ''))"
+                            />
+
                             <div class="flex flex-wrap items-center gap-2">
                               <Button
                                 as-child
@@ -371,7 +370,11 @@ onMounted(async () => {
                                 size="sm"
                                 :disabled="imageUploading[setting.key]"
                               >
-                                <label :for="fieldId(setting)" class="cursor-pointer">
+                                <label
+                                  v-field-help="settingHelp(setting)"
+                                  :for="fieldId(setting)"
+                                  class="cursor-pointer"
+                                >
                                   <Upload class="size-4" />
                                   {{ imageUploading[setting.key] ? 'Uploading...' : 'Upload' }}
                                 </label>
@@ -388,6 +391,7 @@ onMounted(async () => {
                               </Button>
                             </div>
                             <Input
+                              v-field-help="settingHelp(setting)"
                               :id="fieldId(setting)"
                               type="file"
                               accept="image/*,.ico,.svg"
@@ -406,51 +410,53 @@ onMounted(async () => {
 
                       <Field v-else>
                         <FieldLabel :for="fieldId(setting)">{{ setting.label }}</FieldLabel>
-                        <FieldHelp :description="settingHelp(setting)">
-                          <NativeSelect
-                            v-if="setting.type === 'select'"
-                            :id="fieldId(setting)"
-                            class="w-full"
-                            :model-value="stringValue(setting)"
-                            @update:model-value="setSettingValue(setting, String($event ?? ''))"
+
+                        <NativeSelect
+                          v-field-help="settingHelp(setting)"
+                          v-if="setting.type === 'select'"
+                          :id="fieldId(setting)"
+                          class="w-full"
+                          :model-value="stringValue(setting)"
+                          @update:model-value="setSettingValue(setting, String($event ?? ''))"
+                        >
+                          <NativeSelectOption
+                            v-for="(label, value) in setting.options ?? {}"
+                            :key="value"
+                            :value="value"
                           >
-                            <NativeSelectOption
-                              v-for="(label, value) in setting.options ?? {}"
-                              :key="value"
-                              :value="value"
-                            >
-                              {{ label }}
-                            </NativeSelectOption>
-                          </NativeSelect>
-                          <Input
-                            v-else
-                            :id="fieldId(setting)"
-                            :model-value="getSettingValue(setting) as string | number | null"
-                            :type="
+                            {{ label }}
+                          </NativeSelectOption>
+                        </NativeSelect>
+                        <Input
+                          v-field-help="settingHelp(setting)"
+                          v-else
+                          :id="fieldId(setting)"
+                          :model-value="getSettingValue(setting) as string | number | null"
+                          :type="
+                            setting.type === 'integer'
+                              ? 'number'
+                              : setting.type === 'password'
+                                ? 'password'
+                                : setting.type === 'email'
+                                  ? 'email'
+                                  : setting.type === 'url'
+                                    ? 'url'
+                                    : setting.type === 'color'
+                                      ? 'color'
+                                      : 'text'
+                          "
+                          :min="setting.type === 'integer' ? 0 : undefined"
+                          class="w-full"
+                          @update:model-value="
+                            setSettingValue(
+                              setting,
                               setting.type === 'integer'
-                                ? 'number'
-                                : setting.type === 'password'
-                                  ? 'password'
-                                  : setting.type === 'email'
-                                    ? 'email'
-                                    : setting.type === 'url'
-                                      ? 'url'
-                                      : setting.type === 'color'
-                                        ? 'color'
-                                        : 'text'
-                            "
-                            :min="setting.type === 'integer' ? 0 : undefined"
-                            class="w-full"
-                            @update:model-value="
-                              setSettingValue(
-                                setting,
-                                setting.type === 'integer'
-                                  ? Number($event || 0)
-                                  : String($event ?? '')
-                              )
-                            "
-                          />
-                        </FieldHelp>
+                                ? Number($event || 0)
+                                : String($event ?? '')
+                            )
+                          "
+                        />
+
                         <FieldError v-if="fieldError(setting)">
                           {{ fieldError(setting) }}
                         </FieldError>

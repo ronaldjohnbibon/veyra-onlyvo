@@ -10,7 +10,6 @@ import {
   CardTitle,
 } from '@/shared/components/ui/card'
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/shared/components/ui/field'
-import FieldHelp from '@/shared/components/FieldHelp.vue'
 import { Input } from '@/shared/components/ui/input'
 import { useAuthStore } from '../auth-store'
 
@@ -38,17 +37,16 @@ const authStore = useAuthStore()
                 </Field>
                 <Field>
                   <FieldLabel for="email"> Email </FieldLabel>
-                  <FieldHelp
-                    description="Enter the account email that should receive the reset link."
-                  >
-                    <Input
-                      v-model="authStore.forgotPasswordForm.email"
-                      id="email"
-                      type="email"
-                      placeholder="m@example.com"
-                      autocomplete="email"
-                    />
-                  </FieldHelp>
+
+                  <Input
+                    v-field-help="'Enter the account email that should receive the reset link.'"
+                    v-model="authStore.forgotPasswordForm.email"
+                    id="email"
+                    type="email"
+                    placeholder="m@example.com"
+                    autocomplete="email"
+                  />
+
                   <span v-if="authStore.errors.email" class="text-destructive text-[12px]">
                     {{ authStore.errors.email[0] }}
                   </span>

@@ -11,7 +11,6 @@ import {
   CardTitle,
 } from '@/shared/components/ui/card'
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/shared/components/ui/field'
-import FieldHelp from '@/shared/components/FieldHelp.vue'
 import { Input } from '@/shared/components/ui/input'
 import { useAuthStore } from '../auth-store'
 
@@ -59,46 +58,49 @@ const termsOfServiceUrl = String(runtimeSettings['compliance.terms_of_service_ur
                 </Field>
                 <Field>
                   <FieldLabel for="email"> Email </FieldLabel>
-                  <FieldHelp description="Enter the email address you will use to sign in.">
-                    <Input
-                      v-model="authStore.registerForm.email"
-                      id="email"
-                      type="email"
-                      placeholder="user@example.com"
-                      autocomplete="email"
-                    />
-                  </FieldHelp>
+
+                  <Input
+                    v-field-help="'Enter the email address you will use to sign in.'"
+                    v-model="authStore.registerForm.email"
+                    id="email"
+                    type="email"
+                    placeholder="user@example.com"
+                    autocomplete="email"
+                  />
+
                   <span v-if="authStore.errors.email" class="text-destructive text-[12px]">
                     {{ authStore.errors.email[0] }}
                   </span>
                 </Field>
                 <Field>
                   <FieldLabel for="phone"> Contact Number </FieldLabel>
-                  <FieldHelp description="Enter a phone number for account contact and support.">
-                    <Input
-                      v-model="authStore.registerForm.phone"
-                      id="phone"
-                      type="tel"
-                      inputmode="numeric"
-                      placeholder="09xxxxxxxxx"
-                      maxlength="11"
-                      autocomplete="tel"
-                    />
-                  </FieldHelp>
+
+                  <Input
+                    v-field-help="'Enter a phone number for account contact and support.'"
+                    v-model="authStore.registerForm.phone"
+                    id="phone"
+                    type="tel"
+                    inputmode="numeric"
+                    placeholder="09xxxxxxxxx"
+                    maxlength="11"
+                    autocomplete="tel"
+                  />
+
                   <span v-if="authStore.errors.phone" class="text-destructive text-[12px]">
                     {{ authStore.errors.phone[0] }}
                   </span>
                 </Field>
                 <Field>
                   <FieldLabel for="company_name"> Company Name </FieldLabel>
-                  <FieldHelp description="Enter the company or tenant name for this account.">
-                    <Input
-                      v-model="authStore.registerForm.name"
-                      id="company_name"
-                      type="text"
-                      autocomplete="organization"
-                    />
-                  </FieldHelp>
+
+                  <Input
+                    v-field-help="'Enter the company or tenant name for this account.'"
+                    v-model="authStore.registerForm.name"
+                    id="company_name"
+                    type="text"
+                    autocomplete="organization"
+                  />
+
                   <span v-if="authStore.errors.name" class="text-destructive text-[12px]">
                     {{ authStore.errors.name[0] }}
                   </span>
@@ -107,28 +109,30 @@ const termsOfServiceUrl = String(runtimeSettings['compliance.terms_of_service_ur
                   <Field class="grid grid-cols-2 gap-4">
                     <Field>
                       <FieldLabel for="password"> Password </FieldLabel>
-                      <FieldHelp description="Create a password that meets the platform policy.">
-                        <Input
-                          v-model="authStore.registerForm.password"
-                          id="password"
-                          type="password"
-                          autocomplete="new-password"
-                        />
-                      </FieldHelp>
+
+                      <Input
+                        v-field-help="'Create a password that meets the platform policy.'"
+                        v-model="authStore.registerForm.password"
+                        id="password"
+                        type="password"
+                        autocomplete="new-password"
+                      />
+
                       <span v-if="authStore.errors.password" class="text-destructive text-[12px]">
                         {{ authStore.errors.password[0] }}
                       </span>
                     </Field>
                     <Field>
                       <FieldLabel for="confirm-password"> Confirm Password </FieldLabel>
-                      <FieldHelp description="Enter the same password again to confirm it.">
-                        <Input
-                          v-model="authStore.registerForm.password_confirmation"
-                          id="confirm-password"
-                          type="password"
-                          autocomplete="new-password"
-                        />
-                      </FieldHelp>
+
+                      <Input
+                        v-field-help="'Enter the same password again to confirm it.'"
+                        v-model="authStore.registerForm.password_confirmation"
+                        id="confirm-password"
+                        type="password"
+                        autocomplete="new-password"
+                      />
+
                       <span
                         v-if="authStore.errors.password_confirmation"
                         class="text-destructive text-[12px]"

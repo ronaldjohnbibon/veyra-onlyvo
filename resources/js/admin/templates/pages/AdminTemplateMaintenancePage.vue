@@ -19,7 +19,6 @@ import {
 } from '@/shared/components/ui/dialog'
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/shared/components/ui/empty'
 import { Field, FieldGroup, FieldLabel, FieldSet } from '@/shared/components/ui/field'
-import FieldHelp from '@/shared/components/FieldHelp.vue'
 import { Input } from '@/shared/components/ui/input'
 import { Label } from '@/shared/components/ui/label'
 import { NativeSelect, NativeSelectOption } from '@/shared/components/ui/native-select'
@@ -635,11 +634,15 @@ watch(
                             <AccordionContent class="space-y-3 pb-3">
                               <Field>
                                 <FieldLabel for="website-type-name">Name</FieldLabel>
-                                <FieldHelp
-                                  description="Enter the website type name shown to admins and tenants."
-                                >
-                                  <Input id="website-type-name" v-model="websiteTypeForm.name" />
-                                </FieldHelp>
+
+                                <Input
+                                  v-field-help="
+                                    'Enter the website type name shown to admins and tenants.'
+                                  "
+                                  id="website-type-name"
+                                  v-model="websiteTypeForm.name"
+                                />
+
                                 <Label
                                   v-if="maintenanceStore.errors.name"
                                   class="text-destructive text-xs"
@@ -650,15 +653,14 @@ watch(
 
                               <Field>
                                 <FieldLabel for="website-type-slug">Slug</FieldLabel>
-                                <FieldHelp
-                                  description="Enter the URL folder slug for this website type."
-                                >
-                                  <Input
-                                    id="website-type-slug"
-                                    v-model="websiteTypeForm.slug"
-                                    @input="typeSlugTouched = true"
-                                  />
-                                </FieldHelp>
+
+                                <Input
+                                  v-field-help="'Enter the URL folder slug for this website type.'"
+                                  id="website-type-slug"
+                                  v-model="websiteTypeForm.slug"
+                                  @input="typeSlugTouched = true"
+                                />
+
                                 <Label
                                   v-if="maintenanceStore.errors.slug"
                                   class="text-destructive text-xs"
@@ -669,14 +671,11 @@ watch(
 
                               <Field orientation="horizontal" class="items-center gap-3">
                                 <Checkbox
+                                  v-field-help="'Allow tenants to choose templates in this type.'"
                                   id="website-type-active"
                                   v-model="websiteTypeForm.is_active"
                                 />
-                                <FieldHelp
-                                  description="Allow tenants to choose templates in this type."
-                                >
-                                  <FieldLabel for="website-type-active">Active</FieldLabel>
-                                </FieldHelp>
+                                <FieldLabel for="website-type-active">Active</FieldLabel>
                                 <Label
                                   v-if="maintenanceStore.errors.is_active"
                                   class="text-destructive text-xs"
@@ -702,15 +701,14 @@ watch(
                             <AccordionContent class="space-y-3 pb-3">
                               <Field>
                                 <FieldLabel for="website-type-description">Description</FieldLabel>
-                                <FieldHelp
-                                  description="Enter a short note describing this website type."
-                                >
-                                  <Textarea
-                                    id="website-type-description"
-                                    v-model="websiteTypeForm.description"
-                                    class="min-h-24"
-                                  />
-                                </FieldHelp>
+
+                                <Textarea
+                                  v-field-help="'Enter a short note describing this website type.'"
+                                  id="website-type-description"
+                                  v-model="websiteTypeForm.description"
+                                  class="min-h-24"
+                                />
+
                                 <Label
                                   v-if="maintenanceStore.errors.description"
                                   class="text-destructive text-xs"
@@ -801,15 +799,14 @@ watch(
                               <div class="grid gap-3 md:grid-cols-2">
                                 <Field>
                                   <FieldLabel for="catalog-name">Name</FieldLabel>
-                                  <FieldHelp
-                                    description="Enter the template name shown in the catalog."
-                                  >
-                                    <Input
-                                      id="catalog-name"
-                                      v-model="catalogItemForm.name"
-                                      :disabled="!selectedWebsiteType"
-                                    />
-                                  </FieldHelp>
+
+                                  <Input
+                                    v-field-help="'Enter the template name shown in the catalog.'"
+                                    id="catalog-name"
+                                    v-model="catalogItemForm.name"
+                                    :disabled="!selectedWebsiteType"
+                                  />
+
                                   <Label
                                     v-if="maintenanceStore.errors.name"
                                     class="text-destructive text-xs"
@@ -820,16 +817,17 @@ watch(
 
                                 <Field>
                                   <FieldLabel for="catalog-key">Template Key</FieldLabel>
-                                  <FieldHelp
-                                    description="Enter the key that matches the template Vue file name."
-                                  >
-                                    <Input
-                                      id="catalog-key"
-                                      v-model="catalogItemForm.key"
-                                      :disabled="!selectedWebsiteType"
-                                      @input="itemKeyTouched = true"
-                                    />
-                                  </FieldHelp>
+
+                                  <Input
+                                    v-field-help="
+                                      'Enter the key that matches the template Vue file name.'
+                                    "
+                                    id="catalog-key"
+                                    v-model="catalogItemForm.key"
+                                    :disabled="!selectedWebsiteType"
+                                    @input="itemKeyTouched = true"
+                                  />
+
                                   <Label
                                     v-if="maintenanceStore.errors.key"
                                     class="text-destructive text-xs"
@@ -841,15 +839,12 @@ watch(
 
                               <Field orientation="horizontal" class="items-center gap-3">
                                 <Checkbox
+                                  v-field-help="'Allow tenants to select this catalog template.'"
                                   id="catalog-active"
                                   v-model="catalogItemForm.is_active"
                                   :disabled="!selectedWebsiteType"
                                 />
-                                <FieldHelp
-                                  description="Allow tenants to select this catalog template."
-                                >
-                                  <FieldLabel for="catalog-active">Active</FieldLabel>
-                                </FieldHelp>
+                                <FieldLabel for="catalog-active">Active</FieldLabel>
                                 <Label
                                   v-if="maintenanceStore.errors.is_active"
                                   class="text-destructive text-xs"
@@ -875,16 +870,17 @@ watch(
                             <AccordionContent class="space-y-3 pb-3">
                               <Field>
                                 <FieldLabel for="catalog-description">Description</FieldLabel>
-                                <FieldHelp
-                                  description="Enter a short catalog description for this template."
-                                >
-                                  <Textarea
-                                    id="catalog-description"
-                                    v-model="catalogItemForm.description"
-                                    class="min-h-24"
-                                    :disabled="!selectedWebsiteType"
-                                  />
-                                </FieldHelp>
+
+                                <Textarea
+                                  v-field-help="
+                                    'Enter a short catalog description for this template.'
+                                  "
+                                  id="catalog-description"
+                                  v-model="catalogItemForm.description"
+                                  class="min-h-24"
+                                  :disabled="!selectedWebsiteType"
+                                />
+
                                 <Label
                                   v-if="maintenanceStore.errors.description"
                                   class="text-destructive text-xs"
@@ -895,15 +891,14 @@ watch(
 
                               <Field>
                                 <FieldLabel for="catalog-preview">Preview Image</FieldLabel>
-                                <FieldHelp
-                                  description="Enter the image URL shown in template selection."
-                                >
-                                  <Input
-                                    id="catalog-preview"
-                                    v-model="catalogItemForm.preview_image"
-                                    :disabled="!selectedWebsiteType"
-                                  />
-                                </FieldHelp>
+
+                                <Input
+                                  v-field-help="'Enter the image URL shown in template selection.'"
+                                  id="catalog-preview"
+                                  v-model="catalogItemForm.preview_image"
+                                  :disabled="!selectedWebsiteType"
+                                />
+
                                 <Label
                                   v-if="maintenanceStore.errors.preview_image"
                                   class="text-destructive text-xs"
@@ -1164,57 +1159,55 @@ watch(
                       <div class="grid gap-3 md:grid-cols-2">
                         <Field>
                           <FieldLabel for="schema-dialog-label">Field label</FieldLabel>
-                          <FieldHelp description="Enter the label users see above this field.">
-                            <Input
-                              id="schema-dialog-label"
-                              :model-value="schemaFieldDraft.label"
-                              @update:model-value="
-                                updateDraftFieldLabel(schemaFieldDraft, String($event))
-                              "
-                            />
-                          </FieldHelp>
+
+                          <Input
+                            v-field-help="'Enter the label users see above this field.'"
+                            id="schema-dialog-label"
+                            :model-value="schemaFieldDraft.label"
+                            @update:model-value="
+                              updateDraftFieldLabel(schemaFieldDraft, String($event))
+                            "
+                          />
                         </Field>
 
                         <Field>
                           <FieldLabel for="schema-dialog-key">Field key/name</FieldLabel>
-                          <FieldHelp
-                            description="Enter a lowercase key using letters, numbers, and underscores."
-                          >
-                            <Input
-                              id="schema-dialog-key"
-                              :model-value="schemaFieldDraft.key"
-                              @update:model-value="
-                                updateDraftFieldKey(schemaFieldDraft, String($event))
-                              "
-                            />
-                          </FieldHelp>
+
+                          <Input
+                            v-field-help="
+                              'Enter a lowercase key using letters, numbers, and underscores.'
+                            "
+                            id="schema-dialog-key"
+                            :model-value="schemaFieldDraft.key"
+                            @update:model-value="
+                              updateDraftFieldKey(schemaFieldDraft, String($event))
+                            "
+                          />
                         </Field>
 
                         <Field>
                           <FieldLabel for="schema-dialog-type">Field type</FieldLabel>
-                          <FieldHelp
-                            description="Choose the kind of control this field will render."
+
+                          <NativeSelect
+                            v-field-help="'Choose the kind of control this field will render.'"
+                            id="schema-dialog-type"
+                            class="w-full"
+                            :model-value="schemaFieldDraft.type"
+                            @update:model-value="
+                              updateDraftFieldType(
+                                schemaFieldDraft,
+                                String($event) as TemplateFieldType
+                              )
+                            "
                           >
-                            <NativeSelect
-                              id="schema-dialog-type"
-                              class="w-full"
-                              :model-value="schemaFieldDraft.type"
-                              @update:model-value="
-                                updateDraftFieldType(
-                                  schemaFieldDraft,
-                                  String($event) as TemplateFieldType
-                                )
-                              "
+                            <NativeSelectOption
+                              v-for="fieldType in schemaFieldTypeOptions"
+                              :key="fieldType.value"
+                              :value="fieldType.value"
                             >
-                              <NativeSelectOption
-                                v-for="fieldType in schemaFieldTypeOptions"
-                                :key="fieldType.value"
-                                :value="fieldType.value"
-                              >
-                                {{ fieldType.label }}
-                              </NativeSelectOption>
-                            </NativeSelect>
-                          </FieldHelp>
+                              {{ fieldType.label }}
+                            </NativeSelectOption>
+                          </NativeSelect>
                         </Field>
 
                         <Field
@@ -1224,12 +1217,12 @@ watch(
                           "
                         >
                           <FieldLabel for="schema-dialog-placeholder">Placeholder</FieldLabel>
-                          <FieldHelp description="Enter example text shown before users type.">
-                            <Input
-                              id="schema-dialog-placeholder"
-                              v-model="schemaFieldDraft.placeholder"
-                            />
-                          </FieldHelp>
+
+                          <Input
+                            v-field-help="'Enter example text shown before users type.'"
+                            id="schema-dialog-placeholder"
+                            v-model="schemaFieldDraft.placeholder"
+                          />
                         </Field>
 
                         <Field
@@ -1238,56 +1231,47 @@ watch(
                           class="items-center gap-3 self-end"
                         >
                           <Checkbox
+                            v-field-help="'Set whether this checkbox starts checked.'"
                             id="schema-dialog-default"
                             :model-value="Boolean(schemaFieldDraft.default)"
                             @update:model-value="
                               updateDraftFieldDefault(schemaFieldDraft, Boolean($event))
                             "
                           />
-                          <FieldHelp description="Set whether this checkbox starts checked.">
-                            <FieldLabel for="schema-dialog-default">Default checked</FieldLabel>
-                          </FieldHelp>
+                          <FieldLabel for="schema-dialog-default">Default checked</FieldLabel>
                         </Field>
 
                         <Field v-else-if="schemaFieldDraft.type !== 'repeater'">
                           <FieldLabel for="schema-dialog-default">Default value</FieldLabel>
-                          <FieldHelp
-                            description="Enter the value used when this field is first created."
-                          >
-                            <Textarea
-                              v-if="
-                                schemaFieldDraft.type === 'textarea' ||
-                                schemaFieldDraft.type === 'rich_text'
-                              "
-                              id="schema-dialog-default"
-                              :model-value="String(schemaFieldDraft.default ?? '')"
-                              class="min-h-20"
-                              @update:model-value="
-                                updateDraftFieldDefault(schemaFieldDraft, $event)
-                              "
-                            />
-                            <Input
-                              v-else
-                              id="schema-dialog-default"
-                              :type="schemaFieldDraft.type === 'number' ? 'number' : 'text'"
-                              :model-value="String(schemaFieldDraft.default ?? '')"
-                              @update:model-value="
-                                updateDraftFieldDefault(schemaFieldDraft, $event)
-                              "
-                            />
-                          </FieldHelp>
+
+                          <Textarea
+                            v-field-help="'Enter the value used when this field is first created.'"
+                            v-if="
+                              schemaFieldDraft.type === 'textarea' ||
+                              schemaFieldDraft.type === 'rich_text'
+                            "
+                            id="schema-dialog-default"
+                            :model-value="String(schemaFieldDraft.default ?? '')"
+                            class="min-h-20"
+                            @update:model-value="updateDraftFieldDefault(schemaFieldDraft, $event)"
+                          />
+                          <Input
+                            v-field-help="'Enter the value used when this field is first created.'"
+                            v-else
+                            id="schema-dialog-default"
+                            :type="schemaFieldDraft.type === 'number' ? 'number' : 'text'"
+                            :model-value="String(schemaFieldDraft.default ?? '')"
+                            @update:model-value="updateDraftFieldDefault(schemaFieldDraft, $event)"
+                          />
                         </Field>
 
                         <Field orientation="horizontal" class="items-center gap-3 self-end">
                           <Checkbox
+                            v-field-help="'Require users to complete this field before saving.'"
                             id="schema-dialog-required"
                             v-model="schemaFieldDraft.required"
                           />
-                          <FieldHelp
-                            description="Require users to complete this field before saving."
-                          >
-                            <FieldLabel for="schema-dialog-required">Required</FieldLabel>
-                          </FieldHelp>
+                          <FieldLabel for="schema-dialog-required">Required</FieldLabel>
                         </Field>
                       </div>
                     </AccordionContent>
@@ -1324,20 +1308,20 @@ watch(
                         :key="optionIndex"
                         class="grid gap-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]"
                       >
-                        <FieldHelp description="Enter the option text users see.">
-                          <Input
-                            :model-value="String(option.label ?? '')"
-                            placeholder="Label"
-                            @update:model-value="updateSelectOptionLabel(option, String($event))"
-                          />
-                        </FieldHelp>
-                        <FieldHelp description="Enter the saved value for this option.">
-                          <Input
-                            :model-value="String(option.value ?? '')"
-                            placeholder="Value"
-                            @update:model-value="updateSelectOptionValue(option, String($event))"
-                          />
-                        </FieldHelp>
+                        <Input
+                          v-field-help="'Enter the option text users see.'"
+                          :model-value="String(option.label ?? '')"
+                          placeholder="Label"
+                          @update:model-value="updateSelectOptionLabel(option, String($event))"
+                        />
+
+                        <Input
+                          v-field-help="'Enter the saved value for this option.'"
+                          :model-value="String(option.value ?? '')"
+                          placeholder="Value"
+                          @update:model-value="updateSelectOptionValue(option, String($event))"
+                        />
+
                         <Button
                           size="sm"
                           variant="ghost"
@@ -1430,73 +1414,67 @@ watch(
                             <FieldLabel :for="`schema-dialog-nested-label-${nestedIndex}`">
                               Field label
                             </FieldLabel>
-                            <FieldHelp
-                              description="Enter the label users see for this list item field."
-                            >
-                              <Input
-                                :id="`schema-dialog-nested-label-${nestedIndex}`"
-                                :model-value="nestedField.label"
-                                @update:model-value="
-                                  updateDraftFieldLabel(nestedField, String($event))
-                                "
-                              />
-                            </FieldHelp>
+
+                            <Input
+                              v-field-help="'Enter the label users see for this list item field.'"
+                              :id="`schema-dialog-nested-label-${nestedIndex}`"
+                              :model-value="nestedField.label"
+                              @update:model-value="
+                                updateDraftFieldLabel(nestedField, String($event))
+                              "
+                            />
                           </Field>
 
                           <Field>
                             <FieldLabel :for="`schema-dialog-nested-key-${nestedIndex}`">
                               Field key/name
                             </FieldLabel>
-                            <FieldHelp description="Enter the saved key for this list item field.">
-                              <Input
-                                :id="`schema-dialog-nested-key-${nestedIndex}`"
-                                :model-value="nestedField.key"
-                                @update:model-value="
-                                  updateDraftFieldKey(nestedField, String($event))
-                                "
-                              />
-                            </FieldHelp>
+
+                            <Input
+                              v-field-help="'Enter the saved key for this list item field.'"
+                              :id="`schema-dialog-nested-key-${nestedIndex}`"
+                              :model-value="nestedField.key"
+                              @update:model-value="updateDraftFieldKey(nestedField, String($event))"
+                            />
                           </Field>
 
                           <Field>
                             <FieldLabel :for="`schema-dialog-nested-type-${nestedIndex}`">
                               Field type
                             </FieldLabel>
-                            <FieldHelp
-                              description="Choose the control type for this list item field."
+
+                            <NativeSelect
+                              v-field-help="'Choose the control type for this list item field.'"
+                              :id="`schema-dialog-nested-type-${nestedIndex}`"
+                              class="w-full"
+                              :model-value="nestedField.type"
+                              @update:model-value="
+                                updateDraftFieldType(
+                                  nestedField,
+                                  String($event) as TemplateFieldType
+                                )
+                              "
                             >
-                              <NativeSelect
-                                :id="`schema-dialog-nested-type-${nestedIndex}`"
-                                class="w-full"
-                                :model-value="nestedField.type"
-                                @update:model-value="
-                                  updateDraftFieldType(
-                                    nestedField,
-                                    String($event) as TemplateFieldType
-                                  )
-                                "
+                              <NativeSelectOption
+                                v-for="fieldType in nestedFieldTypes"
+                                :key="fieldType.value"
+                                :value="fieldType.value"
                               >
-                                <NativeSelectOption
-                                  v-for="fieldType in nestedFieldTypes"
-                                  :key="fieldType.value"
-                                  :value="fieldType.value"
-                                >
-                                  {{ fieldType.label }}
-                                </NativeSelectOption>
-                              </NativeSelect>
-                            </FieldHelp>
+                                {{ fieldType.label }}
+                              </NativeSelectOption>
+                            </NativeSelect>
                           </Field>
 
                           <Field v-if="nestedField.type !== 'boolean'">
                             <FieldLabel :for="`schema-dialog-nested-placeholder-${nestedIndex}`">
                               Placeholder
                             </FieldLabel>
-                            <FieldHelp description="Enter example text shown before users type.">
-                              <Input
-                                :id="`schema-dialog-nested-placeholder-${nestedIndex}`"
-                                v-model="nestedField.placeholder"
-                              />
-                            </FieldHelp>
+
+                            <Input
+                              v-field-help="'Enter example text shown before users type.'"
+                              :id="`schema-dialog-nested-placeholder-${nestedIndex}`"
+                              v-model="nestedField.placeholder"
+                            />
                           </Field>
 
                           <Field
@@ -1505,58 +1483,52 @@ watch(
                             class="items-center gap-3 self-end"
                           >
                             <Checkbox
+                              v-field-help="'Set whether this checkbox starts checked.'"
                               :id="`schema-dialog-nested-default-${nestedIndex}`"
                               :model-value="Boolean(nestedField.default)"
                               @update:model-value="
                                 updateDraftFieldDefault(nestedField, Boolean($event))
                               "
                             />
-                            <FieldHelp description="Set whether this checkbox starts checked.">
-                              <FieldLabel :for="`schema-dialog-nested-default-${nestedIndex}`">
-                                Default checked
-                              </FieldLabel>
-                            </FieldHelp>
+                            <FieldLabel :for="`schema-dialog-nested-default-${nestedIndex}`">
+                              Default checked
+                            </FieldLabel>
                           </Field>
 
                           <Field v-else>
                             <FieldLabel :for="`schema-dialog-nested-default-${nestedIndex}`">
                               Default value
                             </FieldLabel>
-                            <FieldHelp
-                              description="Enter the starting value for this list item field."
-                            >
-                              <Textarea
-                                v-if="
-                                  nestedField.type === 'textarea' ||
-                                  nestedField.type === 'rich_text'
-                                "
-                                :id="`schema-dialog-nested-default-${nestedIndex}`"
-                                :model-value="String(nestedField.default ?? '')"
-                                class="min-h-20"
-                                @update:model-value="updateDraftFieldDefault(nestedField, $event)"
-                              />
-                              <Input
-                                v-else
-                                :id="`schema-dialog-nested-default-${nestedIndex}`"
-                                :type="nestedField.type === 'number' ? 'number' : 'text'"
-                                :model-value="String(nestedField.default ?? '')"
-                                @update:model-value="updateDraftFieldDefault(nestedField, $event)"
-                              />
-                            </FieldHelp>
+
+                            <Textarea
+                              v-field-help="'Enter the starting value for this list item field.'"
+                              v-if="
+                                nestedField.type === 'textarea' || nestedField.type === 'rich_text'
+                              "
+                              :id="`schema-dialog-nested-default-${nestedIndex}`"
+                              :model-value="String(nestedField.default ?? '')"
+                              class="min-h-20"
+                              @update:model-value="updateDraftFieldDefault(nestedField, $event)"
+                            />
+                            <Input
+                              v-field-help="'Enter the starting value for this list item field.'"
+                              v-else
+                              :id="`schema-dialog-nested-default-${nestedIndex}`"
+                              :type="nestedField.type === 'number' ? 'number' : 'text'"
+                              :model-value="String(nestedField.default ?? '')"
+                              @update:model-value="updateDraftFieldDefault(nestedField, $event)"
+                            />
                           </Field>
 
                           <Field orientation="horizontal" class="items-center gap-3 self-end">
                             <Checkbox
+                              v-field-help="'Require users to complete this list item field.'"
                               :id="`schema-dialog-nested-required-${nestedIndex}`"
                               v-model="nestedField.required"
                             />
-                            <FieldHelp
-                              description="Require users to complete this list item field."
-                            >
-                              <FieldLabel :for="`schema-dialog-nested-required-${nestedIndex}`">
-                                Required
-                              </FieldLabel>
-                            </FieldHelp>
+                            <FieldLabel :for="`schema-dialog-nested-required-${nestedIndex}`">
+                              Required
+                            </FieldLabel>
                           </Field>
                         </div>
 
@@ -1584,24 +1556,20 @@ watch(
                             :key="optionIndex"
                             class="grid gap-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]"
                           >
-                            <FieldHelp description="Enter the option text users see.">
-                              <Input
-                                :model-value="String(option.label ?? '')"
-                                placeholder="Label"
-                                @update:model-value="
-                                  updateSelectOptionLabel(option, String($event))
-                                "
-                              />
-                            </FieldHelp>
-                            <FieldHelp description="Enter the saved value for this option.">
-                              <Input
-                                :model-value="String(option.value ?? '')"
-                                placeholder="Value"
-                                @update:model-value="
-                                  updateSelectOptionValue(option, String($event))
-                                "
-                              />
-                            </FieldHelp>
+                            <Input
+                              v-field-help="'Enter the option text users see.'"
+                              :model-value="String(option.label ?? '')"
+                              placeholder="Label"
+                              @update:model-value="updateSelectOptionLabel(option, String($event))"
+                            />
+
+                            <Input
+                              v-field-help="'Enter the saved value for this option.'"
+                              :model-value="String(option.value ?? '')"
+                              placeholder="Value"
+                              @update:model-value="updateSelectOptionValue(option, String($event))"
+                            />
+
                             <Button
                               size="sm"
                               variant="ghost"

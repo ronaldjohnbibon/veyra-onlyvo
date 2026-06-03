@@ -9,7 +9,6 @@ import {
   DialogTitle,
 } from '@/shared/components/ui/dialog'
 import { Field, FieldGroup, FieldLabel, FieldSet } from '@/shared/components/ui/field'
-import FieldHelp from '@/shared/components/FieldHelp.vue'
 import { Input } from '@/shared/components/ui/input'
 import { Label } from '@/shared/components/ui/label'
 import { Textarea } from '@/shared/components/ui/textarea'
@@ -117,9 +116,13 @@ watch(
           <FieldSet>
             <Field>
               <FieldLabel for="post-title">Title</FieldLabel>
-              <FieldHelp description="Enter the post title shown to readers.">
-                <Input id="post-title" v-model="form.title" />
-              </FieldHelp>
+
+              <Input
+                v-field-help="'Enter the post title shown to readers.'"
+                id="post-title"
+                v-model="form.title"
+              />
+
               <Label v-if="postStore.errors.title" class="text-destructive text-xs">
                 {{ postStore.errors.title[0] }}
               </Label>
@@ -127,21 +130,25 @@ watch(
 
             <Field>
               <FieldLabel for="featured-image">Featured Image</FieldLabel>
-              <FieldHelp description="Enter an image URL to use as the post feature image.">
-                <Input id="featured-image" v-model="form.featured_image" />
-              </FieldHelp>
+
+              <Input
+                v-field-help="'Enter an image URL to use as the post feature image.'"
+                id="featured-image"
+                v-model="form.featured_image"
+              />
+
               <Label v-if="postStore.errors.featured_image" class="text-destructive text-xs">
                 {{ postStore.errors.featured_image[0] }}
               </Label>
-              <FieldHelp description="Upload an image file to fill the URL automatically.">
-                <Input
-                  type="file"
-                  accept="image/*"
-                  class="cursor-pointer text-muted-foreground"
-                  :disabled="postStore.loading"
-                  @change="handleImageUpload"
-                />
-              </FieldHelp>
+
+              <Input
+                v-field-help="'Upload an image file to fill the URL automatically.'"
+                type="file"
+                accept="image/*"
+                class="cursor-pointer text-muted-foreground"
+                :disabled="postStore.loading"
+                @change="handleImageUpload"
+              />
             </Field>
 
             <Field v-if="form.featured_image">
@@ -154,9 +161,14 @@ watch(
 
             <Field>
               <FieldLabel for="post-content">Content</FieldLabel>
-              <FieldHelp description="Write the main post content shown on the public site.">
-                <Textarea id="post-content" v-model="form.content" class="min-h-72" />
-              </FieldHelp>
+
+              <Textarea
+                v-field-help="'Write the main post content shown on the public site.'"
+                id="post-content"
+                v-model="form.content"
+                class="min-h-72"
+              />
+
               <Label v-if="postStore.errors.content" class="text-destructive text-xs">
                 {{ postStore.errors.content[0] }}
               </Label>

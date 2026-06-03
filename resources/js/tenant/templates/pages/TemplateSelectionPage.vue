@@ -19,7 +19,6 @@ import {
 } from '@/shared/components/ui/dialog'
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/shared/components/ui/empty'
 import { Field, FieldGroup, FieldLabel, FieldSet } from '@/shared/components/ui/field'
-import FieldHelp from '@/shared/components/FieldHelp.vue'
 import { Input } from '@/shared/components/ui/input'
 import { Label } from '@/shared/components/ui/label'
 import { NativeSelect, NativeSelectOption } from '@/shared/components/ui/native-select'
@@ -265,14 +264,13 @@ watch(
 
       <div class="grid gap-4 xl:grid-cols-[16rem_minmax(0,1fr)]">
         <aside class="space-y-3">
-          <FieldHelp class="max-w-[300px]" description="Search saved templates by name.">
-            <Input
-              v-model="templateStore.params.search"
-              placeholder="Search templates"
-              class="w-full max-w-[300px]"
-              @keyup.enter="searchTemplates"
-            />
-          </FieldHelp>
+          <Input
+            v-field-help="'Search saved templates by name.'"
+            v-model="templateStore.params.search"
+            placeholder="Search templates"
+            class="w-full max-w-[300px]"
+            @keyup.enter="searchTemplates"
+          />
 
           <div v-if="templateStore.templates.length" class="space-y-2">
             <Button
@@ -491,11 +489,13 @@ watch(
                             <div class="grid gap-4 md:grid-cols-2">
                               <Field>
                                 <FieldLabel for="template-name">Template Name</FieldLabel>
-                                <FieldHelp
-                                  description="Enter the saved site name shown in the app."
-                                >
-                                  <Input id="template-name" v-model="form.name" />
-                                </FieldHelp>
+
+                                <Input
+                                  v-field-help="'Enter the saved site name shown in the app.'"
+                                  id="template-name"
+                                  v-model="form.name"
+                                />
+
                                 <Label
                                   v-if="templateStore.errors.name"
                                   class="text-destructive text-xs"
@@ -506,16 +506,15 @@ watch(
 
                               <Field>
                                 <FieldLabel for="site-slug">Site Slug</FieldLabel>
-                                <FieldHelp
-                                  description="Enter the URL slug used for this public site."
-                                >
-                                  <Input
-                                    id="site-slug"
-                                    v-model="form.slug"
-                                    maxlength="120"
-                                    @input="updateSlug"
-                                  />
-                                </FieldHelp>
+
+                                <Input
+                                  v-field-help="'Enter the URL slug used for this public site.'"
+                                  id="site-slug"
+                                  v-model="form.slug"
+                                  maxlength="120"
+                                  @input="updateSlug"
+                                />
+
                                 <Label
                                   v-if="templateStore.errors.slug"
                                   class="text-destructive text-xs"
@@ -525,12 +524,14 @@ watch(
                               </Field>
 
                               <Field orientation="horizontal" class="items-center gap-3 self-end">
-                                <Checkbox id="default-site" v-model="form.is_default" />
-                                <FieldHelp
-                                  description="Use this site as the tenant's default public website."
-                                >
-                                  <FieldLabel for="default-site">Default public site</FieldLabel>
-                                </FieldHelp>
+                                <Checkbox
+                                  v-field-help="
+                                    'Use this site as the tenant\'s default public website.'
+                                  "
+                                  id="default-site"
+                                  v-model="form.is_default"
+                                />
+                                <FieldLabel for="default-site">Default public site</FieldLabel>
                                 <Label
                                   v-if="templateStore.errors.is_default"
                                   class="text-destructive text-xs"
@@ -541,27 +542,29 @@ watch(
 
                               <Field class="md:col-span-2">
                                 <FieldLabel for="logo-url">Logo URL</FieldLabel>
-                                <FieldHelp
-                                  description="Enter the logo image URL shown on the site."
-                                >
-                                  <Input id="logo-url" v-model="form.logo" />
-                                </FieldHelp>
+
+                                <Input
+                                  v-field-help="'Enter the logo image URL shown on the site.'"
+                                  id="logo-url"
+                                  v-model="form.logo"
+                                />
+
                                 <Label
                                   v-if="templateStore.errors.logo"
                                   class="text-destructive text-xs"
                                 >
                                   {{ templateStore.errors.logo[0] }}
                                 </Label>
-                                <FieldHelp
-                                  description="Upload a logo image to fill the URL automatically."
-                                >
-                                  <Input
-                                    type="file"
-                                    accept="image/*"
-                                    class="cursor-pointer text-muted-foreground"
-                                    @change="handleLogoUpload"
-                                  />
-                                </FieldHelp>
+
+                                <Input
+                                  v-field-help="
+                                    'Upload a logo image to fill the URL automatically.'
+                                  "
+                                  type="file"
+                                  accept="image/*"
+                                  class="cursor-pointer text-muted-foreground"
+                                  @change="handleLogoUpload"
+                                />
                               </Field>
                             </div>
                           </FieldSet>
@@ -613,23 +616,22 @@ watch(
                             <div class="grid gap-4 md:grid-cols-5">
                               <Field>
                                 <FieldLabel for="font-family">Font Family</FieldLabel>
-                                <FieldHelp
-                                  description="Choose the font used across the public site."
+
+                                <NativeSelect
+                                  v-field-help="'Choose the font used across the public site.'"
+                                  id="font-family"
+                                  v-model="form.font_family"
+                                  class="w-full"
                                 >
-                                  <NativeSelect
-                                    id="font-family"
-                                    v-model="form.font_family"
-                                    class="w-full"
+                                  <NativeSelectOption
+                                    v-for="font in fonts"
+                                    :key="font"
+                                    :value="font"
                                   >
-                                    <NativeSelectOption
-                                      v-for="font in fonts"
-                                      :key="font"
-                                      :value="font"
-                                    >
-                                      {{ font }}
-                                    </NativeSelectOption>
-                                  </NativeSelect>
-                                </FieldHelp>
+                                    {{ font }}
+                                  </NativeSelectOption>
+                                </NativeSelect>
+
                                 <Label
                                   v-if="templateStore.errors.font_family"
                                   class="text-destructive text-xs"
@@ -640,15 +642,16 @@ watch(
 
                               <Field>
                                 <FieldLabel for="primary-color">Primary Color</FieldLabel>
-                                <FieldHelp
-                                  description="Pick the main brand color for buttons and accents."
-                                >
-                                  <Input
-                                    id="primary-color"
-                                    v-model="form.primary_color"
-                                    type="color"
-                                  />
-                                </FieldHelp>
+
+                                <Input
+                                  v-field-help="
+                                    'Pick the main brand color for buttons and accents.'
+                                  "
+                                  id="primary-color"
+                                  v-model="form.primary_color"
+                                  type="color"
+                                />
+
                                 <Label
                                   v-if="templateStore.errors.primary_color"
                                   class="text-destructive text-xs"
@@ -659,15 +662,14 @@ watch(
 
                               <Field>
                                 <FieldLabel for="secondary-color">Secondary Color</FieldLabel>
-                                <FieldHelp
-                                  description="Pick the secondary color for supporting accents."
-                                >
-                                  <Input
-                                    id="secondary-color"
-                                    v-model="form.secondary_color"
-                                    type="color"
-                                  />
-                                </FieldHelp>
+
+                                <Input
+                                  v-field-help="'Pick the secondary color for supporting accents.'"
+                                  id="secondary-color"
+                                  v-model="form.secondary_color"
+                                  type="color"
+                                />
+
                                 <Label
                                   v-if="templateStore.errors.secondary_color"
                                   class="text-destructive text-xs"
@@ -678,15 +680,14 @@ watch(
 
                               <Field>
                                 <FieldLabel for="background-color">Background Color</FieldLabel>
-                                <FieldHelp
-                                  description="Pick the main background color for the site."
-                                >
-                                  <Input
-                                    id="background-color"
-                                    v-model="form.background_color"
-                                    type="color"
-                                  />
-                                </FieldHelp>
+
+                                <Input
+                                  v-field-help="'Pick the main background color for the site.'"
+                                  id="background-color"
+                                  v-model="form.background_color"
+                                  type="color"
+                                />
+
                                 <Label
                                   v-if="templateStore.errors.background_color"
                                   class="text-destructive text-xs"
@@ -697,9 +698,14 @@ watch(
 
                               <Field>
                                 <FieldLabel for="text-color">Text Color</FieldLabel>
-                                <FieldHelp description="Pick the default text color for the site.">
-                                  <Input id="text-color" v-model="form.text_color" type="color" />
-                                </FieldHelp>
+
+                                <Input
+                                  v-field-help="'Pick the default text color for the site.'"
+                                  id="text-color"
+                                  v-model="form.text_color"
+                                  type="color"
+                                />
+
                                 <Label
                                   v-if="templateStore.errors.text_color"
                                   class="text-destructive text-xs"

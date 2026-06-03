@@ -12,7 +12,6 @@ import {
   CardTitle,
 } from '@/shared/components/ui/card'
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/shared/components/ui/field'
-import FieldHelp from '@/shared/components/FieldHelp.vue'
 import { Input } from '@/shared/components/ui/input'
 import { useAuthStore } from '../auth-store'
 
@@ -46,42 +45,45 @@ onMounted(() => {
                 </Field>
                 <Field>
                   <FieldLabel for="email"> Email </FieldLabel>
-                  <FieldHelp description="Use the email address connected to the reset link.">
-                    <Input
-                      v-model="authStore.resetPasswordForm.email"
-                      id="email"
-                      type="email"
-                      autocomplete="email"
-                    />
-                  </FieldHelp>
+
+                  <Input
+                    v-field-help="'Use the email address connected to the reset link.'"
+                    v-model="authStore.resetPasswordForm.email"
+                    id="email"
+                    type="email"
+                    autocomplete="email"
+                  />
+
                   <span v-if="authStore.errors.email" class="text-destructive text-[12px]">
                     {{ authStore.errors.email[0] }}
                   </span>
                 </Field>
                 <Field>
                   <FieldLabel for="password"> Password </FieldLabel>
-                  <FieldHelp description="Enter the new password you want to use.">
-                    <Input
-                      v-model="authStore.resetPasswordForm.password"
-                      id="password"
-                      type="password"
-                      autocomplete="new-password"
-                    />
-                  </FieldHelp>
+
+                  <Input
+                    v-field-help="'Enter the new password you want to use.'"
+                    v-model="authStore.resetPasswordForm.password"
+                    id="password"
+                    type="password"
+                    autocomplete="new-password"
+                  />
+
                   <span v-if="authStore.errors.password" class="text-destructive text-[12px]">
                     {{ authStore.errors.password[0] }}
                   </span>
                 </Field>
                 <Field>
                   <FieldLabel for="confirm-password"> Confirm Password </FieldLabel>
-                  <FieldHelp description="Enter the same password again to confirm it.">
-                    <Input
-                      v-model="authStore.resetPasswordForm.password_confirmation"
-                      id="confirm-password"
-                      type="password"
-                      autocomplete="new-password"
-                    />
-                  </FieldHelp>
+
+                  <Input
+                    v-field-help="'Enter the same password again to confirm it.'"
+                    v-model="authStore.resetPasswordForm.password_confirmation"
+                    id="confirm-password"
+                    type="password"
+                    autocomplete="new-password"
+                  />
+
                   <span
                     v-if="authStore.errors.password_confirmation"
                     class="text-destructive text-[12px]"

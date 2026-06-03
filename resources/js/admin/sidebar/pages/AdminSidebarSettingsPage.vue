@@ -8,7 +8,6 @@ import {
   DialogScrollContent,
   DialogTitle,
 } from '@/shared/components/ui/dialog'
-import FieldHelp from '@/shared/components/FieldHelp.vue'
 import { Label } from '@/shared/components/ui/label'
 import { Textarea } from '@/shared/components/ui/textarea'
 import { useAdminSidebarStore } from '@/admin/sidebar/sidebar-store'
@@ -99,13 +98,13 @@ onMounted(loadSidebar)
               </DialogDescription>
             </DialogHeader>
 
-            <FieldHelp description="Edit the admin sidebar structure as valid JSON.">
-              <Textarea
-                v-model="editorValue"
-                class="min-h-[60vh] resize-y bg-background p-4 font-mono"
-                spellcheck="false"
-              />
-            </FieldHelp>
+            <Textarea
+              v-field-help="'Edit the admin sidebar structure as valid JSON.'"
+              v-model="editorValue"
+              class="min-h-[60vh] resize-y bg-background p-4 font-mono"
+              spellcheck="false"
+            />
+
             <Label v-if="sidebarDataError" class="text-destructive text-xs">
               {{ sidebarDataError }}
             </Label>

@@ -2,7 +2,6 @@
 import BaseTable from '@/shared/components/BaseTable.vue'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
-import FieldHelp from '@/shared/components/FieldHelp.vue'
 import { Input } from '@/shared/components/ui/input'
 import { NativeSelect } from '@/shared/components/ui/native-select'
 import { formatDisplayDate } from '@/shared/utils/date'
@@ -269,51 +268,64 @@ onMounted(() => {
         @update:sort="updateSort"
       >
         <template #filters>
-          <FieldHelp description="Show logs from this date onward.">
-            <Input v-model="fromFilter" type="date" class="h-9 min-w-36 sm:max-w-40" />
-          </FieldHelp>
-          <FieldHelp description="Show logs up to this date.">
-            <Input v-model="toFilter" type="date" class="h-9 min-w-36 sm:max-w-40" />
-          </FieldHelp>
+          <Input
+            v-field-help="'Show logs from this date onward.'"
+            v-model="fromFilter"
+            type="date"
+            class="h-9 min-w-36 sm:max-w-40"
+          />
 
-          <FieldHelp description="Filter logs by tracked event type.">
-            <NativeSelect v-model="eventTypeFilter" class="h-9 min-w-40">
-              <option value="">All events</option>
-              <option
-                v-for="option in trackingLogStore.filters.event_types"
-                :key="option.value"
-                :value="option.value"
-              >
-                {{ option.label }}
-              </option>
-            </NativeSelect>
-          </FieldHelp>
+          <Input
+            v-field-help="'Show logs up to this date.'"
+            v-model="toFilter"
+            type="date"
+            class="h-9 min-w-36 sm:max-w-40"
+          />
 
-          <FieldHelp description="Filter logs by the related website template.">
-            <NativeSelect v-model="templateFilter" class="h-9 min-w-48">
-              <option value="">All templates</option>
-              <option
-                v-for="template in trackingLogStore.filters.templates"
-                :key="template.id"
-                :value="template.id"
-              >
-                {{ template.name }}
-              </option>
-            </NativeSelect>
-          </FieldHelp>
+          <NativeSelect
+            v-field-help="'Filter logs by tracked event type.'"
+            v-model="eventTypeFilter"
+            class="h-9 min-w-40"
+          >
+            <option value="">All events</option>
+            <option
+              v-for="option in trackingLogStore.filters.event_types"
+              :key="option.value"
+              :value="option.value"
+            >
+              {{ option.label }}
+            </option>
+          </NativeSelect>
 
-          <FieldHelp description="Filter logs by conversion status.">
-            <NativeSelect v-model="conversionStatusFilter" class="h-9 min-w-40">
-              <option value="">All statuses</option>
-              <option
-                v-for="status in trackingLogStore.filters.conversion_statuses"
-                :key="status.value"
-                :value="status.value"
-              >
-                {{ status.label }}
-              </option>
-            </NativeSelect>
-          </FieldHelp>
+          <NativeSelect
+            v-field-help="'Filter logs by the related website template.'"
+            v-model="templateFilter"
+            class="h-9 min-w-48"
+          >
+            <option value="">All templates</option>
+            <option
+              v-for="template in trackingLogStore.filters.templates"
+              :key="template.id"
+              :value="template.id"
+            >
+              {{ template.name }}
+            </option>
+          </NativeSelect>
+
+          <NativeSelect
+            v-field-help="'Filter logs by conversion status.'"
+            v-model="conversionStatusFilter"
+            class="h-9 min-w-40"
+          >
+            <option value="">All statuses</option>
+            <option
+              v-for="status in trackingLogStore.filters.conversion_statuses"
+              :key="status.value"
+              :value="status.value"
+            >
+              {{ status.label }}
+            </option>
+          </NativeSelect>
 
           <Button
             type="button"

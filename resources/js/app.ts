@@ -8,6 +8,7 @@ import AdminLayout from '@/admin/layouts/AdminLayout.vue'
 import DefaultLayout from '@/shared/layouts/DefaultLayout.vue'
 import EmptyLayout from '@/shared/layouts/EmptyLayout.vue'
 import TenantLayout from '@/tenant/layouts/TenantLayout.vue'
+import { fieldHelp } from '@/shared/directives/fieldHelp'
 
 const app = createApp(App)
 
@@ -18,5 +19,6 @@ app.component('admin-layout', AdminLayout)
 app.component('default-layout', DefaultLayout)
 app.component('empty-layout', EmptyLayout)
 app.component('tenant-layout', TenantLayout)
+app.directive('field-help', fieldHelp)
 
 app.mount('#app')

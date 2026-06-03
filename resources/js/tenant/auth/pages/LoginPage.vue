@@ -10,7 +10,6 @@ import {
   CardTitle,
 } from '@/shared/components/ui/card'
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/shared/components/ui/field'
-import FieldHelp from '@/shared/components/FieldHelp.vue'
 import { Input } from '@/shared/components/ui/input'
 import { useAuthStore } from '../auth-store'
 
@@ -45,15 +44,16 @@ const registrationEnabled = runtimeSettings['authentication.allow_tenant_registr
                 </Field>
                 <Field>
                   <FieldLabel for="email"> Email </FieldLabel>
-                  <FieldHelp description="Enter the email address for your tenant account.">
-                    <Input
-                      v-model="authStore.loginForm.email"
-                      id="email"
-                      type="email"
-                      placeholder="m@example.com"
-                      autocomplete="email"
-                    />
-                  </FieldHelp>
+
+                  <Input
+                    v-field-help="'Enter the email address for your tenant account.'"
+                    v-model="authStore.loginForm.email"
+                    id="email"
+                    type="email"
+                    placeholder="m@example.com"
+                    autocomplete="email"
+                  />
+
                   <span v-if="authStore.errors.email" class="text-destructive text-[12px]">
                     {{ authStore.errors.email[0] }}
                   </span>
@@ -68,14 +68,15 @@ const registrationEnabled = runtimeSettings['authentication.allow_tenant_registr
                       Forgot your password?
                     </router-link>
                   </div>
-                  <FieldHelp description="Enter your account password.">
-                    <Input
-                      v-model="authStore.loginForm.password"
-                      id="password"
-                      type="password"
-                      autocomplete="current-password"
-                    />
-                  </FieldHelp>
+
+                  <Input
+                    v-field-help="'Enter your account password.'"
+                    v-model="authStore.loginForm.password"
+                    id="password"
+                    type="password"
+                    autocomplete="current-password"
+                  />
+
                   <span v-if="authStore.errors.password" class="text-destructive text-[12px]">
                     {{ authStore.errors.password[0] }}
                   </span>

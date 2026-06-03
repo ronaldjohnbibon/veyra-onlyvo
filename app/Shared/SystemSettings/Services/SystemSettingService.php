@@ -24,7 +24,7 @@ class SystemSettingService
         'general.support_email'           => ['group' => 'general', 'label' => 'Support Email', 'type' => 'email', 'default' => '', 'public' => true, 'description' => 'Enter the support email shown to users.'],
         'general.support_phone'           => ['group' => 'general', 'label' => 'Support Phone', 'type' => 'string', 'default' => '', 'public' => true, 'description' => 'Enter the support phone number shown to users.'],
         'general.company_address'         => ['group' => 'general', 'label' => 'Company Address', 'type' => 'text', 'default' => '', 'public' => true, 'description' => 'Enter the company address shown in public areas.'],
-        'general.show_field_descriptions' => ['group' => 'general', 'label' => 'Show Field Descriptions', 'type' => 'boolean', 'default' => true, 'public' => true, 'description' => 'Turn short help text under form fields on or off.'],
+        'general.show_field_descriptions' => ['group' => 'general', 'label' => 'Show Field Descriptions', 'type' => 'boolean', 'default' => true, 'public' => true, 'description' => 'Turn field hover help text on or off.'],
 
         'authentication.allow_tenant_registration'  => ['group' => 'authentication', 'label' => 'Allow Tenant Registration', 'type' => 'boolean', 'default' => true, 'public' => true, 'description' => 'Allow new tenants to create accounts from registration.'],
         'authentication.require_email_verification' => ['group' => 'authentication', 'label' => 'Require Email Verification', 'type' => 'boolean', 'default' => false, 'public' => false, 'description' => 'Require users to verify email before tenant login.'],
