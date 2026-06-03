@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Shared\SystemSettings\Services\SystemSettingService;
 use App\Tenant\Dashboard\Http\Requests\CtaEventTrackingRequest;
 use App\Tenant\Dashboard\Services\CtaTrackingService;
+use App\Tenant\SystemSettings\Services\TenantSystemSettingService;
 use Illuminate\Http\JsonResponse;
 use Sprout\Contracts\Tenant as CurrentTenant;
 
@@ -14,6 +15,7 @@ class PublicCtaTrackingController extends Controller
     public function __construct(
         private readonly CtaTrackingService $service,
         private readonly SystemSettingService $settings,
+        private readonly TenantSystemSettingService $tenantSettings,
     ) {}
 
     public function store(CtaEventTrackingRequest $request, CurrentTenant $tenant): JsonResponse
@@ -24,6 +26,10 @@ class PublicCtaTrackingController extends Controller
 
         if (! $this->settings->boolean('analytics.enable_cta_tracking', true)) {
             return $this->success(null, 'CTA tracking disabled.');
+        }
+
+        if (! $this->tenantSettings->boolean($tenant, 'analytics.enable_cta_tracking', true)) {
+            return $this->success(null, 'Tenant CTA tracking disabled.');
         }
 
         $event = $this->service->record($request, (string) $tenant->getTenantKey(), $request->validated());

@@ -1,8 +1,13 @@
 <script setup lang="ts">
 import TemplatePreview from '@/tenant/templates/components/TemplatePreview.vue'
+import TenantComplianceNotice from '@/tenant/templates/components/TenantComplianceNotice.vue'
 import { formatDisplayDate } from '@/shared/utils/date'
 import { ctaPayloadFromElement, ctaViewPayloadFromElement } from '@/tenant/dashboard/cta-tracking'
 import { useAnalyticsStore } from '@/tenant/dashboard/analytics-store'
+import {
+  applyTenantPublicHead,
+  fallbackImage,
+} from '@/tenant/templates/composables/useTenantPublicSettings'
 import { usePublicSiteStore } from '@/tenant/templates/public-site-store'
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
@@ -24,6 +29,9 @@ const loadSite = async (): Promise<void> => {
   await publicSiteStore.loadSite(siteSlug.value)
 
   if (publicSiteStore.template) {
+    applyTenantPublicHead(publicSiteStore.template.tenant_settings, {
+      path: window.location.pathname,
+    })
     await analyticsStore.trackPublicVisit(publicSiteStore.template.id, window.location.href)
     await nextTick()
     observePublicCtaViews()
@@ -96,6 +104,10 @@ const observePublicCtaViews = (): void => {
     .forEach((element) => ctaViewObserver?.observe(element))
 }
 
+const postImage = (image?: string | null): string => {
+  return image || fallbackImage(publicSiteStore.template?.tenant_settings)
+}
+
 onMounted(loadSite)
 onUnmounted(() => ctaViewObserver?.disconnect())
 watch(siteSlug, () => {
@@ -133,8 +145,8 @@ watch(siteSlug, () => {
             class="rounded border bg-card text-card-foreground transition hover:border-primary hover:shadow-md"
           >
             <img
-              v-if="post.featured_image"
-              :src="post.featured_image"
+              v-if="postImage(post.featured_image)"
+              :src="postImage(post.featured_image)"
               :alt="post.title"
               class="aspect-video w-full rounded-t object-cover"
             />
@@ -161,5 +173,10 @@ watch(siteSlug, () => {
         This site is not published yet or no longer exists.
       </p>
     </section>
+
+    <TenantComplianceNotice
+      v-if="publicSiteStore.template"
+      :settings="publicSiteStore.template.tenant_settings"
+    />
   </main>
 </template>

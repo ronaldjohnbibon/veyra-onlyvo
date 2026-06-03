@@ -4,14 +4,16 @@ namespace App\Tenant\Templates\Posts\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Shared\SystemSettings\Services\SystemSettingService;
-use App\Tenant\Templates\Posts\Http\Resources\PostResource;
+use App\Tenant\SystemSettings\Services\TenantSystemSettingService;
 use App\Tenant\Templates\Models\Template;
+use App\Tenant\Templates\Posts\Http\Resources\PostResource;
 use Illuminate\Http\JsonResponse;
 
 class PublicPostController extends Controller
 {
     public function __construct(
         private readonly SystemSettingService $settings,
+        private readonly TenantSystemSettingService $tenantSettings,
     ) {}
 
     public function index(string $siteSlug): JsonResponse
@@ -22,12 +24,13 @@ class PublicPostController extends Controller
 
         $template = $this->publishedTemplate($siteSlug);
 
-        if (! $template) {
+        if (! $template || $this->tenantSettings->string($template->tenant, 'website.site_status', 'live') !== 'live') {
             return $this->error('Published site not found.', 404);
         }
 
         // Show published posts only.
         $posts = $template->posts()
+            ->with('template.tenant')
             ->where('status', 'published')
             ->whereNotNull('published_at')
             ->latest('published_at')
@@ -51,16 +54,21 @@ class PublicPostController extends Controller
                 ->first()
             : null;
 
-        if (! $template || ! $post) {
+        if (
+            ! $template
+            || $this->tenantSettings->string($template->tenant, 'website.site_status', 'live') !== 'live'
+            || ! $post
+        ) {
             return $this->error('Published post not found.', 404);
         }
 
-        return $this->success(new PostResource($post), 'Published post retrieved.');
+        return $this->success(new PostResource($post->load('template.tenant')), 'Published post retrieved.');
     }
 
     private function publishedTemplate(string $siteSlug): ?Template
     {
         return Template::query()
+            ->with('tenant')
             ->where('status', 'published')
             ->where('slug', $siteSlug)
             ->first();

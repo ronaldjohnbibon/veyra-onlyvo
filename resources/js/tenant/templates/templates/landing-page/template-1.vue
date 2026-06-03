@@ -2,6 +2,7 @@
 import { defaultTemplateCta } from '@/shared/templates/cta-presets'
 import FieldHelp from '@/shared/components/FieldHelp.vue'
 import TemplateCta from '@/tenant/templates/components/TemplateCta.vue'
+import { settingBoolean } from '@/tenant/templates/composables/useTenantPublicSettings'
 import type { TemplateCtaConfig, TemplateCtaField, TemplateRecord } from '@/shared/types/templates'
 import {
   BarChart3,
@@ -239,6 +240,9 @@ const contact = computed(() => ({
 }))
 
 const primaryCta = computed(() => ctaConfigFor(content.value.primary_cta))
+const ctaEnabled = computed(() =>
+  settingBoolean(props.template.tenant_settings, 'website.contact_form_enabled', true)
+)
 
 const iconFor = (name: unknown) => {
   const key = stringValue(name, 'analytics') as keyof typeof iconComponents
@@ -440,6 +444,7 @@ onBeforeUnmount(() => {
           <TemplateCta
             :template-id="props.template.id"
             :cta="primaryCta"
+            :enabled="ctaEnabled"
             class="contents"
             form-class="space-y-5"
             v-slot="{

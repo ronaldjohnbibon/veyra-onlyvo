@@ -2,6 +2,7 @@
 
 namespace App\Tenant\Templates\Posts\Http\Resources;
 
+use App\Tenant\SystemSettings\Services\TenantSystemSettingService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -12,18 +13,24 @@ class PostResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $template = $this->relationLoaded('template') ? $this->template : null;
+        $tenant   = $template?->relationLoaded('tenant') ? $template->tenant : null;
+
         return [
-            'id'             => $this->id,
-            'template_id'    => $this->template_id,
-            'title'          => $this->title,
-            'slug'           => $this->slug,
-            'content'        => $this->content,
-            'excerpt'        => str(strip_tags((string) $this->content))->limit(180)->toString(),
-            'featured_image' => $this->featuredImageUrl($request),
-            'status'         => $this->status,
-            'published_at'   => $this->published_at,
-            'created_at'     => $this->created_at,
-            'updated_at'     => $this->updated_at,
+            'id'              => $this->id,
+            'template_id'     => $this->template_id,
+            'site_slug'       => $template?->slug,
+            'site_name'       => $template?->business_name,
+            'title'           => $this->title,
+            'slug'            => $this->slug,
+            'content'         => $this->content,
+            'excerpt'         => str(strip_tags((string) $this->content))->limit(180)->toString(),
+            'featured_image'  => $this->featuredImageUrl($request),
+            'status'          => $this->status,
+            'tenant_settings' => $tenant ? app(TenantSystemSettingService::class)->values($tenant) : [],
+            'published_at'    => $this->published_at,
+            'created_at'      => $this->created_at,
+            'updated_at'      => $this->updated_at,
         ];
     }
 

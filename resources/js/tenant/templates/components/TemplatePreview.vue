@@ -2,6 +2,10 @@
 import { Button } from '@/shared/components/ui/button'
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/shared/components/ui/empty'
 import { getWebsiteTemplateComponent } from '@/tenant/templates/components/registry'
+import {
+  buttonRadius,
+  effectiveTemplate,
+} from '@/tenant/templates/composables/useTenantPublicSettings'
 import type { TemplateRecord } from '@/shared/types/templates'
 import { Maximize2, Monitor, Smartphone, Tablet } from 'lucide-vue-next'
 import { computed, ref, type CSSProperties } from 'vue'
@@ -21,9 +25,13 @@ const previewSizes = [
 type PreviewSizeKey = (typeof previewSizes)[number]['key']
 
 const selectedPreviewSize = ref<PreviewSizeKey>('full')
+const renderedTemplate = computed(() => effectiveTemplate(props.template))
 
 const templateComponent = computed(() => {
-  return getWebsiteTemplateComponent(props.template.website_type?.slug, props.template.template_key)
+  return getWebsiteTemplateComponent(
+    renderedTemplate.value.website_type?.slug,
+    renderedTemplate.value.template_key
+  )
 })
 
 const selectedPreview = computed(() => {
@@ -31,13 +39,14 @@ const selectedPreview = computed(() => {
 })
 
 const previewStyle = computed<CSSProperties>(() => ({
-  '--template-primary': props.template.primary_color,
-  '--template-secondary': props.template.secondary_color,
-  '--template-bg': props.template.background_color,
-  '--template-text': props.template.text_color,
-  backgroundColor: props.template.background_color,
-  color: props.template.text_color,
-  fontFamily: `${props.template.font_family}, Inter, sans-serif`,
+  '--template-primary': renderedTemplate.value.primary_color,
+  '--template-secondary': renderedTemplate.value.secondary_color,
+  '--template-bg': renderedTemplate.value.background_color,
+  '--template-text': renderedTemplate.value.text_color,
+  '--template-button-radius': buttonRadius(renderedTemplate.value.tenant_settings),
+  backgroundColor: renderedTemplate.value.background_color,
+  color: renderedTemplate.value.text_color,
+  fontFamily: `${renderedTemplate.value.font_family}, Inter, sans-serif`,
 }))
 
 const previewFrameStyle = computed<CSSProperties>(() => ({
@@ -75,7 +84,7 @@ const previewFrameStyle = computed<CSSProperties>(() => ({
         class="template-preview mx-auto min-h-full overflow-hidden rounded border bg-white transition-[width] duration-200"
         :style="[previewStyle, previewFrameStyle]"
       >
-        <component :is="templateComponent" v-if="templateComponent" :template="props.template" />
+        <component :is="templateComponent" v-if="templateComponent" :template="renderedTemplate" />
         <Empty v-else class="min-h-[320px] border-0">
           <EmptyHeader>
             <EmptyTitle>No template selected</EmptyTitle>
@@ -95,5 +104,12 @@ const previewFrameStyle = computed<CSSProperties>(() => ({
   --template-secondary: #0f766e;
   --template-bg: #ffffff;
   --template-text: #111827;
+  --template-button-radius: 8px;
+}
+
+.template-preview :deep(a),
+.template-preview :deep(button),
+.template-preview :deep([role='button']) {
+  border-radius: var(--template-button-radius);
 }
 </style>

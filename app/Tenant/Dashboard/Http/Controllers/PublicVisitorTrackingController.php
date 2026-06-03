@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Shared\SystemSettings\Services\SystemSettingService;
 use App\Tenant\Dashboard\Http\Requests\VisitorTrackingRequest;
 use App\Tenant\Dashboard\Services\VisitorTrackingService;
+use App\Tenant\SystemSettings\Services\TenantSystemSettingService;
 use Illuminate\Http\JsonResponse;
 use Sprout\Contracts\Tenant as CurrentTenant;
 
@@ -14,6 +15,7 @@ class PublicVisitorTrackingController extends Controller
     public function __construct(
         private readonly VisitorTrackingService $service,
         private readonly SystemSettingService $settings,
+        private readonly TenantSystemSettingService $tenantSettings,
     ) {}
 
     public function store(VisitorTrackingRequest $request, CurrentTenant $tenant): JsonResponse
@@ -24,6 +26,10 @@ class PublicVisitorTrackingController extends Controller
 
         if (! $this->settings->boolean('analytics.enable_visitor_tracking', true)) {
             return $this->success(null, 'Visitor tracking disabled.');
+        }
+
+        if (! $this->tenantSettings->boolean($tenant, 'analytics.enable_visitor_tracking', true)) {
+            return $this->success(null, 'Tenant visitor tracking disabled.');
         }
 
         $visit = $this->service->record($request, (string) $tenant->getTenantKey(), $request->validated());

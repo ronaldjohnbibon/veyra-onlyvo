@@ -2,6 +2,7 @@
 
 namespace App\Tenant\Templates\Http\Resources;
 
+use App\Tenant\SystemSettings\Services\TenantSystemSettingService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -12,6 +13,9 @@ class TemplateResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $tenantSettings = app(TenantSystemSettingService::class);
+        $tenant         = $this->relationLoaded('tenant') ? $this->tenant : null;
+
         return [
             'id'               => $this->id,
             'tenant_id'        => $this->tenant_id,
@@ -33,6 +37,7 @@ class TemplateResource extends JsonResource
             'text_color'       => $this->text_color,
             'status'           => $this->status,
             'is_default'       => (bool) $this->is_default,
+            'tenant_settings'  => $tenant ? $tenantSettings->values($tenant) : [],
             'created_at'       => $this->created_at,
             'updated_at'       => $this->updated_at,
         ];

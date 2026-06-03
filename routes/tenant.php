@@ -6,6 +6,7 @@ use App\Tenant\Dashboard\Http\Controllers\PublicCtaTrackingController;
 use App\Tenant\Dashboard\Http\Controllers\PublicVisitorTrackingController;
 use App\Tenant\DesignRequests\Http\Controllers\DesignRequestController;
 use App\Tenant\Sidebar\Http\Controllers\TenantSidebarController;
+use App\Tenant\SystemSettings\Http\Controllers\TenantSystemSettingController;
 use App\Tenant\Templates\Http\Controllers\PublicTemplateController;
 use App\Tenant\Templates\Http\Controllers\TemplateController;
 use App\Tenant\Templates\Http\Controllers\TemplateCtaSubmissionController;
@@ -33,6 +34,10 @@ Route::prefix('app')->name('app.')->group(function (): void {
             Route::get('design-requests/{designRequest}', [DesignRequestController::class, 'show'])->name('design-requests.show');
 
             Route::apiResource('sidebars', TenantSidebarController::class);
+
+            Route::put('system-settings', [TenantSystemSettingController::class, 'updateBulk'])->name('system-settings.update-bulk');
+            Route::post('system-settings/images', [TenantSystemSettingController::class, 'uploadImage'])->name('system-settings.images.store');
+            Route::get('system-settings', [TenantSystemSettingController::class, 'index'])->name('system-settings.index');
 
             Route::get('templates/website-types', [TemplateController::class, 'websiteTypes'])->name('templates.website-types');
             Route::get('templates/website-types/{websiteType}/templates', [TemplateController::class, 'websiteTypeTemplates'])->name('templates.website-types.templates');

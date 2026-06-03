@@ -1,6 +1,11 @@
 <script setup lang="ts">
+import TenantComplianceNotice from '@/tenant/templates/components/TenantComplianceNotice.vue'
 import { formatDisplayDate } from '@/shared/utils/date'
 import { useAnalyticsStore } from '@/tenant/dashboard/analytics-store'
+import {
+  applyTenantPublicHead,
+  fallbackImage,
+} from '@/tenant/templates/composables/useTenantPublicSettings'
 import { usePublicPostStore } from '@/tenant/templates/posts/public-post-store'
 import { computed, onMounted, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
@@ -16,9 +21,22 @@ const loadPost = async (): Promise<void> => {
   await publicPostStore.loadPost(siteSlug.value, postSlug.value)
 
   if (publicPostStore.post) {
+    applyTenantPublicHead(publicPostStore.post.tenant_settings, {
+      title: publicPostStore.post.title,
+      description: publicPostStore.post.excerpt,
+      image:
+        publicPostStore.post.featured_image || fallbackImage(publicPostStore.post.tenant_settings),
+      path: window.location.pathname,
+    })
     await analyticsStore.trackPublicVisit(publicPostStore.post.template_id, window.location.href)
   }
 }
+
+const postImage = computed(() => {
+  return (
+    publicPostStore.post?.featured_image || fallbackImage(publicPostStore.post?.tenant_settings)
+  )
+})
 
 onMounted(loadPost)
 watch([siteSlug, postSlug], loadPost)
@@ -28,7 +46,7 @@ watch([siteSlug, postSlug], loadPost)
   <main class="min-h-screen bg-background">
     <article v-if="publicPostStore.post" class="mx-auto max-w-3xl px-6 py-12">
       <RouterLink
-        :to="{ name: 'public.sites.show', params: { siteSlug } }"
+        :to="{ name: 'public.sites.show', params: { siteSlug: publicPostStore.post.site_slug } }"
         class="text-sm font-medium text-primary hover:underline"
       >
         Back to site
@@ -48,8 +66,8 @@ watch([siteSlug, postSlug], loadPost)
       </h1>
 
       <img
-        v-if="publicPostStore.post.featured_image"
-        :src="publicPostStore.post.featured_image"
+        v-if="postImage"
+        :src="postImage"
         :alt="publicPostStore.post.title"
         class="mt-8 aspect-video w-full rounded object-cover"
       />
@@ -68,5 +86,10 @@ watch([siteSlug, postSlug], loadPost)
         This post is not published yet or no longer exists.
       </p>
     </section>
+
+    <TenantComplianceNotice
+      v-if="publicPostStore.post"
+      :settings="publicPostStore.post.tenant_settings"
+    />
   </main>
 </template>

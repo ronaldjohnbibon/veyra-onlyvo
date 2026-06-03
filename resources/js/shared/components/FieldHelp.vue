@@ -24,8 +24,20 @@ const hasDefaultSlot = computed(() => Boolean(slots.default))
 </script>
 
 <template>
-  <div :class="cn(hasDefaultSlot ? 'relative' : 'inline-flex items-center', props.class)">
-    <slot />
+  <div
+    :class="
+      cn(
+        hasDefaultSlot
+          ? 'flex w-full max-w-full items-start gap-2 align-top'
+          : 'inline-flex items-center',
+        props.class
+      )
+    "
+  >
+    <div v-if="hasDefaultSlot" class="min-w-0 flex-1">
+      <slot />
+    </div>
+    <slot v-else />
 
     <TooltipProvider v-if="showFieldDescriptions && hasDescription" :delay-duration="150">
       <Tooltip>
@@ -35,8 +47,8 @@ const hasDefaultSlot = computed(() => Boolean(slots.default))
             aria-label="Field help"
             :class="
               cn(
-                'inline-flex size-4 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-                hasDefaultSlot ? 'absolute -right-2 -top-2 z-10 bg-background/90' : ''
+                'inline-flex size-4 shrink-0 items-center justify-center rounded-full bg-background/90 text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+                hasDefaultSlot ? 'mt-1' : ''
               )
             "
           >

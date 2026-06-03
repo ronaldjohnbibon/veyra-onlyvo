@@ -93,7 +93,7 @@ const socialLinks = computed(() => {
           </p>
           <div class="mt-8 flex flex-wrap gap-3">
             <a
-              href="#contact"
+              :href="String(content.primary_cta_url ?? '#contact')"
               class="rounded bg-[var(--template-primary)] px-5 py-3 text-sm font-semibold text-white"
             >
               {{ content.primary_cta_label ?? 'Start a project' }}

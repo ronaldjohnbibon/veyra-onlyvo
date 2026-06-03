@@ -170,6 +170,7 @@ export interface TemplateRecord {
   text_color: string
   status: TemplateStatus
   is_default: boolean
+  tenant_settings?: Record<string, string | number | boolean | null>
   created_at?: string
   updated_at?: string
 }

@@ -34,6 +34,31 @@ class AnalyticsService
         ];
     }
 
+    public function pruneExpired(string $tenantId, int $retentionDays): void
+    {
+        $cutoff = now()->subDays(max(1, $retentionDays))->toDateString();
+
+        DB::table('visitor_visits')
+            ->where('tenant_id', $tenantId)
+            ->where('visit_date', '<', $cutoff)
+            ->delete();
+
+        DB::table('visitor_unique_visitors')
+            ->where('tenant_id', $tenantId)
+            ->where('visit_date', '<', $cutoff)
+            ->delete();
+
+        DB::table('cta_events')
+            ->where('tenant_id', $tenantId)
+            ->where('event_date', '<', $cutoff)
+            ->delete();
+
+        DB::table('cta_unique_visitors')
+            ->where('tenant_id', $tenantId)
+            ->where('event_date', '<', $cutoff)
+            ->delete();
+    }
+
     /**
      * @return array<string, int>
      */

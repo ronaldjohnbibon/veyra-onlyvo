@@ -22,11 +22,13 @@ const props = withDefaults(
     selectClass?: string
     checkboxClass?: string
     buttonClass?: string
+    enabled?: boolean
   }>(),
   {
     class: '',
     titleClass: 'text-2xl font-semibold',
     descriptionClass: 'text-sm',
+    enabled: true,
   }
 )
 
@@ -57,7 +59,9 @@ const runtimeSettings =
       __SYSTEM_SETTINGS__?: Record<string, string | boolean | number | null>
     }
   ).__SYSTEM_SETTINGS__ ?? {}
-const ctaFormsEnabled = computed(() => runtimeSettings['feature_flags.enable_cta_forms'] !== false)
+const ctaFormsEnabled = computed(
+  () => props.enabled && runtimeSettings['feature_flags.enable_cta_forms'] !== false
+)
 </script>
 
 <template>

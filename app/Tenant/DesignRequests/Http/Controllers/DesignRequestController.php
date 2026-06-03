@@ -8,6 +8,8 @@ use App\Tenant\DesignRequests\Http\Requests\DesignRequestRequest;
 use App\Tenant\DesignRequests\Http\Resources\DesignRequestResource;
 use App\Tenant\DesignRequests\Models\DesignRequest;
 use App\Tenant\DesignRequests\Services\DesignRequestService;
+use App\Tenant\SystemSettings\Services\TenantNotificationService;
+use App\Tenant\Tenants\Models\Tenant;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -17,6 +19,7 @@ class DesignRequestController extends Controller
     public function __construct(
         private readonly DesignRequestService $service,
         private readonly SystemSettingService $settings,
+        private readonly TenantNotificationService $notifications,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -63,6 +66,11 @@ class DesignRequestController extends Controller
         abort_unless($user?->tenant_id, 403);
 
         $designRequest = $this->service->create($user, $request->validated());
+        $tenant        = Tenant::query()->find($user->tenant_id);
+
+        if ($tenant) {
+            $this->notifications->sendDesignRequest($designRequest, $tenant);
+        }
 
         return $this->success(new DesignRequestResource($designRequest), 'Design request submitted.', 201);
     }
