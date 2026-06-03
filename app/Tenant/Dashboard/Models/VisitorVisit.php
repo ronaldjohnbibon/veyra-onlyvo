@@ -7,10 +7,12 @@ use App\Tenant\Tenants\Models\Tenant;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Sprout\Attributes\TenantRelation;
+use Sprout\Database\Eloquent\Concerns\BelongsToTenant;
 
 class VisitorVisit extends Model
 {
-    use HasUuids;
+    use BelongsToTenant, HasUuids;
 
     protected $fillable = [
         'tenant_id',
@@ -32,6 +34,7 @@ class VisitorVisit extends Model
         ];
     }
 
+    #[TenantRelation]
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class);

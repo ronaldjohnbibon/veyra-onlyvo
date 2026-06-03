@@ -112,7 +112,7 @@ return new class extends Migration
                     ['image' => '/template-assets/infinite-loop/gallery-tn-05.jpg', 'full_image' => '/template-assets/infinite-loop/gallery-img-05.jpg', 'title' => 'Workstation', 'highlight' => 'Offices'],
                     ['image' => '/template-assets/infinite-loop/gallery-tn-06.jpg', 'full_image' => '/template-assets/infinite-loop/gallery-img-06.jpg', 'title' => 'Just Above', 'highlight' => 'The City'],
                 ],
-                'primary_cta'              => [
+                'primary_cta' => [
                     'type'            => 'contact_message',
                     'label'           => 'Contact message',
                     'title'           => 'Contact Us',

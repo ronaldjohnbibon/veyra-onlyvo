@@ -10,13 +10,13 @@ class TenantResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id'              => $this->id,
-            'name'            => $this->name,
-            'subdomain'       => $this->subdomain,
-            'settings'        => $this->settings,
-            'timezone'        => $this->timezone,
-            'status'          => $this->status,
-            'owner'           => $this->whenLoaded('owner', fn () => [
+            'id'        => $this->id,
+            'name'      => $this->name,
+            'subdomain' => $this->subdomain,
+            'settings'  => $this->settings,
+            'timezone'  => $this->timezone,
+            'status'    => $this->status,
+            'owner'     => $this->whenLoaded('owner', fn () => [
                 'id'         => $this->owner?->id,
                 'name'       => $this->owner?->name,
                 'first_name' => $this->owner?->first_name,

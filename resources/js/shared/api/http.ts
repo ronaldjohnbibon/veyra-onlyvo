@@ -1,5 +1,6 @@
 import axios, { type AxiosError, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios'
 import { useConfirmStore } from '@/shared/stores/confirm-store'
+import { useLoadingStore } from '@/shared/stores/loading-store'
 import { useToastStore } from '@/shared/stores/toast-store'
 
 interface ApiResponse {
@@ -89,6 +90,8 @@ http.interceptors.request.use(
       }
     }
 
+    useLoadingStore().start()
+
     return config
   },
   (error: AxiosError): Promise<never> => Promise.reject(error)
@@ -96,6 +99,8 @@ http.interceptors.request.use(
 
 http.interceptors.response.use(
   (response: AxiosResponse<ApiResponse>): AxiosResponse<ApiResponse> => {
+    useLoadingStore().stop()
+
     if (response.config.method?.toLowerCase() !== 'get' && !isSilentRequest(response.config)) {
       notifySuccess(response.data?.message)
     }
@@ -103,6 +108,8 @@ http.interceptors.response.use(
     return response
   },
   (error: unknown): Promise<never> => {
+    useLoadingStore().stop()
+
     const silent = axios.isAxiosError<ApiResponse>(error) && isSilentRequest(error.config)
 
     if (axios.isAxiosError<ApiResponse>(error) && error.code !== 'ERR_CANCELED' && !silent) {

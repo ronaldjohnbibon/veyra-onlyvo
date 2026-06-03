@@ -2,12 +2,12 @@
 
 namespace App\Admin\DesignRequests\Http\Controllers;
 
-use App\Http\Controllers\Controller;
-use App\Shared\Enums\UserType;
 use App\Admin\DesignRequests\Http\Requests\AdminDesignRequestStatusRequest;
 use App\Admin\DesignRequests\Http\Resources\DesignRequestResource;
 use App\Admin\DesignRequests\Models\DesignRequest;
 use App\Admin\DesignRequests\Services\DesignRequestService;
+use App\Http\Controllers\Controller;
+use App\Shared\Enums\UserType;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;

@@ -2,11 +2,11 @@
 
 namespace App\Admin\Templates\Http\Controllers;
 
-use App\Http\Controllers\Controller;
-use App\Shared\Enums\UserType;
 use App\Admin\Templates\Http\Requests\WebsiteTypeRequest;
 use App\Admin\Templates\Http\Resources\WebsiteTypeResource;
 use App\Admin\Templates\Models\WebsiteType;
+use App\Http\Controllers\Controller;
+use App\Shared\Enums\UserType;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;

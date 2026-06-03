@@ -7,10 +7,12 @@ use App\Tenant\Tenants\Models\Tenant;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Sprout\Attributes\TenantRelation;
+use Sprout\Database\Eloquent\Concerns\BelongsToTenant;
 
 class VisitorUniqueVisitor extends Model
 {
-    use HasUuids;
+    use BelongsToTenant, HasUuids;
 
     protected $table = 'visitor_unique_visitors';
 
@@ -32,6 +34,7 @@ class VisitorUniqueVisitor extends Model
         ];
     }
 
+    #[TenantRelation]
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class);

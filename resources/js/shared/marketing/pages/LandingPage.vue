@@ -1,7 +1,5 @@
 <script setup lang="ts">
 import { Button } from '@/shared/components/ui/button'
-import { useAdminAuthStore } from '@/admin/auth/auth-store'
-import { useAuthStore } from '@/tenant/auth/auth-store'
 import {
   ArrowRight,
   BarChart3,
@@ -17,8 +15,6 @@ import {
 } from 'lucide-vue-next'
 import { computed } from 'vue'
 
-const tenantAuthStore = useAuthStore()
-const adminAuthStore = useAdminAuthStore()
 const runtimeSettings =
   (
     window as unknown as {
@@ -52,11 +48,13 @@ const socialLinks = computed(() =>
 )
 
 const dashboardRoute = computed(() => {
-  return adminAuthStore.isAuthenticated ? { name: 'admin.dashboard' } : { name: 'sidebar.index' }
+  return localStorage.getItem('admin_token')
+    ? { name: 'admin.dashboard' }
+    : { name: 'sidebar.index' }
 })
 
 const showDashboardCta = computed(() => {
-  return tenantAuthStore.isAuthenticated || adminAuthStore.isAuthenticated
+  return !!(localStorage.getItem('tenant_token') || localStorage.getItem('admin_token'))
 })
 
 const heroImage = '/template-assets/infinite-loop/infinite-loop-01.jpg'

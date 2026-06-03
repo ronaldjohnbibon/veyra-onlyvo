@@ -182,43 +182,43 @@ class TrackingLogService
         $utm = $this->utmValues((string) ($row->landing_page_url ?? ''));
 
         return [
-            'id'                  => $row->source.'-'.$row->source_id,
-            'source'              => $row->source,
-            'source_id'           => $row->source_id,
-            'event_type'          => $row->event_type,
-            'event_type_label'    => $this->eventTypeLabel((string) $row->event_type),
-            'event_name'          => $this->titleText((string) ($row->event_name ?? '')),
-            'tenant_id'           => $row->tenant_id,
-            'tenant_name'         => $row->tenant_name,
-            'template_id'         => $row->template_id,
-            'template_name'       => $row->template_name,
-            'website_template'    => $this->websiteTemplate($row),
-            'landing_page_url'    => $row->landing_page_url,
-            'visitor_identifier'  => $row->visitor_identifier,
-            'session_identifier'  => $row->session_identifier,
-            'referrer_url'        => $row->referrer_url,
-            'utm_source'          => $utm['utm_source'],
-            'utm_medium'          => $utm['utm_medium'],
-            'utm_campaign'        => $utm['utm_campaign'],
-            'device_type'         => $this->deviceType((string) ($row->user_agent ?? '')),
-            'browser'             => $this->browser((string) ($row->user_agent ?? '')),
-            'operating_system'    => $this->operatingSystem((string) ($row->user_agent ?? '')),
-            'ip_address'          => $row->ip_address,
-            'country_location'    => $row->country_location,
-            'conversion_status'   => $row->conversion_status,
-            'created_at'          => $row->created_at,
+            'id'                 => $row->source.'-'.$row->source_id,
+            'source'             => $row->source,
+            'source_id'          => $row->source_id,
+            'event_type'         => $row->event_type,
+            'event_type_label'   => $this->eventTypeLabel((string) $row->event_type),
+            'event_name'         => $this->titleText((string) ($row->event_name ?? '')),
+            'tenant_id'          => $row->tenant_id,
+            'tenant_name'        => $row->tenant_name,
+            'template_id'        => $row->template_id,
+            'template_name'      => $row->template_name,
+            'website_template'   => $this->websiteTemplate($row),
+            'landing_page_url'   => $row->landing_page_url,
+            'visitor_identifier' => $row->visitor_identifier,
+            'session_identifier' => $row->session_identifier,
+            'referrer_url'       => $row->referrer_url,
+            'utm_source'         => $utm['utm_source'],
+            'utm_medium'         => $utm['utm_medium'],
+            'utm_campaign'       => $utm['utm_campaign'],
+            'device_type'        => $this->deviceType((string) ($row->user_agent ?? '')),
+            'browser'            => $this->browser((string) ($row->user_agent ?? '')),
+            'operating_system'   => $this->operatingSystem((string) ($row->user_agent ?? '')),
+            'ip_address'         => $row->ip_address,
+            'country_location'   => $row->country_location,
+            'conversion_status'  => $row->conversion_status,
+            'created_at'         => $row->created_at,
         ];
     }
 
     private function eventTypeLabel(string $eventType): string
     {
         return match ($eventType) {
-            'website_visit'    => 'Website Visit',
-            'cta_view'         => 'CTA View',
-            'cta_click'        => 'CTA Click',
-            'form_submission'  => 'Form Submission',
-            'conversion'       => 'Conversion',
-            default            => $this->titleText($eventType),
+            'website_visit'   => 'Website Visit',
+            'cta_view'        => 'CTA View',
+            'cta_click'       => 'CTA Click',
+            'form_submission' => 'Form Submission',
+            'conversion'      => 'Conversion',
+            default           => $this->titleText($eventType),
         };
     }
 
@@ -290,12 +290,12 @@ class TrackingLogService
         }
 
         return match (true) {
-            str_contains($userAgent, 'Edg/') || str_contains($userAgent, 'Edge/') => 'Edge',
-            str_contains($userAgent, 'OPR/') || str_contains($userAgent, 'Opera') => 'Opera',
-            str_contains($userAgent, 'Chrome/') || str_contains($userAgent, 'CriOS/') => 'Chrome',
+            str_contains($userAgent, 'Edg/')     || str_contains($userAgent, 'Edge/')      => 'Edge',
+            str_contains($userAgent, 'OPR/')     || str_contains($userAgent, 'Opera')      => 'Opera',
+            str_contains($userAgent, 'Chrome/')  || str_contains($userAgent, 'CriOS/')  => 'Chrome',
             str_contains($userAgent, 'Firefox/') || str_contains($userAgent, 'FxiOS/') => 'Firefox',
-            str_contains($userAgent, 'Safari/') => 'Safari',
-            default => 'Other',
+            str_contains($userAgent, 'Safari/')                                        => 'Safari',
+            default                                                                    => 'Other',
         };
     }
 
@@ -306,12 +306,12 @@ class TrackingLogService
         }
 
         return match (true) {
-            str_contains($userAgent, 'Windows') => 'Windows',
-            str_contains($userAgent, 'iPhone') || str_contains($userAgent, 'iPad') => 'iOS',
+            str_contains($userAgent, 'Windows')                                         => 'Windows',
+            str_contains($userAgent, 'iPhone') || str_contains($userAgent, 'iPad')      => 'iOS',
             str_contains($userAgent, 'Mac OS') || str_contains($userAgent, 'Macintosh') => 'macOS',
-            str_contains($userAgent, 'Android') => 'Android',
-            str_contains($userAgent, 'Linux') => 'Linux',
-            default => 'Other',
+            str_contains($userAgent, 'Android')                                         => 'Android',
+            str_contains($userAgent, 'Linux')                                           => 'Linux',
+            default                                                                     => 'Other',
         };
     }
 
@@ -349,7 +349,7 @@ class TrackingLogService
                 ['value' => 'form_submission', 'label' => 'Form Submission'],
                 ['value' => 'conversion', 'label' => 'Conversion'],
             ],
-            'templates' => $templates,
+            'templates'           => $templates,
             'conversion_statuses' => Collection::make(['success'])
                 ->merge($statuses)
                 ->unique()

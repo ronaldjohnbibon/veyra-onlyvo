@@ -2,8 +2,8 @@
 
 namespace App\Tenant\Templates\Posts\Services;
 
-use App\Tenant\Templates\Posts\Models\Post;
 use App\Tenant\Templates\Models\Template;
+use App\Tenant\Templates\Posts\Models\Post;
 use Illuminate\Support\Str;
 
 class PostService

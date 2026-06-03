@@ -3,8 +3,8 @@
 namespace Database\Seeders;
 
 use App\Tenant\Sidebar\Models\Sidebar;
-use Illuminate\Database\Seeder;
 use App\Tenant\Tenants\Models\Tenant;
+use Illuminate\Database\Seeder;
 
 class SidebarSeeder extends Seeder
 {

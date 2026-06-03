@@ -2,12 +2,12 @@
 
 namespace App\Admin\Tenants\Http\Controllers;
 
-use App\Http\Controllers\Controller;
-use App\Shared\Enums\UserType;
 use App\Admin\Tenants\Http\Requests\TenantRequest;
 use App\Admin\Tenants\Http\Resources\TenantResource;
 use App\Admin\Tenants\Models\Tenant;
 use App\Admin\Tenants\Services\TenantService;
+use App\Http\Controllers\Controller;
+use App\Shared\Enums\UserType;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;

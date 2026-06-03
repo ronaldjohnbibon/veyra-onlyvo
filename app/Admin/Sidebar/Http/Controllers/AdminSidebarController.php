@@ -2,12 +2,12 @@
 
 namespace App\Admin\Sidebar\Http\Controllers;
 
-use App\Http\Controllers\Controller;
-use App\Shared\Enums\UserType;
 use App\Admin\Sidebar\Http\Requests\SidebarRequest;
 use App\Admin\Sidebar\Http\Resources\SidebarResource;
 use App\Admin\Sidebar\Models\Sidebar;
 use App\Admin\Sidebar\Services\SidebarService;
+use App\Http\Controllers\Controller;
+use App\Shared\Enums\UserType;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
