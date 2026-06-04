@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import { Checkbox } from '@/shared/components/ui/checkbox'
 import { Field, FieldError, FieldGroup, FieldLabel, FieldSet } from '@/shared/components/ui/field'
@@ -14,77 +15,212 @@ import type {
   SystemSettingsPayload,
 } from '@/admin/system-settings/types'
 import {
-  AppWindow,
   BarChart3,
-  Building2,
-  Database,
-  FileText,
-  Globe2,
+  Bell,
+  Brush,
+  CheckCircle2,
+  CircleAlert,
+  Clock,
+  ExternalLink,
   History,
-  KeyRound,
-  Mail,
+  IdCard,
+  Info,
+  Rocket,
   Save,
-  Share2,
-  Shield,
-  SlidersHorizontal,
-  ToggleLeft,
+  Search,
+  ShieldCheck,
   Upload,
-  Wrench,
   X,
 } from 'lucide-vue-next'
 import type { Component } from 'vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 
+type TaskSectionKey =
+  | 'profile'
+  | 'launch'
+  | 'seo'
+  | 'branding'
+  | 'notifications'
+  | 'compliance'
+  | 'analytics'
+  | 'history'
+
+interface TaskSection {
+  key: TaskSectionKey
+  label: string
+  title: string
+  description: string
+  task: string
+  icon: Component
+  groupKeys: string[]
+}
+
 const settingStore = useAdminSystemSettingStore()
 const form = reactive<SystemSettingsPayload>({})
 const formError = ref('')
-const activeSection = ref('general')
+const saveNotice = ref('')
+const savedSnapshot = ref('')
+const activeSection = ref<TaskSectionKey>('profile')
 const imageUploadErrors = reactive<Record<string, string>>({})
 const imageUploading = reactive<Record<string, boolean>>({})
 const imagePreviewFailed = reactive<Record<string, boolean>>({})
 
-const iconMap: Record<string, Component> = {
-  general: AppWindow,
-  authentication: KeyRound,
-  security: Shield,
-  tenant_defaults: Building2,
-  feature_flags: ToggleLeft,
-  email: Mail,
-  analytics: BarChart3,
-  storage: Database,
-  maintenance: Wrench,
-  seo: Globe2,
-  compliance: FileText,
-  social: Share2,
-  history: History,
+const taskSections: TaskSection[] = [
+  {
+    key: 'profile',
+    label: 'Profile',
+    title: 'Platform Profile',
+    description: 'Set the platform identity and support details shown to admins and tenants.',
+    task: 'Keep the platform name, logo, and support contact details current.',
+    icon: IdCard,
+    groupKeys: ['general'],
+  },
+  {
+    key: 'launch',
+    label: 'Launch',
+    title: 'Tenant Launch Controls',
+    description: 'Control registration, tenant defaults, feature access, uploads, and maintenance.',
+    task: 'Use these settings to decide what new tenants can do and what modules are available.',
+    icon: Rocket,
+    groupKeys: ['authentication', 'tenant_defaults', 'feature_flags', 'storage', 'maintenance'],
+  },
+  {
+    key: 'seo',
+    label: 'SEO',
+    title: 'SEO and Public Metadata',
+    description: 'Set platform-wide search, social preview, and canonical domain defaults.',
+    task: 'Make public pages readable to search engines and clean when shared.',
+    icon: Search,
+    groupKeys: ['seo'],
+  },
+  {
+    key: 'branding',
+    label: 'Branding',
+    title: 'Social and Brand Presence',
+    description: 'Connect public social profiles and brand-facing links.',
+    task: 'Keep public social destinations accurate for marketing and footer surfaces.',
+    icon: Brush,
+    groupKeys: ['social'],
+  },
+  {
+    key: 'notifications',
+    label: 'Notifications',
+    title: 'Email Delivery',
+    description: 'Configure the mail driver and sender identity used for platform email.',
+    task: 'Make sure transactional emails have a valid sender and delivery provider.',
+    icon: Bell,
+    groupKeys: ['email'],
+  },
+  {
+    key: 'compliance',
+    label: 'Compliance',
+    title: 'Access, Security, and Policies',
+    description: 'Manage admin access controls, password rules, and public legal policy links.',
+    task: 'Review security limits and policy URLs before opening the platform to tenants.',
+    icon: ShieldCheck,
+    groupKeys: ['security', 'compliance'],
+  },
+  {
+    key: 'analytics',
+    label: 'Analytics',
+    title: 'Analytics Capture',
+    description: 'Control whether visits and CTA events are captured across public tenant sites.',
+    task: 'Enable only the tracking signals that admins and tenants need to act on.',
+    icon: BarChart3,
+    groupKeys: ['analytics'],
+  },
+  {
+    key: 'history',
+    label: 'History',
+    title: 'Change History',
+    description: 'Review recent setting updates and who made them.',
+    task: 'Use history to audit platform configuration changes.',
+    icon: History,
+    groupKeys: [],
+  },
+]
+
+const fieldCopy: Record<string, string> = {
+  'general.application_name': 'The platform name shown in browser titles, dashboards, and public metadata.',
+  'general.application_description': 'A short platform summary used when public pages need fallback metadata.',
+  'general.logo': 'The main app logo. Use a clear PNG, SVG, or WebP that works on light backgrounds.',
+  'general.favicon': 'The browser tab icon. Square images or ICO files work best.',
+  'general.support_email': 'The support inbox shown to tenants when they need platform help.',
+  'general.support_phone': 'Optional support phone number shown in public or tenant-facing areas.',
+  'general.company_address': 'Company address used in public compliance and support surfaces.',
+  'general.show_field_descriptions': 'Shows helpful field descriptions across the app for admins and tenants.',
+  'authentication.allow_tenant_registration': 'Lets new tenants create accounts from the registration page.',
+  'authentication.require_email_verification': 'Requires tenant users to confirm email before logging in.',
+  'security.session_lifetime_minutes': 'How long users can stay signed in before their session expires.',
+  'security.login_rate_limit_attempts': 'How many failed login attempts are allowed before rate limiting.',
+  'security.login_rate_limit_window_minutes': 'Time window used to count failed login attempts.',
+  'security.require_strong_passwords': 'Requires stronger passwords for account security.',
+  'security.minimum_password_length': 'Minimum number of characters accepted for passwords.',
+  'security.allowed_admin_ips': 'Optional allow-list for admin access. Use IPs or CIDR ranges, separated by commas or lines.',
+  'tenant_defaults.default_tenant_timezone': 'Timezone assigned to new tenants until they change it.',
+  'tenant_defaults.default_tenant_status': 'Initial status for newly created tenants.',
+  'tenant_defaults.default_tenant_trial_days': 'Trial length assigned to new tenants.',
+  'tenant_defaults.default_tenant_template_type': 'Default website type slug used during tenant setup.',
+  'tenant_defaults.default_tenant_template_key': 'Default template key used with the selected website type.',
+  'feature_flags.enable_templates_module': 'Shows or hides template builder features for tenants.',
+  'feature_flags.enable_posts_module': 'Shows or hides tenant post management.',
+  'feature_flags.enable_analytics_module': 'Shows or hides analytics dashboards and capture features.',
+  'feature_flags.enable_design_requests_module': 'Shows or hides tenant/admin design request workflows.',
+  'feature_flags.enable_cta_forms': 'Allows CTA forms to collect public submissions.',
+  'feature_flags.enable_tracking_logs': 'Shows or hides raw tracking log tooling.',
+  'email.mail_driver': 'The mail provider used to send platform email.',
+  'email.smtp_host': 'SMTP server host name, when SMTP delivery is selected.',
+  'email.smtp_port': 'SMTP server port. Common values are 587 or 465.',
+  'email.smtp_username': 'SMTP username, if your provider requires one.',
+  'email.smtp_password': 'SMTP password or provider token. Leave blank if not required.',
+  'email.sender_name': 'Name recipients see in the From field.',
+  'email.sender_email': 'Email address recipients see in the From field.',
+  'analytics.enable_visitor_tracking': 'Records public website visits for tenant analytics.',
+  'analytics.enable_cta_tracking': 'Records CTA views, clicks, and submissions for conversion analytics.',
+  'storage.maximum_upload_size': 'Maximum upload size in KB for images and other tenant assets.',
+  'storage.allowed_file_types': 'Comma-separated file extensions tenants may upload.',
+  'maintenance.maintenance_mode': 'Temporarily blocks affected platform areas while maintenance is active.',
+  'maintenance.maintenance_message': 'Message shown to users while maintenance is active.',
+  'maintenance.maintenance_start_time': 'Optional scheduled start time for maintenance messaging.',
+  'maintenance.maintenance_end_time': 'Optional scheduled end time for maintenance messaging.',
+  'maintenance.allow_admin_bypass': 'Allows admins to continue using the platform during maintenance.',
+  'maintenance.maintenance_affected_areas': 'Paths affected by maintenance, one per line or separated by commas.',
+  'seo.default_meta_title': 'Fallback title used for public platform pages and social previews.',
+  'seo.default_meta_description': 'Fallback description used in search and sharing previews.',
+  'seo.open_graph_image': 'Default image shown when public pages are shared.',
+  'seo.allow_search_engine_indexing': 'Allows search engines to index public platform pages.',
+  'seo.canonical_domain': 'Preferred public domain for canonical URLs.',
+  'compliance.privacy_policy_url': 'Public link to the platform privacy policy.',
+  'compliance.terms_of_service_url': 'Public link to platform terms of service.',
+  'compliance.cookie_notice_enabled': 'Shows cookie notice messaging where supported.',
+  'social.facebook_url': 'Public Facebook page or profile URL.',
+  'social.instagram_url': 'Public Instagram profile URL.',
+  'social.linkedin_url': 'Public LinkedIn page or profile URL.',
+  'social.twitter_url': 'Public X/Twitter profile URL.',
+  'social.youtube_url': 'Public YouTube channel URL.',
 }
 
-const sections = computed(() => [
-  ...settingStore.groups.map((group) => ({
-    key: group.key,
-    label: group.label,
-    icon: iconMap[group.key] ?? SlidersHorizontal,
-  })),
-  { key: 'history', label: 'History', icon: History },
-])
-
-const currentGroup = computed<SystemSettingGroup | null>(() => {
-  return settingStore.groups.find((group) => group.key === activeSection.value) ?? null
+const activeTaskSection = computed(() => {
+  return taskSections.find((section) => section.key === activeSection.value) ?? taskSections[0]
 })
 
-const activeSectionLabel = computed(() => {
-  return sections.value.find((section) => section.key === activeSection.value)?.label ?? 'Settings'
+const currentSectionGroups = computed<SystemSettingGroup[]>(() => {
+  if (activeSection.value === 'history') return []
+
+  return activeTaskSection.value.groupKeys
+    .map((key) => settingStore.groups.find((group) => group.key === key))
+    .filter((group): group is SystemSettingGroup => Boolean(group))
 })
 
-const settingHelp = (setting: SystemSettingItem): string => {
-  return setting.description ?? 'Enter the value for this setting.'
-}
-
-const getGroupName = (setting: SystemSettingItem): string => setting.key.split('.')[0] ?? ''
+const currentSettings = computed<SystemSettingItem[]>(() => {
+  return currentSectionGroups.value.flatMap((group) => group.settings)
+})
 
 const ensureGroup = (group: string): void => {
   form[group] ??= {}
 }
+
+const getGroupName = (setting: SystemSettingItem): string => setting.key.split('.')[0] ?? ''
 
 const getSettingValue = (setting: SystemSettingItem): SystemSettingValue => {
   const group = getGroupName(setting)
@@ -98,6 +234,25 @@ const setSettingValue = (setting: SystemSettingItem, value: SystemSettingValue):
   form[group][setting.name] = value
 }
 
+const payloadForSave = (): SystemSettingsPayload => {
+  const payload: SystemSettingsPayload = {}
+
+  for (const group of settingStore.groups) {
+    payload[group.key] = {}
+
+    for (const setting of group.settings) {
+      const value = getSettingValue(setting)
+      payload[group.key][setting.name] = setting.type === 'integer' ? Number(value || 0) : value
+    }
+  }
+
+  return payload
+}
+
+const syncSavedSnapshot = (): void => {
+  savedSnapshot.value = JSON.stringify(payloadForSave())
+}
+
 const hydrateForm = (): void => {
   for (const group of settingStore.groups) {
     ensureGroup(group.key)
@@ -105,10 +260,6 @@ const hydrateForm = (): void => {
     for (const setting of group.settings) {
       form[group.key][setting.name] = setting.value
     }
-  }
-
-  if (!settingStore.groups.some((group) => group.key === activeSection.value)) {
-    activeSection.value = settingStore.groups[0]?.key ?? 'general'
   }
 }
 
@@ -120,18 +271,59 @@ const fieldError = (setting: SystemSettingItem): string | null => {
   return settingStore.errors[`settings.${setting.key}`]?.[0] ?? null
 }
 
-const sectionErrorCount = (section: string): number => {
-  if (section === 'history') return 0
+const hasFieldError = (setting: SystemSettingItem): boolean => Boolean(fieldError(setting))
 
-  const prefix = `settings.${section}.`
+const sectionErrorCount = (section: TaskSection): number => {
+  if (section.key === 'history') return 0
 
-  return Object.keys(settingStore.errors).filter((key) => key.startsWith(prefix)).length
+  return Object.keys(settingStore.errors).filter((key) => {
+    return section.groupKeys.some((groupKey) => key.startsWith(`settings.${groupKey}.`))
+  }).length
 }
 
 const stringValue = (setting: SystemSettingItem): string => {
   const value = getSettingValue(setting)
 
   return value === null || value === undefined ? '' : String(value)
+}
+
+const valueForKey = (key: string): SystemSettingValue => {
+  const [group, name] = key.split('.')
+
+  return form[group]?.[name] ?? ''
+}
+
+const stringForKey = (key: string): string => {
+  const value = valueForKey(key)
+
+  return value === null || value === undefined ? '' : String(value)
+}
+
+const booleanForKey = (key: string): boolean => Boolean(valueForKey(key))
+
+const settingDescription = (setting: SystemSettingItem): string => {
+  return fieldCopy[setting.key] ?? setting.description ?? 'Enter the value for this setting.'
+}
+
+const settingHelp = (setting: SystemSettingItem): string => settingDescription(setting)
+
+const groupLabel = (group: SystemSettingGroup): string => {
+  const labels: Record<string, string> = {
+    general: 'Platform identity',
+    authentication: 'Registration and access',
+    security: 'Admin security',
+    tenant_defaults: 'New tenant defaults',
+    feature_flags: 'Tenant modules',
+    email: 'Email provider',
+    analytics: 'Tracking controls',
+    storage: 'Uploads',
+    maintenance: 'Maintenance window',
+    seo: 'Search defaults',
+    compliance: 'Policy links',
+    social: 'Social links',
+  }
+
+  return labels[group.key] ?? group.label
 }
 
 const hasImagePreview = (setting: SystemSettingItem): boolean => {
@@ -170,43 +362,89 @@ const uploadSettingImage = async (setting: SystemSettingItem, event: Event): Pro
   }
 }
 
-const payloadForSave = (): SystemSettingsPayload => {
-  const payload: SystemSettingsPayload = {}
+const hasUnsavedChanges = computed(() => {
+  if (!savedSnapshot.value || !settingStore.groups.length) return false
 
-  for (const group of settingStore.groups) {
-    payload[group.key] = {}
+  return JSON.stringify(payloadForSave()) !== savedSnapshot.value
+})
 
-    for (const setting of group.settings) {
-      const value = getSettingValue(setting)
-      payload[group.key][setting.name] = setting.type === 'integer' ? Number(value || 0) : value
-    }
-  }
+const saveState = computed(() => {
+  if (settingStore.loading) return { label: 'Saving...', tone: 'info', icon: Clock }
+  if (formError.value) return { label: 'Review highlighted fields', tone: 'error', icon: CircleAlert }
+  if (hasUnsavedChanges.value) return { label: 'Unsaved changes', tone: 'warning', icon: Clock }
+  if (saveNotice.value) return { label: saveNotice.value, tone: 'success', icon: CheckCircle2 }
 
-  return payload
+  return { label: 'Saved', tone: 'success', icon: CheckCircle2 }
+})
+
+const completionCount = computed(() => {
+  return currentSettings.value.filter((setting) => {
+    if (setting.type === 'boolean') return true
+
+    return stringValue(setting).trim() !== ''
+  }).length
+})
+
+const maintenanceMode = computed(() => booleanForKey('maintenance.maintenance_mode'))
+const registrationOpen = computed(() => booleanForKey('authentication.allow_tenant_registration'))
+const visitorTracking = computed(() => booleanForKey('analytics.enable_visitor_tracking'))
+const ctaTracking = computed(() => booleanForKey('analytics.enable_cta_tracking'))
+const featureFlags = computed(() => {
+  return currentValueFlags('feature_flags').filter((flag) => flag.enabled)
+})
+
+const currentValueFlags = (group: string): { key: string; label: string; enabled: boolean }[] => {
+  return (settingStore.groups.find((item) => item.key === group)?.settings ?? [])
+    .filter((setting) => setting.type === 'boolean')
+    .map((setting) => ({
+      key: setting.key,
+      label: setting.label.replace(/^Enable /, ''),
+      enabled: Boolean(getSettingValue(setting)),
+    }))
 }
+
+const appNamePreview = computed(() => stringForKey('general.application_name') || 'Onlyvo')
+const appDescriptionPreview = computed(() => {
+  return stringForKey('general.application_description') || 'Onlyvo tenant platform'
+})
+const seoTitlePreview = computed(() => stringForKey('seo.default_meta_title') || appNamePreview.value)
+const seoDescriptionPreview = computed(() => {
+  return stringForKey('seo.default_meta_description') || appDescriptionPreview.value
+})
+const canonicalPreview = computed(() => stringForKey('seo.canonical_domain') || 'your-platform.com')
+const uploadLimitPreview = computed(() => {
+  const size = Number(valueForKey('storage.maximum_upload_size') || 0)
+
+  if (!size) return 'Not set'
+  if (size >= 1024) return `${Math.round((size / 1024) * 10) / 10} MB`
+
+  return `${size} KB`
+})
 
 const saveSettings = async (): Promise<void> => {
   try {
     formError.value = ''
+    saveNotice.value = ''
     await settingStore.update(payloadForSave())
     hydrateForm()
+    syncSavedSnapshot()
+    saveNotice.value = 'Changes saved'
   } catch {
+    saveNotice.value = ''
     formError.value = 'Please check the highlighted settings and try again.'
   }
 }
 
-const maintenanceMode = computed(() => Boolean(form.maintenance?.maintenance_mode))
-const registrationOpen = computed(() => Boolean(form.authentication?.allow_tenant_registration))
-
 onMounted(async () => {
   await settingStore.index()
   hydrateForm()
+  syncSavedSnapshot()
 })
 </script>
 
 <template>
   <div class="flex flex-1 flex-col p-4">
-    <div class="min-h-screen pb-24">
+    <div class="min-h-screen pb-16">
       <form class="space-y-4" @submit.prevent="saveSettings">
         <div
           class="sticky top-0 z-20 -mx-4 border-b bg-background/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80"
@@ -214,12 +452,14 @@ onMounted(async () => {
           <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <h2 class="text-2xl font-semibold tracking-tight text-foreground">System Settings</h2>
-              <p class="mt-1 text-sm text-muted-foreground">{{ activeSectionLabel }} controls</p>
+              <p class="mt-1 text-sm text-muted-foreground">
+                Admin-friendly controls for launching, protecting, and growing the platform.
+              </p>
             </div>
 
             <div class="flex flex-wrap items-center gap-2">
               <span
-                class="rounded border px-2.5 py-1 text-xs font-medium"
+                class="inline-flex items-center gap-1.5 rounded border px-2.5 py-1 text-xs font-medium"
                 :class="
                   maintenanceMode
                     ? 'border-amber-300 bg-amber-50 text-amber-800'
@@ -229,7 +469,7 @@ onMounted(async () => {
                 Maintenance {{ maintenanceMode ? 'On' : 'Off' }}
               </span>
               <span
-                class="rounded border px-2.5 py-1 text-xs font-medium"
+                class="inline-flex items-center gap-1.5 rounded border px-2.5 py-1 text-xs font-medium"
                 :class="
                   registrationOpen
                     ? 'border-sky-200 bg-sky-50 text-sky-800'
@@ -237,6 +477,18 @@ onMounted(async () => {
                 "
               >
                 Registration {{ registrationOpen ? 'Open' : 'Closed' }}
+              </span>
+              <span
+                class="inline-flex items-center gap-1.5 rounded border px-2.5 py-1 text-xs font-medium"
+                :class="{
+                  'border-emerald-200 bg-emerald-50 text-emerald-800': saveState.tone === 'success',
+                  'border-amber-300 bg-amber-50 text-amber-800': saveState.tone === 'warning',
+                  'border-sky-200 bg-sky-50 text-sky-800': saveState.tone === 'info',
+                  'border-destructive/40 bg-destructive/10 text-destructive': saveState.tone === 'error',
+                }"
+              >
+                <component :is="saveState.icon" class="size-3.5" />
+                {{ saveState.label }}
               </span>
               <Button variant="update" size="sm" type="submit" :disabled="settingStore.loading">
                 <Save class="size-4" />
@@ -246,11 +498,18 @@ onMounted(async () => {
           </div>
         </div>
 
-        <div class="grid gap-4 lg:grid-cols-[18rem_minmax(0,1fr)]">
+        <div
+          v-if="formError"
+          class="rounded border border-destructive/40 bg-destructive/10 p-3 text-sm font-medium text-destructive"
+        >
+          {{ formError }}
+        </div>
+
+        <div class="grid gap-4 xl:grid-cols-[18rem_minmax(0,1fr)_24rem]">
           <aside class="lg:sticky lg:top-24 lg:self-start">
             <div class="rounded border bg-background p-2">
               <button
-                v-for="section in sections"
+                v-for="section in taskSections"
                 :key="section.key"
                 type="button"
                 class="flex h-11 w-full items-center justify-between rounded px-3 text-left text-sm font-medium transition hover:bg-muted"
@@ -266,192 +525,280 @@ onMounted(async () => {
                   <span class="truncate">{{ section.label }}</span>
                 </span>
                 <span
-                  v-if="sectionErrorCount(section.key)"
+                  v-if="sectionErrorCount(section)"
                   class="ml-2 rounded bg-destructive px-1.5 py-0.5 text-[11px] text-destructive-foreground"
                 >
-                  {{ sectionErrorCount(section.key) }}
+                  {{ sectionErrorCount(section) }}
                 </span>
               </button>
+            </div>
+
+            <div
+              v-if="activeSection !== 'history'"
+              class="mt-3 rounded border bg-muted/30 p-3"
+            >
+              <p class="text-xs font-medium text-muted-foreground">Section progress</p>
+              <p class="mt-1 text-sm font-semibold">
+                {{ completionCount }} of {{ currentSettings.length }} settings filled
+              </p>
+              <div class="mt-3 h-2 rounded bg-muted">
+                <div
+                  class="h-2 rounded bg-primary"
+                  :style="{
+                    width: `${Math.round((completionCount / Math.max(currentSettings.length, 1)) * 100)}%`,
+                  }"
+                />
+              </div>
             </div>
           </aside>
 
           <main class="rounded border bg-background">
-            <div class="border-b px-4 py-3">
-              <div class="flex items-center gap-2">
-                <component
-                  :is="sections.find((section) => section.key === activeSection)?.icon"
-                  class="size-4 text-primary"
-                />
-                <h3 class="text-base font-semibold">{{ activeSectionLabel }}</h3>
+            <div class="border-b px-4 py-4">
+              <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                <div class="flex gap-3">
+                  <div class="flex size-10 shrink-0 items-center justify-center rounded border bg-primary/5 text-primary">
+                    <component :is="activeTaskSection.icon" class="size-5" />
+                  </div>
+                  <div>
+                    <h3 class="text-base font-semibold">{{ activeTaskSection.title }}</h3>
+                    <p class="mt-1 max-w-2xl text-sm text-muted-foreground">
+                      {{ activeTaskSection.description }}
+                    </p>
+                  </div>
+                </div>
+                <Badge v-if="activeSection !== 'history'" variant="outline">
+                  {{ currentSettings.length }} settings
+                </Badge>
+              </div>
+
+              <div class="mt-4 rounded border bg-muted/30 p-3">
+                <div class="flex gap-2 text-sm">
+                  <Info class="mt-0.5 size-4 shrink-0 text-primary" />
+                  <span>{{ activeTaskSection.task }}</span>
+                </div>
               </div>
             </div>
 
             <FieldSet class="p-4">
-              <section v-if="currentGroup">
+              <section v-if="activeSection !== 'history'">
                 <FieldGroup>
-                  <div class="grid gap-4 lg:grid-cols-1">
-                    <template v-for="setting in currentGroup.settings" :key="setting.key">
-                      <label
-                        v-if="setting.type === 'boolean'"
-                        :for="fieldId(setting)"
-                        class="flex min-h-20 cursor-pointer items-center justify-between gap-4 rounded border bg-muted/20 p-4"
-                      >
-                        <span class="block text-sm font-semibold">{{ setting.label }}</span>
-                        <Checkbox
-                          v-field-help="settingHelp(setting)"
-                          :id="fieldId(setting)"
-                          :model-value="Boolean(getSettingValue(setting))"
-                          @update:model-value="setSettingValue(setting, Boolean($event))"
-                        />
-                      </label>
+                  <div class="space-y-5">
+                    <section
+                      v-for="group in currentSectionGroups"
+                      :key="group.key"
+                      class="space-y-3"
+                    >
+                      <div v-if="currentSectionGroups.length > 1" class="flex items-center gap-2">
+                        <div class="h-px flex-1 bg-border" />
+                        <Badge variant="secondary">{{ groupLabel(group) }}</Badge>
+                        <div class="h-px flex-1 bg-border" />
+                      </div>
 
-                      <Field v-else-if="setting.type === 'text'" class="lg:col-span-1">
-                        <FieldLabel :for="fieldId(setting)">{{ setting.label }}</FieldLabel>
-
-                        <Textarea
-                          v-field-help="settingHelp(setting)"
-                          :id="fieldId(setting)"
-                          :model-value="stringValue(setting)"
-                          class="min-h-28"
-                          @update:model-value="setSettingValue(setting, String($event ?? ''))"
-                        />
-
-                        <FieldError v-if="fieldError(setting)">
-                          {{ fieldError(setting) }}
-                        </FieldError>
-                      </Field>
-
-                      <Field v-else-if="setting.type === 'image'" class="lg:col-span-1">
-                        <FieldLabel :for="fieldId(setting)">{{ setting.label }}</FieldLabel>
-                        <div
-                          class="grid gap-4 rounded border bg-muted/20 p-3 md:grid-cols-[18rem_minmax(0,1fr)]"
-                        >
-                          <img
-                            v-if="hasImagePreview(setting)"
-                            :src="stringValue(setting)"
-                            :alt="`${setting.label} preview`"
-                            class="aspect-video w-full rounded border bg-background object-contain"
-                            @error="markImagePreviewFailed(setting)"
-                          />
-                          <div
-                            v-else
-                            class="flex aspect-video items-center justify-center rounded border border-dashed bg-background text-sm text-muted-foreground"
+                      <div class="grid gap-4">
+                        <template v-for="setting in group.settings" :key="setting.key">
+                          <label
+                            v-if="setting.type === 'boolean'"
+                            :for="fieldId(setting)"
+                            class="flex cursor-pointer items-start justify-between gap-4 rounded border p-4 transition hover:bg-muted/40"
+                            :class="hasFieldError(setting) ? 'border-destructive/60 bg-destructive/5' : 'bg-muted/10'"
                           >
-                            No image uploaded
-                          </div>
-
-                          <div class="flex flex-col justify-center gap-3">
-                            <Input
+                            <span class="min-w-0">
+                              <span class="flex flex-wrap items-center gap-2">
+                                <span class="text-sm font-semibold">{{ setting.label }}</span>
+                                <Badge v-if="setting.is_public" variant="outline">Public</Badge>
+                              </span>
+                              <span class="mt-1 block text-sm text-muted-foreground">
+                                {{ settingDescription(setting) }}
+                              </span>
+                              <FieldError v-if="fieldError(setting)" class="mt-2">
+                                {{ fieldError(setting) }}
+                              </FieldError>
+                            </span>
+                            <Checkbox
                               v-field-help="settingHelp(setting)"
+                              :id="fieldId(setting)"
+                              :model-value="Boolean(getSettingValue(setting))"
+                              class="mt-1"
+                              @update:model-value="setSettingValue(setting, Boolean($event))"
+                            />
+                          </label>
+
+                          <Field
+                            v-else-if="setting.type === 'text'"
+                            class="rounded border p-4"
+                            :class="hasFieldError(setting) ? 'border-destructive/60 bg-destructive/5' : 'bg-muted/10'"
+                          >
+                            <div class="flex flex-wrap items-center gap-2">
+                              <FieldLabel :for="fieldId(setting)">{{ setting.label }}</FieldLabel>
+                              <Badge v-if="setting.is_public" variant="outline">Public</Badge>
+                            </div>
+                            <p class="text-sm text-muted-foreground">{{ settingDescription(setting) }}</p>
+
+                            <Textarea
+                              v-field-help="settingHelp(setting)"
+                              :id="fieldId(setting)"
                               :model-value="stringValue(setting)"
-                              placeholder="/storage/system-settings/logo.png"
+                              class="min-h-28"
                               @update:model-value="setSettingValue(setting, String($event ?? ''))"
                             />
 
-                            <div class="flex flex-wrap items-center gap-2">
-                              <Button
-                                as-child
-                                variant="outline_default"
-                                size="sm"
-                                :disabled="imageUploading[setting.key]"
-                              >
-                                <label
-                                  v-field-help="settingHelp(setting)"
-                                  :for="fieldId(setting)"
-                                  class="cursor-pointer"
-                                >
-                                  <Upload class="size-4" />
-                                  {{ imageUploading[setting.key] ? 'Uploading...' : 'Upload' }}
-                                </label>
-                              </Button>
-                              <Button
-                                v-if="stringValue(setting)"
-                                type="button"
-                                variant="cancel"
-                                size="sm"
-                                @click="clearImage(setting)"
-                              >
-                                <X class="size-4" />
-                                Clear
-                              </Button>
-                            </div>
-                            <Input
-                              v-field-help="settingHelp(setting)"
-                              :id="fieldId(setting)"
-                              type="file"
-                              accept="image/*,.ico,.svg"
-                              class="sr-only"
-                              @change="uploadSettingImage(setting, $event)"
-                            />
-                          </div>
-                        </div>
-                        <FieldError v-if="imageUploadErrors[setting.key]">
-                          {{ imageUploadErrors[setting.key] }}
-                        </FieldError>
-                        <FieldError v-if="fieldError(setting)">
-                          {{ fieldError(setting) }}
-                        </FieldError>
-                      </Field>
+                            <FieldError v-if="fieldError(setting)">
+                              {{ fieldError(setting) }}
+                            </FieldError>
+                          </Field>
 
-                      <Field v-else>
-                        <FieldLabel :for="fieldId(setting)">{{ setting.label }}</FieldLabel>
-
-                        <NativeSelect
-                          v-field-help="settingHelp(setting)"
-                          v-if="setting.type === 'select'"
-                          :id="fieldId(setting)"
-                          class="w-full"
-                          :model-value="stringValue(setting)"
-                          @update:model-value="setSettingValue(setting, String($event ?? ''))"
-                        >
-                          <NativeSelectOption
-                            v-for="(label, value) in setting.options ?? {}"
-                            :key="value"
-                            :value="value"
+                          <Field
+                            v-else-if="setting.type === 'image'"
+                            class="rounded border p-4"
+                            :class="hasFieldError(setting) || imageUploadErrors[setting.key] ? 'border-destructive/60 bg-destructive/5' : 'bg-muted/10'"
                           >
-                            {{ label }}
-                          </NativeSelectOption>
-                        </NativeSelect>
-                        <Input
-                          v-field-help="settingHelp(setting)"
-                          v-else
-                          :id="fieldId(setting)"
-                          :model-value="getSettingValue(setting) as string | number | null"
-                          :type="
-                            setting.type === 'integer'
-                              ? 'number'
-                              : setting.type === 'password'
-                                ? 'password'
-                                : setting.type === 'email'
-                                  ? 'email'
-                                  : setting.type === 'url'
-                                    ? 'url'
-                                    : setting.type === 'color'
-                                      ? 'color'
-                                      : 'text'
-                          "
-                          :min="setting.type === 'integer' ? 0 : undefined"
-                          class="w-full"
-                          @update:model-value="
-                            setSettingValue(
-                              setting,
-                              setting.type === 'integer'
-                                ? Number($event || 0)
-                                : String($event ?? '')
-                            )
-                          "
-                        />
+                            <div class="flex flex-wrap items-center gap-2">
+                              <FieldLabel :for="fieldId(setting)">{{ setting.label }}</FieldLabel>
+                              <Badge v-if="setting.is_public" variant="outline">Public</Badge>
+                            </div>
+                            <p class="text-sm text-muted-foreground">{{ settingDescription(setting) }}</p>
+                            <div
+                              class="mt-2 grid gap-4 rounded border bg-background p-3 md:grid-cols-[18rem_minmax(0,1fr)]"
+                            >
+                              <img
+                                v-if="hasImagePreview(setting)"
+                                :src="stringValue(setting)"
+                                :alt="`${setting.label} preview`"
+                                class="aspect-video w-full rounded border bg-background object-contain"
+                                @error="markImagePreviewFailed(setting)"
+                              />
+                              <div
+                                v-else
+                                class="flex aspect-video items-center justify-center rounded border border-dashed bg-background text-sm text-muted-foreground"
+                              >
+                                No image uploaded
+                              </div>
 
-                        <FieldError v-if="fieldError(setting)">
-                          {{ fieldError(setting) }}
-                        </FieldError>
-                      </Field>
-                    </template>
+                              <div class="flex flex-col justify-center gap-3">
+                                <Input
+                                  v-field-help="settingHelp(setting)"
+                                  :model-value="stringValue(setting)"
+                                  placeholder="/storage/system-settings/logo.png"
+                                  @update:model-value="setSettingValue(setting, String($event ?? ''))"
+                                />
+
+                                <div class="flex flex-wrap items-center gap-2">
+                                  <Button
+                                    as-child
+                                    variant="outline_default"
+                                    size="sm"
+                                    :disabled="imageUploading[setting.key]"
+                                  >
+                                    <label
+                                      v-field-help="settingHelp(setting)"
+                                      :for="fieldId(setting)"
+                                      class="cursor-pointer"
+                                    >
+                                      <Upload class="size-4" />
+                                      {{ imageUploading[setting.key] ? 'Uploading...' : 'Upload' }}
+                                    </label>
+                                  </Button>
+                                  <Button
+                                    v-if="stringValue(setting)"
+                                    type="button"
+                                    variant="cancel"
+                                    size="sm"
+                                    @click="clearImage(setting)"
+                                  >
+                                    <X class="size-4" />
+                                    Clear
+                                  </Button>
+                                </div>
+                                <Input
+                                  v-field-help="settingHelp(setting)"
+                                  :id="fieldId(setting)"
+                                  type="file"
+                                  accept="image/*,.ico,.svg"
+                                  class="sr-only"
+                                  @change="uploadSettingImage(setting, $event)"
+                                />
+                              </div>
+                            </div>
+                            <FieldError v-if="imageUploadErrors[setting.key]">
+                              {{ imageUploadErrors[setting.key] }}
+                            </FieldError>
+                            <FieldError v-if="fieldError(setting)">
+                              {{ fieldError(setting) }}
+                            </FieldError>
+                          </Field>
+
+                          <Field v-else>
+                            <div
+                              class="rounded border p-4"
+                              :class="hasFieldError(setting) ? 'border-destructive/60 bg-destructive/5' : 'bg-muted/10'"
+                            >
+                              <div class="mb-2 flex flex-wrap items-center gap-2">
+                                <FieldLabel :for="fieldId(setting)">{{ setting.label }}</FieldLabel>
+                                <Badge v-if="setting.is_public" variant="outline">Public</Badge>
+                              </div>
+                              <p class="mb-3 text-sm text-muted-foreground">
+                                {{ settingDescription(setting) }}
+                              </p>
+
+                              <NativeSelect
+                                v-field-help="settingHelp(setting)"
+                                v-if="setting.type === 'select'"
+                                :id="fieldId(setting)"
+                                class="w-full"
+                                :model-value="stringValue(setting)"
+                                @update:model-value="setSettingValue(setting, String($event ?? ''))"
+                              >
+                                <NativeSelectOption
+                                  v-for="(label, value) in setting.options ?? {}"
+                                  :key="value"
+                                  :value="value"
+                                >
+                                  {{ label }}
+                                </NativeSelectOption>
+                              </NativeSelect>
+                              <Input
+                                v-field-help="settingHelp(setting)"
+                                v-else
+                                :id="fieldId(setting)"
+                                :model-value="getSettingValue(setting) as string | number | null"
+                                :type="
+                                  setting.type === 'integer'
+                                    ? 'number'
+                                    : setting.type === 'password'
+                                      ? 'password'
+                                      : setting.type === 'email'
+                                        ? 'email'
+                                        : setting.type === 'url'
+                                          ? 'url'
+                                          : setting.type === 'color'
+                                            ? 'color'
+                                            : 'text'
+                                "
+                                :min="setting.type === 'integer' ? 0 : undefined"
+                                class="w-full"
+                                @update:model-value="
+                                  setSettingValue(
+                                    setting,
+                                    setting.type === 'integer'
+                                      ? Number($event || 0)
+                                      : String($event ?? '')
+                                  )
+                                "
+                              />
+
+                              <FieldError v-if="fieldError(setting)" class="mt-2">
+                                {{ fieldError(setting) }}
+                              </FieldError>
+                            </div>
+                          </Field>
+                        </template>
+                      </div>
+                    </section>
                   </div>
                 </FieldGroup>
               </section>
 
-              <section v-else-if="activeSection === 'history'">
+              <section v-else>
                 <SystemSettingHistoryTable
                   :records="settingStore.history"
                   :total="settingStore.historyTotal"
@@ -462,11 +809,136 @@ onMounted(async () => {
               </section>
             </FieldSet>
           </main>
-        </div>
 
-        <p v-if="formError" class="text-sm font-medium text-destructive">
-          {{ formError }}
-        </p>
+          <aside class="space-y-4 xl:sticky xl:top-24 xl:self-start">
+            <section class="rounded border bg-background">
+              <div class="border-b px-4 py-3">
+                <h3 class="text-base font-semibold">Platform Preview</h3>
+                <p class="mt-1 text-sm text-muted-foreground">
+                  A quick view of the public-facing settings admins control.
+                </p>
+              </div>
+
+              <div class="space-y-4 p-4">
+                <div class="rounded border p-4">
+                  <div class="flex items-center gap-3">
+                    <img
+                      v-if="stringForKey('general.logo')"
+                      :src="stringForKey('general.logo')"
+                      alt="Logo preview"
+                      class="size-10 rounded border object-contain"
+                    />
+                    <div
+                      v-else
+                      class="flex size-10 items-center justify-center rounded border bg-muted text-sm font-semibold"
+                    >
+                      {{ appNamePreview.slice(0, 1).toUpperCase() }}
+                    </div>
+                    <div class="min-w-0">
+                      <p class="truncate text-sm font-semibold">{{ appNamePreview }}</p>
+                      <p class="truncate text-xs text-muted-foreground">
+                        {{ stringForKey('general.support_email') || 'Add support email' }}
+                      </p>
+                    </div>
+                  </div>
+                  <p class="mt-3 line-clamp-3 text-sm text-muted-foreground">
+                    {{ appDescriptionPreview }}
+                  </p>
+                </div>
+
+                <div class="rounded border p-4">
+                  <p class="text-xs font-medium text-muted-foreground">Search preview</p>
+                  <p class="mt-2 line-clamp-1 text-sm text-blue-700">{{ seoTitlePreview }}</p>
+                  <p class="line-clamp-1 text-xs text-emerald-700">{{ canonicalPreview }}</p>
+                  <p class="mt-1 line-clamp-3 text-sm text-muted-foreground">
+                    {{ seoDescriptionPreview }}
+                  </p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                  <div class="rounded border p-3">
+                    <p class="text-xs text-muted-foreground">Uploads</p>
+                    <p class="mt-1 text-sm font-semibold">{{ uploadLimitPreview }}</p>
+                  </div>
+                  <div class="rounded border p-3">
+                    <p class="text-xs text-muted-foreground">Mail</p>
+                    <p class="mt-1 truncate text-sm font-semibold">
+                      {{ stringForKey('email.mail_driver') || 'Not set' }}
+                    </p>
+                  </div>
+                </div>
+
+                <div class="rounded border p-4">
+                  <p class="text-xs font-medium text-muted-foreground">Enabled tenant modules</p>
+                  <div class="mt-2 flex flex-wrap gap-2">
+                    <Badge v-for="flag in featureFlags" :key="flag.key" variant="secondary">
+                      {{ flag.label }}
+                    </Badge>
+                    <span v-if="!featureFlags.length" class="text-sm text-muted-foreground">
+                      No modules enabled
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section class="rounded border bg-background p-4">
+              <div class="flex items-center gap-2">
+                <ShieldCheck class="size-4 text-primary" />
+                <h3 class="text-sm font-semibold">Readiness</h3>
+              </div>
+              <div class="mt-3 space-y-2 text-sm">
+                <div class="flex items-center justify-between gap-3">
+                  <span class="text-muted-foreground">Registration</span>
+                  <Badge :variant="registrationOpen ? 'success' : 'outline'">
+                    {{ registrationOpen ? 'Open' : 'Closed' }}
+                  </Badge>
+                </div>
+                <div class="flex items-center justify-between gap-3">
+                  <span class="text-muted-foreground">Maintenance</span>
+                  <Badge :variant="maintenanceMode ? 'warning' : 'success'">
+                    {{ maintenanceMode ? 'On' : 'Off' }}
+                  </Badge>
+                </div>
+                <div class="flex items-center justify-between gap-3">
+                  <span class="text-muted-foreground">Analytics</span>
+                  <Badge :variant="visitorTracking && ctaTracking ? 'success' : 'outline'">
+                    {{ visitorTracking && ctaTracking ? 'Tracking' : 'Partial' }}
+                  </Badge>
+                </div>
+                <div class="flex items-center justify-between gap-3">
+                  <span class="text-muted-foreground">Policies</span>
+                  <Badge
+                    :variant="
+                      stringForKey('compliance.privacy_policy_url') &&
+                      stringForKey('compliance.terms_of_service_url')
+                        ? 'success'
+                        : 'outline'
+                    "
+                  >
+                    {{
+                      stringForKey('compliance.privacy_policy_url') &&
+                      stringForKey('compliance.terms_of_service_url')
+                        ? 'Linked'
+                        : 'Missing'
+                    }}
+                  </Badge>
+                </div>
+              </div>
+
+              <a
+                v-if="stringForKey('compliance.privacy_policy_url')"
+                :href="stringForKey('compliance.privacy_policy_url')"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="mt-4 inline-flex items-center gap-2 text-sm font-medium text-primary"
+              >
+                Open privacy policy
+                <ExternalLink class="size-3.5" />
+              </a>
+            </section>
+          </aside>
+        </div>
       </form>
     </div>
   </div>

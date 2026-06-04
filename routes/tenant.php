@@ -1,6 +1,7 @@
 <?php
 
 use App\Tenant\Auth\Http\Controllers\AuthController;
+use App\Tenant\Account\Http\Controllers\AccountController;
 use App\Tenant\Dashboard\Http\Controllers\AnalyticsController;
 use App\Tenant\Dashboard\Http\Controllers\PublicCtaTrackingController;
 use App\Tenant\Dashboard\Http\Controllers\PublicVisitorTrackingController;
@@ -28,6 +29,9 @@ Route::prefix('app')->name('app.')->group(function (): void {
         Route::middleware('api.auth')->group(function (): void {
             Route::get('me', [AuthController::class, 'me']);
             Route::post('logout', [AuthController::class, 'logout']);
+            Route::get('account', [AccountController::class, 'show'])->name('account.show');
+            Route::put('account/profile', [AccountController::class, 'updateProfile'])->name('account.profile.update');
+            Route::put('account/password', [AccountController::class, 'updatePassword'])->name('account.password.update');
 
             Route::get('dashboard', [TenantDashboardController::class, 'index'])->name('dashboard.index');
             Route::get('analytics/export', [AnalyticsController::class, 'export'])->name('analytics.export');
