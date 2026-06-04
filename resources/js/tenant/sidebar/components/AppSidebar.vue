@@ -48,9 +48,12 @@ const hiddenUrls = computed(() => {
 })
 const visibleNav = computed(() => {
   return (data.value?.data.main_nav ?? [])
+    .filter((item) => item.is_active !== false)
     .map((item) => ({
       ...item,
-      items: item.items?.filter((child) => !hiddenUrls.value.has(child.url)),
+      items: item.items?.filter(
+        (child) => child.is_active !== false && !hiddenUrls.value.has(child.url)
+      ),
     }))
     .filter((item) => item.url !== '#' || item.items?.length)
     .filter((item) => item.url === '#' || !hiddenUrls.value.has(item.url))

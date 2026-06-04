@@ -54,6 +54,7 @@ class SidebarRequest extends FormRequest
             'data.main_nav.*.items'               => ['sometimes', 'array'],
             'data.main_nav.*.items.*.title'       => ['required_with:data.main_nav.*.items', 'string', 'max:255'],
             'data.main_nav.*.items.*.url'         => ['required_with:data.main_nav.*.items', 'string', 'max:255'],
+            'data.main_nav.*.items.*.icon'        => ['nullable', 'string', 'max:100'],
             'data.main_nav.*.items.*.description' => ['nullable', 'string'],
             'data.main_nav.*.items.*.is_active'   => ['sometimes', 'boolean'],
 

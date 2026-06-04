@@ -19,6 +19,7 @@ export interface SidebarProject {
 export interface SidebarNavChild {
   title: string
   url: string
+  icon?: string
   description?: string
   is_active?: boolean
 }

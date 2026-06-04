@@ -26,6 +26,7 @@ const props = defineProps<{
 const route = useRoute()
 
 const resolveUrl = (url: string): string => {
+  if (isExternalUrl(url)) return url
   if (url === '#') return route.path
   if (url.startsWith('/')) return url
 
@@ -34,7 +35,13 @@ const resolveUrl = (url: string): string => {
   return `${base}/${url}`.replace(/\/+/g, '/')
 }
 
+const isExternalUrl = (url: string): boolean => /^(https?:|mailto:|tel:)/.test(url)
+
+const opensNewTab = (url: string): boolean => /^https?:/.test(url)
+
 const isRouteActive = (url: string): boolean => {
+  if (isExternalUrl(url)) return false
+
   const resolved = resolveUrl(url)
 
   return route.path === resolved || route.path.startsWith(`${resolved}/`)
@@ -77,7 +84,17 @@ const iconFor = (icon?: string) => {
                   :key="`${item.title}-${subItem.title}`"
                 >
                   <SidebarMenuSubButton as-child :is-active="isRouteActive(subItem.url)">
-                    <RouterLink :to="resolveUrl(subItem.url)">
+                    <a
+                      v-if="isExternalUrl(subItem.url)"
+                      :href="subItem.url"
+                      :target="opensNewTab(subItem.url) ? '_blank' : undefined"
+                      :rel="opensNewTab(subItem.url) ? 'noopener noreferrer' : undefined"
+                    >
+                      <component :is="iconFor(subItem.icon)" />
+                      <span>{{ subItem.title }}</span>
+                    </a>
+                    <RouterLink v-else :to="resolveUrl(subItem.url)">
+                      <component :is="iconFor(subItem.icon)" />
                       <span>{{ subItem.title }}</span>
                     </RouterLink>
                   </SidebarMenuSubButton>
@@ -89,7 +106,16 @@ const iconFor = (icon?: string) => {
 
         <SidebarMenuItem v-else>
           <SidebarMenuButton as-child :tooltip="item.title" :is-active="isRouteActive(item.url)">
-            <RouterLink :to="resolveUrl(item.url)">
+            <a
+              v-if="isExternalUrl(item.url)"
+              :href="item.url"
+              :target="opensNewTab(item.url) ? '_blank' : undefined"
+              :rel="opensNewTab(item.url) ? 'noopener noreferrer' : undefined"
+            >
+              <component :is="iconFor(item.icon)" />
+              <span>{{ item.title }}</span>
+            </a>
+            <RouterLink v-else :to="resolveUrl(item.url)">
               <component :is="iconFor(item.icon)" />
               <span>{{ item.title }}</span>
             </RouterLink>
