@@ -9,7 +9,7 @@ import { Button } from '@/shared/components/ui/button'
 import { NativeSelect, NativeSelectOption } from '@/shared/components/ui/native-select'
 import { formatDisplayDate } from '@/shared/utils/date'
 import { getStatusBadgeVariant, getStatusLabel } from '@/shared/utils/status'
-import { Globe2, Pencil, Trash2 } from 'lucide-vue-next'
+import { Eye, Globe2, Pencil, Trash2 } from 'lucide-vue-next'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
@@ -23,8 +23,9 @@ const selectedPost = ref<PostRecord | null>(null)
 const tableColumns = [
   { key: 'title', label: 'Title', sortable: true },
   { key: 'status', label: 'Status', sortable: true },
+  { key: 'tags', label: 'Tags' },
   { key: 'published_at', label: 'Published', sortable: true },
-  { key: 'actions', label: 'Actions', headerClass: 'w-40 text-right', cellClass: 'text-right' },
+  { key: 'actions', label: 'Actions', headerClass: 'w-52 text-right', cellClass: 'text-right' },
 ] as const
 
 const selectedTemplate = computed(() => {
@@ -38,6 +39,10 @@ const postRows = computed(() => {
 })
 
 const emptyText = computed(() => {
+  if (!selectedTemplateId.value) {
+    return 'Select a template to manage its posts.'
+  }
+
   return `No posts found for ${selectedTemplate.value?.name || 'this template'}.`
 })
 
@@ -83,6 +88,12 @@ const togglePublish = async (post: PostRecord): Promise<void> => {
   }
 
   await postStore.publish(selectedTemplateId.value, post.id)
+}
+
+const previewPost = (post: PostRecord): void => {
+  if (!selectedTemplate.value?.slug || post.status !== 'published') return
+
+  window.open(`/${selectedTemplate.value.slug}/posts/${post.slug}`, '_blank', 'noopener')
 }
 
 const deletePost = async (post: PostRecord): Promise<void> => {
@@ -164,6 +175,7 @@ watch(selectedTemplateId, (templateId) => {
             >
               <NativeSelectOption value="">All statuses</NativeSelectOption>
               <NativeSelectOption value="draft">Draft</NativeSelectOption>
+              <NativeSelectOption value="scheduled">Scheduled</NativeSelectOption>
               <NativeSelectOption value="published">Published</NativeSelectOption>
             </NativeSelect>
           </template>
@@ -171,7 +183,10 @@ watch(selectedTemplateId, (templateId) => {
           <template #cell-title="{ row }">
             <div class="font-medium">{{ row.title }}</div>
             <div class="line-clamp-1 text-xs text-muted-foreground">
-              {{ row.excerpt || row.slug }}
+              /{{ row.slug }}
+            </div>
+            <div class="mt-1 line-clamp-1 text-xs text-muted-foreground">
+              {{ row.excerpt || 'No excerpt yet' }}
             </div>
           </template>
 
@@ -181,9 +196,23 @@ watch(selectedTemplateId, (templateId) => {
             </Badge>
           </template>
 
+          <template #cell-tags="{ row }">
+            <div v-if="row.tags?.length" class="flex flex-wrap gap-1">
+              <Badge v-for="tag in row.tags.slice(0, 3)" :key="tag" variant="secondary">
+                {{ tag }}
+              </Badge>
+              <Badge v-if="row.tags.length > 3" variant="outline">+{{ row.tags.length - 3 }}</Badge>
+            </div>
+            <span v-else class="text-sm text-muted-foreground">No tags</span>
+          </template>
+
           <template #cell-published_at="{ row }">
             <span class="text-sm text-muted-foreground">
-              {{ row.published_at ? formatDisplayDate(row.published_at) : 'Unpublished' }}
+              {{
+                row.published_at
+                  ? `${row.status === 'scheduled' ? 'Scheduled' : 'Published'} ${formatDisplayDate(row.published_at)}`
+                  : 'Unpublished'
+              }}
             </span>
           </template>
 
@@ -203,12 +232,23 @@ watch(selectedTemplateId, (templateId) => {
                 variant="publish"
                 size="sm"
                 type="button"
-                :aria-label="row.status === 'published' ? 'Move to draft' : 'Publish post'"
+                :aria-label="row.status === 'published' ? 'Move to draft' : 'Publish post now'"
                 :disabled="postStore.loading"
-                :title="row.status === 'published' ? 'Move to draft' : 'Publish post'"
+                :title="row.status === 'published' ? 'Move to draft' : 'Publish post now'"
                 @click="togglePublish(row)"
               >
                 <Globe2 class="size-4" />
+              </Button>
+              <Button
+                variant="navigate"
+                size="sm"
+                type="button"
+                aria-label="Preview public post"
+                :disabled="row.status !== 'published'"
+                title="Preview public post"
+                @click="previewPost(row)"
+              >
+                <Eye class="size-4" />
               </Button>
               <Button
                 variant="delete"

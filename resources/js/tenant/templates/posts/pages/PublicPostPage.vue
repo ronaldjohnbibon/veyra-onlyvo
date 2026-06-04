@@ -7,6 +7,7 @@ import {
   fallbackImage,
 } from '@/tenant/templates/composables/useTenantPublicSettings'
 import { usePublicPostStore } from '@/tenant/templates/posts/public-post-store'
+import { renderMarkdown } from '@/shared/utils/markdown'
 import { computed, onMounted, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 
@@ -22,8 +23,8 @@ const loadPost = async (): Promise<void> => {
 
   if (publicPostStore.post) {
     applyTenantPublicHead(publicPostStore.post.tenant_settings, {
-      title: publicPostStore.post.title,
-      description: publicPostStore.post.excerpt,
+      title: publicPostStore.post.seo_title || publicPostStore.post.title,
+      description: publicPostStore.post.meta_description || publicPostStore.post.excerpt,
       image:
         publicPostStore.post.featured_image || fallbackImage(publicPostStore.post.tenant_settings),
       path: window.location.pathname,
@@ -36,6 +37,10 @@ const postImage = computed(() => {
   return (
     publicPostStore.post?.featured_image || fallbackImage(publicPostStore.post?.tenant_settings)
   )
+})
+
+const contentHtml = computed(() => {
+  return renderMarkdown(publicPostStore.post?.content ?? '')
 })
 
 onMounted(loadPost)
@@ -65,6 +70,16 @@ watch([siteSlug, postSlug], loadPost)
         {{ publicPostStore.post.title }}
       </h1>
 
+      <div v-if="publicPostStore.post.tags?.length" class="mt-4 flex flex-wrap gap-2">
+        <span
+          v-for="tag in publicPostStore.post.tags"
+          :key="tag"
+          class="rounded border bg-muted px-2 py-1 text-xs font-medium text-muted-foreground"
+        >
+          {{ tag }}
+        </span>
+      </div>
+
       <img
         v-if="postImage"
         :src="postImage"
@@ -72,9 +87,10 @@ watch([siteSlug, postSlug], loadPost)
         class="mt-8 aspect-video w-full rounded object-cover"
       />
 
-      <div class="mt-8 whitespace-pre-line text-base leading-8 text-foreground">
-        {{ publicPostStore.post.content }}
-      </div>
+      <div
+        class="prose prose-neutral mt-8 max-w-none text-base leading-8 text-foreground [&_a]:text-primary [&_a]:underline [&_h1]:text-3xl [&_h2]:text-2xl [&_h3]:text-xl [&_li]:ml-6 [&_p]:mb-5 [&_ul]:list-disc"
+        v-html="contentHtml"
+      />
     </article>
 
     <section

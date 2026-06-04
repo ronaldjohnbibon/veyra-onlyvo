@@ -1,4 +1,4 @@
-export type PostStatus = 'draft' | 'published'
+export type PostStatus = 'draft' | 'published' | 'scheduled'
 
 export interface PostRecord {
   id: string
@@ -10,6 +10,9 @@ export interface PostRecord {
   content: string
   excerpt: string
   featured_image?: string | null
+  seo_title?: string | null
+  meta_description?: string | null
+  tags?: string[]
   status: PostStatus
   tenant_settings?: Record<string, string | number | boolean | null>
   published_at?: string | null
@@ -19,9 +22,15 @@ export interface PostRecord {
 
 export interface PostPayload {
   title: string
+  slug?: string | null
   content: string
+  excerpt?: string | null
   featured_image?: string | null
+  seo_title?: string | null
+  meta_description?: string | null
+  tags?: string[]
   status: PostStatus
+  published_at?: string | null
 }
 
 export interface PostParams {

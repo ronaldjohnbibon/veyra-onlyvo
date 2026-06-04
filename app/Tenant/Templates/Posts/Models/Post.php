@@ -18,7 +18,11 @@ class Post extends Model
         'title',
         'slug',
         'content',
+        'excerpt',
         'featured_image',
+        'seo_title',
+        'meta_description',
+        'tags',
         'status',
         'published_at',
     ];
@@ -27,6 +31,7 @@ class Post extends Model
     {
         return [
             'published_at' => 'datetime',
+            'tags'         => 'array',
         ];
     }
 
@@ -36,7 +41,9 @@ class Post extends Model
             ->when($filters['search'] ?? null, function ($query, string $search): void {
                 $query->where(function ($query) use ($search): void {
                     $query->where('title', 'like', '%'.$search.'%')
-                        ->orWhere('content', 'like', '%'.$search.'%');
+                        ->orWhere('slug', 'like', '%'.$search.'%')
+                        ->orWhere('content', 'like', '%'.$search.'%')
+                        ->orWhere('excerpt', 'like', '%'.$search.'%');
                 });
             })
             ->when($filters['status'] ?? null, fn ($query, string $status) => $query->where('status', $status));
