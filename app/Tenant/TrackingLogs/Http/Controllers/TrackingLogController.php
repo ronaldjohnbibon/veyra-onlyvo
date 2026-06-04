@@ -8,6 +8,7 @@ use App\Tenant\TrackingLogs\Http\Requests\TrackingLogIndexRequest;
 use App\Tenant\TrackingLogs\Services\TrackingLogService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class TrackingLogController extends Controller
 {
@@ -23,6 +24,61 @@ class TrackingLogController extends Controller
         }
 
         return $this->success($this->service->index($this->tenantId(), $request->validated()), 'Tracking logs retrieved.');
+    }
+
+    public function export(TrackingLogIndexRequest $request): StreamedResponse
+    {
+        if (! $this->settings->featureEnabled('enable_tracking_logs')) {
+            abort(403, 'Tracking logs are disabled.');
+        }
+
+        $rows = $this->service->exportRows($this->tenantId(), $request->validated());
+
+        return response()->streamDownload(function () use ($rows): void {
+            $handle = fopen('php://output', 'w');
+
+            if (! $handle) {
+                return;
+            }
+
+            fputcsv($handle, [
+                'Time',
+                'Activity',
+                'Event Type',
+                'Website',
+                'Page',
+                'Visitor',
+                'IP',
+                'Device',
+                'Browser',
+                'Referrer',
+                'UTM Source',
+                'UTM Medium',
+                'UTM Campaign',
+                'Conversion Status',
+            ]);
+
+            foreach ($rows as $row) {
+                fputcsv($handle, [
+                    $row['created_at'],
+                    $row['activity_title'],
+                    $row['event_type_label'],
+                    $row['website_template'],
+                    $row['landing_page_url'],
+                    $row['visitor_label'],
+                    $row['ip_address_label'],
+                    $row['device_type'],
+                    $row['browser'],
+                    $row['referrer_url'],
+                    $row['utm_source'],
+                    $row['utm_medium'],
+                    $row['utm_campaign'],
+                    $row['conversion_status'],
+                ]);
+            }
+
+            fclose($handle);
+        }, 'tracking-logs.csv', ['Content-Type' => 'text/csv']);
     }
 
     private function tenantId(): string

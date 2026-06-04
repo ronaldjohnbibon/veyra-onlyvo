@@ -15,6 +15,8 @@ export interface TrackingLogRecord {
   event_type: Exclude<TrackingLogEventType, ''>
   event_type_label: string
   event_name: string
+  activity_title?: string
+  activity_summary?: string
   tenant_id: string
   tenant_name: string
   template_id?: string | null
@@ -22,7 +24,9 @@ export interface TrackingLogRecord {
   website_template: string
   landing_page_url?: string | null
   visitor_identifier?: string | null
+  visitor_label?: string | null
   session_identifier?: string | null
+  session_label?: string | null
   referrer_url?: string | null
   utm_source?: string | null
   utm_medium?: string | null
@@ -31,6 +35,7 @@ export interface TrackingLogRecord {
   browser?: string | null
   operating_system?: string | null
   ip_address?: string | null
+  ip_address_label?: string | null
   country_location?: string | null
   conversion_status?: string | null
   created_at: string

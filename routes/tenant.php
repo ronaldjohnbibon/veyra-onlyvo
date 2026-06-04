@@ -66,6 +66,7 @@ Route::prefix('app')->name('app.')->group(function (): void {
             Route::post('templates/{template}/posts/{post}/publish', [PostController::class, 'publish'])->name('templates.posts.publish');
             Route::post('templates/{template}/posts/{post}/unpublish', [PostController::class, 'unpublish'])->name('templates.posts.unpublish');
 
+            Route::get('tracking-logs/export', [TrackingLogController::class, 'export'])->name('tracking-logs.export');
             Route::get('tracking-logs', [TrackingLogController::class, 'index'])->name('tracking-logs.index');
         });
     });

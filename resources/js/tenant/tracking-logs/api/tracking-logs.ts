@@ -11,4 +11,13 @@ export const trackingLogService = {
       .get<TrackingLogResponse>('tracking-logs', { params })
       .then((response) => response.data)
   },
+
+  exportCsv(params: TrackingLogParams = {}) {
+    return http
+      .get<Blob>('tracking-logs/export', {
+        params,
+        responseType: 'blob',
+      })
+      .then((response) => response.data)
+  },
 }

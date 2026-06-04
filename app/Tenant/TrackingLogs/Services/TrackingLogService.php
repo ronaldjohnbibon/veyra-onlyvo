@@ -36,6 +36,25 @@ class TrackingLogService
         ];
     }
 
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return array<int, array<string, mixed>>
+     */
+    public function exportRows(string $tenantId, array $filters): array
+    {
+        $query = DB::query()->fromSub($this->baseUnion($tenantId), 'logs');
+
+        $this->applyFilters($query, $filters);
+        $this->applySorting($query, $filters);
+
+        return $query
+            ->limit(5000)
+            ->get()
+            ->map(fn (object $row): array => $this->formatRow($row))
+            ->values()
+            ->all();
+    }
+
     private function baseUnion(string $tenantId): Builder
     {
         $visits = DB::table('visitor_visits as visits')
@@ -188,6 +207,8 @@ class TrackingLogService
             'event_type'         => $row->event_type,
             'event_type_label'   => $this->eventTypeLabel((string) $row->event_type),
             'event_name'         => $this->titleText((string) ($row->event_name ?? '')),
+            'activity_title'     => $this->activityTitle((string) $row->event_type, (string) ($row->event_name ?? '')),
+            'activity_summary'   => $this->activitySummary($row),
             'tenant_id'          => $row->tenant_id,
             'tenant_name'        => $row->tenant_name,
             'template_id'        => $row->template_id,
@@ -195,7 +216,9 @@ class TrackingLogService
             'website_template'   => $this->websiteTemplate($row),
             'landing_page_url'   => $row->landing_page_url,
             'visitor_identifier' => $row->visitor_identifier,
+            'visitor_label'      => $this->safeIdentifier((string) ($row->visitor_identifier ?? 'visitor')),
             'session_identifier' => $row->session_identifier,
+            'session_label'      => $this->safeIdentifier((string) ($row->session_identifier ?? $row->visitor_identifier ?? 'session')),
             'referrer_url'       => $row->referrer_url,
             'utm_source'         => $utm['utm_source'],
             'utm_medium'         => $utm['utm_medium'],
@@ -204,6 +227,7 @@ class TrackingLogService
             'browser'            => $this->browser((string) ($row->user_agent ?? '')),
             'operating_system'   => $this->operatingSystem((string) ($row->user_agent ?? '')),
             'ip_address'         => $row->ip_address,
+            'ip_address_label'   => $this->maskedIp((string) ($row->ip_address ?? '')),
             'country_location'   => $row->country_location,
             'conversion_status'  => $row->conversion_status,
             'created_at'         => $row->created_at,
@@ -220,6 +244,31 @@ class TrackingLogService
             'conversion'      => 'Conversion',
             default           => $this->titleText($eventType),
         };
+    }
+
+    private function activityTitle(string $eventType, string $eventName): string
+    {
+        $name = $this->titleText($eventName);
+
+        return match ($eventType) {
+            'website_visit'   => 'Visited a website page',
+            'cta_view'        => 'Saw '.$name,
+            'cta_click'       => 'Clicked '.$name,
+            'form_submission' => 'Submitted '.$name,
+            'conversion'      => 'Completed '.$name,
+            default           => $name,
+        };
+    }
+
+    private function activitySummary(object $row): string
+    {
+        $parts = array_filter([
+            $this->websiteTemplate($row),
+            $row->landing_page_url ? parse_url((string) $row->landing_page_url, PHP_URL_PATH) ?: $row->landing_page_url : null,
+            $row->referrer_url ? 'from '.parse_url((string) $row->referrer_url, PHP_URL_HOST) : null,
+        ]);
+
+        return $parts ? implode(' - ', $parts) : 'No page details captured.';
     }
 
     private function titleText(string $value): string
@@ -313,6 +362,36 @@ class TrackingLogService
             str_contains($userAgent, 'Linux')                                           => 'Linux',
             default                                                                     => 'Other',
         };
+    }
+
+    private function safeIdentifier(string $value): string
+    {
+        $value = trim($value);
+
+        if ($value === '') {
+            return 'Unknown';
+        }
+
+        return 'ID '.Str::upper(substr(hash('sha256', $value), 0, 8));
+    }
+
+    private function maskedIp(string $ipAddress): string
+    {
+        if ($ipAddress === '') {
+            return 'Not captured';
+        }
+
+        if (filter_var($ipAddress, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+            $parts = explode('.', $ipAddress);
+
+            return $parts[0].'.'.$parts[1].'.'.$parts[2].'.x';
+        }
+
+        if (filter_var($ipAddress, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+            return substr($ipAddress, 0, 8).'...';
+        }
+
+        return 'Masked';
     }
 
     /**

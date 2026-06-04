@@ -59,7 +59,21 @@ export const useTrackingLogStore = defineStore('tracking-logs', () => {
     })
   }
 
+  const exportCsv = async (): Promise<void> => {
+    const blob = await trackingLogService.exportCsv(params.value)
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+
+    link.href = url
+    link.download = 'tracking-logs.csv'
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(url)
+  }
+
   return {
+    exportCsv,
     filters,
     index,
     loading,
