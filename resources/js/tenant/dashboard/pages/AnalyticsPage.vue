@@ -202,7 +202,9 @@ const saveCurrentRange = (): void => {
   const label = `${formatDisplayDate(customFrom.value)} - ${formatDisplayDate(customTo.value)}`
   const next = [
     { label, from: customFrom.value, to: customTo.value },
-    ...savedRanges.value.filter((range) => range.from !== customFrom.value || range.to !== customTo.value),
+    ...savedRanges.value.filter(
+      (range) => range.from !== customFrom.value || range.to !== customTo.value
+    ),
   ].slice(0, 5)
 
   savedRanges.value = next
@@ -317,18 +319,21 @@ onMounted(() => {
           </NativeSelect>
         </div>
 
-        <Button type="button" size="sm" variant="navigate" class="h-9 xl:ml-auto" @click="exportAnalytics">
+        <Button
+          type="button"
+          size="sm"
+          variant="navigate"
+          class="h-9 xl:ml-auto"
+          @click="exportAnalytics"
+        >
           <Download class="size-4" />
           Export CSV
         </Button>
       </div>
 
-      <div
-        v-if="insights.length"
-        class="mb-4 grid gap-3 md:grid-cols-2 xl:grid-cols-5"
-      >
+      <div v-if="insights.length" class="mb-4 grid gap-4 md:grid-cols-2">
         <Card v-for="insight in insights" :key="insight.title">
-          <CardHeader class="space-y-0 pb-2">
+          <CardHeader class="space-y-0">
             <CardTitle class="flex items-center gap-2 text-sm font-medium">
               <Lightbulb class="size-4 text-primary" />
               {{ insight.title }}
@@ -386,21 +391,26 @@ onMounted(() => {
               </div>
               <div class="rounded border p-3">
                 <p class="text-xs text-muted-foreground">Clicks</p>
-                <p class="mt-1 text-xl font-semibold">{{ formatNumber(funnel?.cta_clicks ?? 0) }}</p>
+                <p class="mt-1 text-xl font-semibold">
+                  {{ formatNumber(funnel?.cta_clicks ?? 0) }}
+                </p>
                 <p class="mt-1 text-xs text-muted-foreground">
                   {{ formatPercent(funnel?.view_to_click_rate ?? 0) }}
                 </p>
               </div>
               <div class="rounded border p-3">
                 <p class="text-xs text-muted-foreground">Submissions</p>
-                <p class="mt-1 text-xl font-semibold">{{ formatNumber(funnel?.submissions ?? 0) }}</p>
+                <p class="mt-1 text-xl font-semibold">
+                  {{ formatNumber(funnel?.submissions ?? 0) }}
+                </p>
                 <p class="mt-1 text-xs text-muted-foreground">
                   {{ formatPercent(funnel?.click_to_submission_rate ?? 0) }}
                 </p>
               </div>
             </div>
             <p class="mt-3 text-sm leading-6 text-muted-foreground">
-              The funnel separates visits, CTA exposure, CTA clicks, and submission goals so you can spot where users stop.
+              The funnel separates visits, CTA exposure, CTA clicks, and submission goals so you can
+              spot where users stop.
             </p>
           </CardContent>
         </Card>
@@ -441,7 +451,12 @@ onMounted(() => {
             <div v-if="!campaigns.length" class="py-16 text-center text-sm text-muted-foreground">
               No UTM-tagged visits found for this range.
             </div>
-            <div v-for="campaign in campaigns" v-else :key="`${campaign.source}-${campaign.medium}-${campaign.campaign}`" class="rounded border p-3">
+            <div
+              v-for="campaign in campaigns"
+              v-else
+              :key="`${campaign.source}-${campaign.medium}-${campaign.campaign}`"
+              class="rounded border p-3"
+            >
               <div class="flex items-start justify-between gap-3">
                 <div class="min-w-0">
                   <p class="truncate text-sm font-medium">{{ campaign.campaign }}</p>
@@ -579,7 +594,8 @@ onMounted(() => {
               </p>
             </div>
             <p class="text-sm leading-6 text-muted-foreground">
-              Submission goals include CTA events ending in submitted, such as contact, quote, booking, message, and newsletter submissions.
+              Submission goals include CTA events ending in submitted, such as contact, quote,
+              booking, message, and newsletter submissions.
             </p>
           </CardContent>
         </Card>
