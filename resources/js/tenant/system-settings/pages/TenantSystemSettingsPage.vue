@@ -279,7 +279,7 @@ onMounted(async () => {
             <FieldSet class="p-4">
               <section v-if="currentGroup">
                 <FieldGroup>
-                  <div class="grid gap-4 lg:grid-cols-2">
+                  <div class="grid gap-4 lg:grid-cols-1">
                     <template v-for="setting in currentGroup.settings" :key="setting.key">
                       <label
                         v-if="setting.type === 'boolean'"
@@ -295,7 +295,7 @@ onMounted(async () => {
                         />
                       </label>
 
-                      <Field v-else-if="setting.type === 'text'" class="lg:col-span-2">
+                      <Field v-else-if="setting.type === 'text'" class="lg:col-span-1">
                         <FieldLabel :for="fieldId(setting)">{{ setting.label }}</FieldLabel>
 
                         <Textarea
@@ -311,7 +311,7 @@ onMounted(async () => {
                         </FieldError>
                       </Field>
 
-                      <Field v-else-if="setting.type === 'image'" class="lg:col-span-2">
+                      <Field v-else-if="setting.type === 'image'" class="lg:col-span-1">
                         <FieldLabel :for="fieldId(setting)">{{ setting.label }}</FieldLabel>
                         <div
                           class="grid gap-4 rounded border bg-muted/20 p-3 md:grid-cols-[18rem_minmax(0,1fr)]"
