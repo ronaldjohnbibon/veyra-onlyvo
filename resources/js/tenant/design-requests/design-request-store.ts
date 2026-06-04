@@ -3,6 +3,8 @@ import { ref } from 'vue'
 import { designRequestService } from './api/design-requests'
 import { validationErrorsFrom } from '@/shared/api/errors'
 import type {
+  DesignRequestActionPayload,
+  DesignRequestCommentPayload,
   DesignRequestParams,
   DesignRequestPayload,
   DesignRequestRecord,
@@ -59,7 +61,45 @@ export const useDesignRequestStore = defineStore('tenant-design-requests', () =>
     }
   }
 
+  const comment = async (
+    id: string,
+    payload: DesignRequestCommentPayload
+  ): Promise<DesignRequestRecord> => {
+    try {
+      loading.value = true
+      errors.value = {}
+      request.value = (await designRequestService.comment(id, payload)).data
+      await index()
+      return request.value
+    } catch (err) {
+      errors.value = validationErrorsFrom(err)
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const action = async (
+    id: string,
+    payload: DesignRequestActionPayload
+  ): Promise<DesignRequestRecord> => {
+    try {
+      loading.value = true
+      errors.value = {}
+      request.value = (await designRequestService.action(id, payload)).data
+      await index()
+      return request.value
+    } catch (err) {
+      errors.value = validationErrorsFrom(err)
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
+    action,
+    comment,
     errors,
     index,
     loading,

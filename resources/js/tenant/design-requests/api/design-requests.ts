@@ -3,6 +3,8 @@ import type {
   DesignRequestParams,
   DesignRequestPayload,
   DesignRequestRecord,
+  DesignRequestActionPayload,
+  DesignRequestCommentPayload,
 } from '@/shared/types/design-requests'
 
 interface DesignRequestCollectionResponse {
@@ -53,6 +55,18 @@ export const designRequestService = {
       .post<DesignRequestResponse>('design-requests', toFormData(payload), {
         headers: { 'Content-Type': 'multipart/form-data' },
       })
+      .then((response) => response.data)
+  },
+
+  comment(id: string, payload: DesignRequestCommentPayload) {
+    return http
+      .post<DesignRequestResponse>(`design-requests/${id}/comments`, payload)
+      .then((response) => response.data)
+  },
+
+  action(id: string, payload: DesignRequestActionPayload) {
+    return http
+      .post<DesignRequestResponse>(`design-requests/${id}/actions`, payload)
       .then((response) => response.data)
   },
 }

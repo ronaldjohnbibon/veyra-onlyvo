@@ -4,6 +4,7 @@ import { adminDesignRequestService } from './api/design-requests'
 import { validationErrorsFrom } from '@/shared/api/errors'
 import type {
   AdminDesignRequestPayload,
+  DesignRequestCommentPayload,
   DesignRequestParams,
   DesignRequestRecord,
 } from '@/shared/types/design-requests'
@@ -62,7 +63,26 @@ export const useAdminDesignRequestStore = defineStore('admin-design-requests', (
     }
   }
 
+  const comment = async (
+    id: string,
+    payload: DesignRequestCommentPayload
+  ): Promise<DesignRequestRecord> => {
+    try {
+      loading.value = true
+      errors.value = {}
+      request.value = (await adminDesignRequestService.comment(id, payload)).data
+      await index()
+      return request.value
+    } catch (err) {
+      errors.value = validationErrorsFrom(err)
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
+    comment,
     errors,
     index,
     loading,

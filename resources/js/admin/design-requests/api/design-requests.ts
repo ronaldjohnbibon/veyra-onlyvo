@@ -1,6 +1,7 @@
 import http from '@/shared/api/http'
 import type {
   AdminDesignRequestPayload,
+  DesignRequestCommentPayload,
   DesignRequestParams,
   DesignRequestRecord,
 } from '@/shared/types/design-requests'
@@ -32,6 +33,12 @@ export const adminDesignRequestService = {
   update(id: string, payload: AdminDesignRequestPayload) {
     return http
       .put<DesignRequestResponse>(`admin/design-requests/${id}`, payload)
+      .then((response) => response.data)
+  },
+
+  comment(id: string, payload: DesignRequestCommentPayload) {
+    return http
+      .post<DesignRequestResponse>(`admin/design-requests/${id}/comments`, payload)
       .then((response) => response.data)
   },
 }

@@ -14,6 +14,37 @@ export interface AnalyticsSummary {
   last_30_days_cta_events: number
 }
 
+export interface AnalyticsRangeSummary {
+  visits: number
+  unique_visitors: number
+  cta_events: number
+  submissions: number
+  cta_rate: number
+  submission_rate: number
+}
+
+export interface AnalyticsChange {
+  value: number
+  percent?: number | null
+  direction: 'up' | 'down' | 'flat'
+}
+
+export interface AnalyticsComparison {
+  current: AnalyticsRangeSummary
+  previous: AnalyticsRangeSummary
+  previous_range: {
+    from: string
+    to: string
+  }
+  changes: {
+    visits: AnalyticsChange
+    unique_visitors: AnalyticsChange
+    cta_events: AnalyticsChange
+    submissions: AnalyticsChange
+    submission_rate: AnalyticsChange
+  }
+}
+
 export interface AnalyticsDailyTotal {
   date: string
   total: number
@@ -34,6 +65,48 @@ export interface AnalyticsCtaTotalRow {
 export interface AnalyticsEventTypeRow {
   event_type: string
   total: number
+}
+
+export interface AnalyticsNameTotalRow {
+  name: string
+  total: number
+}
+
+export interface AnalyticsCampaignRow {
+  source: string
+  medium: string
+  campaign: string
+  visits: number
+  cta_events: number
+}
+
+export interface AnalyticsCtaDrilldownRow {
+  cta_identifier: string
+  cta_label: string
+  cta_type: string
+  views: number
+  clicks: number
+  submissions: number
+  total_events: number
+  click_rate: number
+  submission_rate: number
+}
+
+export interface AnalyticsFunnel {
+  visits: number
+  cta_views: number
+  cta_clicks: number
+  submissions: number
+  visit_to_view_rate: number
+  view_to_click_rate: number
+  click_to_submission_rate: number
+  visit_to_submission_rate: number
+}
+
+export interface AnalyticsInsight {
+  title: string
+  body: string
+  tone: 'success' | 'warning' | 'info' | 'neutral' | string
 }
 
 export interface AnalyticsPagination {
@@ -84,14 +157,22 @@ export interface AnalyticsDashboard {
     from: string
     to: string
   }
+  range_summary: AnalyticsRangeSummary
+  comparison: AnalyticsComparison
   daily_visits: AnalyticsDailyTotal[]
   daily_uniques: AnalyticsDailyTotal[]
   daily_cta_events: AnalyticsDailyTotal[]
   cta_events_by_type: AnalyticsEventTypeRow[]
+  campaigns: AnalyticsCampaignRow[]
+  devices: AnalyticsNameTotalRow[]
+  browsers: AnalyticsNameTotalRow[]
+  cta_drilldowns: AnalyticsCtaDrilldownRow[]
   top_ctas: AnalyticsPagedCtaTotals
   top_pages: AnalyticsPagedTotals
   top_referrers: AnalyticsPagedTotals
   conversions: AnalyticsConversions
+  funnel: AnalyticsFunnel
+  insights: AnalyticsInsight[]
 }
 
 export interface AnalyticsParams {

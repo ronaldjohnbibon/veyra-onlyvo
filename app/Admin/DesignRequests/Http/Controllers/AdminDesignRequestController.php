@@ -2,6 +2,7 @@
 
 namespace App\Admin\DesignRequests\Http\Controllers;
 
+use App\Admin\DesignRequests\Http\Requests\AdminDesignRequestCommentRequest;
 use App\Admin\DesignRequests\Http\Requests\AdminDesignRequestStatusRequest;
 use App\Admin\DesignRequests\Http\Resources\DesignRequestResource;
 use App\Admin\DesignRequests\Models\DesignRequest;
@@ -75,13 +76,29 @@ class AdminDesignRequestController extends Controller
 
         $this->service->review($record, $request->validated(), Auth::id());
 
-        return $this->success(new DesignRequestResource($record->fresh(['files', 'tenant', 'requester'])), 'Design request updated.');
+        return $this->success(new DesignRequestResource($record->fresh(['files', 'events', 'tenant', 'requester'])), 'Design request updated.');
+    }
+
+    public function comment(AdminDesignRequestCommentRequest $request, string $designRequest): JsonResponse
+    {
+        $this->authorizeAdmin();
+
+        $record = $this->findRequest($designRequest);
+
+        if (! $record) {
+            return $this->error('Design request not found.', 404);
+        }
+
+        return $this->success(
+            new DesignRequestResource($this->service->comment($record, Auth::id(), $request->validated('message'))),
+            'Comment added.',
+        );
     }
 
     private function findRequest(string $id): ?DesignRequest
     {
         return DesignRequest::query()
-            ->with(['files', 'tenant', 'requester'])
+            ->with(['files', 'events', 'tenant', 'requester'])
             ->whereKey($id)
             ->first();
     }

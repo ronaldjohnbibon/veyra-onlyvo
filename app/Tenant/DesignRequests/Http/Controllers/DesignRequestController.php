@@ -3,6 +3,8 @@
 namespace App\Tenant\DesignRequests\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Tenant\DesignRequests\Http\Requests\DesignRequestActionRequest;
+use App\Tenant\DesignRequests\Http\Requests\DesignRequestCommentRequest;
 use App\Tenant\DesignRequests\Http\Requests\DesignRequestRequest;
 use App\Tenant\DesignRequests\Http\Resources\DesignRequestResource;
 use App\Tenant\DesignRequests\Models\DesignRequest;
@@ -72,7 +74,7 @@ class DesignRequestController extends Controller
             $this->notifications->sendDesignRequest($designRequest, $tenant);
         }
 
-        return $this->success(new DesignRequestResource($designRequest), 'Design request submitted.', 201);
+        return $this->success(new DesignRequestResource($designRequest->load('events')), 'Design request submitted.', 201);
     }
 
     public function show(string $designRequest): JsonResponse
@@ -82,7 +84,7 @@ class DesignRequestController extends Controller
         }
 
         $record = DesignRequest::query()
-            ->with('files')
+            ->with(['files', 'events'])
             ->whereKey($designRequest)
             ->first();
 
@@ -91,5 +93,55 @@ class DesignRequestController extends Controller
         }
 
         return $this->success(new DesignRequestResource($record), 'Design request retrieved.');
+    }
+
+    public function comment(DesignRequestCommentRequest $request, string $designRequest): JsonResponse
+    {
+        if (! $this->settings->featureEnabled('enable_design_requests_module')) {
+            return $this->error('Design requests module is disabled.', 403);
+        }
+
+        $user = Auth::user();
+        abort_unless($user?->tenant_id, 403);
+
+        $record = DesignRequest::query()
+            ->with(['files', 'events'])
+            ->whereKey($designRequest)
+            ->first();
+
+        if (! $record) {
+            return $this->error('Design request not found.', 404);
+        }
+
+        return $this->success(
+            new DesignRequestResource($this->service->comment($record, $user, $request->validated('message'))),
+            'Comment added.',
+        );
+    }
+
+    public function action(DesignRequestActionRequest $request, string $designRequest): JsonResponse
+    {
+        if (! $this->settings->featureEnabled('enable_design_requests_module')) {
+            return $this->error('Design requests module is disabled.', 403);
+        }
+
+        $user = Auth::user();
+        abort_unless($user?->tenant_id, 403);
+
+        $record = DesignRequest::query()
+            ->with(['files', 'events'])
+            ->whereKey($designRequest)
+            ->first();
+
+        if (! $record) {
+            return $this->error('Design request not found.', 404);
+        }
+
+        $data = $request->validated();
+
+        return $this->success(
+            new DesignRequestResource($this->service->tenantAction($record, $user, (string) $data['action'], $data['message'] ?? null)),
+            'Request updated.',
+        );
     }
 }

@@ -18,6 +18,7 @@ class DesignRequestFileResource extends JsonResource
             'url'        => '/storage/'.ltrim((string) $this->path, '/'),
             'path'       => $this->path,
             'mime_type'  => $this->mime_type,
+            'is_image'   => str_starts_with((string) $this->mime_type, 'image/'),
             'size'       => $this->size,
             'created_at' => $this->created_at,
         ];

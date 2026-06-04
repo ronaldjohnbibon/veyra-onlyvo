@@ -21,6 +21,7 @@ class DesignRequest extends Model
         'pending',
         'under_review',
         'approved',
+        'changes_requested',
         'rejected',
         'completed',
     ];
@@ -65,6 +66,11 @@ class DesignRequest extends Model
     public function files(): HasMany
     {
         return $this->hasMany(DesignRequestFile::class)->oldest();
+    }
+
+    public function events(): HasMany
+    {
+        return $this->hasMany(DesignRequestEvent::class)->oldest();
     }
 
     #[TenantRelation]

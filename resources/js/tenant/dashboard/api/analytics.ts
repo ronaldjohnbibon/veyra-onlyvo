@@ -20,6 +20,15 @@ export const analyticsService = {
     return http.get<AnalyticsResponse>('analytics', { params }).then((response) => response.data)
   },
 
+  exportCsv(params: AnalyticsParams = {}) {
+    return http
+      .get<Blob>('analytics/export', {
+        params,
+        responseType: 'blob',
+      })
+      .then((response) => response.data)
+  },
+
   trackVisit(payload: TrackingPayload) {
     return http
       .post('public/analytics/visits', payload, {

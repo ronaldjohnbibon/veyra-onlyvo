@@ -16,8 +16,12 @@ import { Textarea } from '@/shared/components/ui/textarea'
 import { formatDisplayDate } from '@/shared/utils/date'
 import { getStatusBadgeVariant, getStatusLabel } from '@/shared/utils/status'
 import { useAdminDesignRequestStore } from '@/admin/design-requests/design-request-store'
-import type { DesignRequestRecord, DesignRequestStatus } from '@/shared/types/design-requests'
-import { Eye, FileText, Link2, Save } from 'lucide-vue-next'
+import type {
+  DesignRequestEventRecord,
+  DesignRequestRecord,
+  DesignRequestStatus,
+} from '@/shared/types/design-requests'
+import { Eye, FileText, Link2, MessageSquare, Save } from 'lucide-vue-next'
 import { computed, onMounted, reactive, ref } from 'vue'
 
 type SortDirection = 'asc' | 'desc' | ''
@@ -26,6 +30,8 @@ const designRequestStore = useAdminDesignRequestStore()
 const reviewDialogOpen = ref(false)
 const selectedRequest = ref<DesignRequestRecord | null>(null)
 const formError = ref('')
+const commentText = ref('')
+const collaborationError = ref('')
 
 const columns = [
   { key: 'title', label: 'Request', sortable: true },
@@ -53,13 +59,22 @@ const statusFilter = computed({
   },
 })
 
-const openReviewDialog = (request: DesignRequestRecord): void => {
+const openReviewDialog = async (request: DesignRequestRecord): Promise<void> => {
   selectedRequest.value = request
   form.status = request.status
   form.admin_remarks = request.admin_remarks ?? ''
   formError.value = ''
+  commentText.value = ''
+  collaborationError.value = ''
   designRequestStore.errors = {}
   reviewDialogOpen.value = true
+  await designRequestStore.show(request.id)
+  selectedRequest.value = designRequestStore.request
+
+  if (selectedRequest.value) {
+    form.status = selectedRequest.value.status
+    form.admin_remarks = selectedRequest.value.admin_remarks ?? ''
+  }
 }
 
 const saveReview = async (): Promise<void> => {
@@ -75,6 +90,20 @@ const saveReview = async (): Promise<void> => {
   }
 }
 
+const submitComment = async (): Promise<void> => {
+  if (!selectedRequest.value || !commentText.value.trim()) return
+
+  try {
+    collaborationError.value = ''
+    selectedRequest.value = await designRequestStore.comment(selectedRequest.value.id, {
+      message: commentText.value.trim(),
+    })
+    commentText.value = ''
+  } catch {
+    collaborationError.value = 'Could not add the comment. Please try again.'
+  }
+}
+
 const updateSort = (key: string, direction: SortDirection): void => {
   designRequestStore.index({
     sort: direction ? key : 'created_at',
@@ -87,6 +116,28 @@ const formatFileSize = (size: number): string => {
   if (size < 1024 * 1024) return `${Math.max(1, Math.round(size / 1024))} KB`
 
   return `${(size / 1024 / 1024).toFixed(1)} MB`
+}
+
+const eventTitle = (event: DesignRequestEventRecord): string => {
+  if (event.event_type === 'status_changed') {
+    return `Status changed to ${getStatusLabel(event.to_status ?? '')}`
+  }
+
+  if (event.event_type === 'approval') return 'Approved by tenant'
+  if (event.event_type === 'changes_requested') return 'Changes requested'
+  if (event.event_type === 'feedback') return 'Admin feedback'
+  if (event.event_type === 'comment') return 'Comment'
+  if (event.event_type === 'created') return 'Request submitted'
+
+  return event.event_type.replace(/_/g, ' ')
+}
+
+const actorLabel = (event: DesignRequestEventRecord): string => {
+  if (event.actor_name) return event.actor_name
+  if (event.actor_type === 'admin') return 'Admin'
+  if (event.actor_type === 'tenant') return 'Tenant'
+
+  return 'System'
 }
 
 onMounted(() => {
@@ -137,6 +188,7 @@ onMounted(() => {
             <option value="pending">Pending</option>
             <option value="under_review">Under Review</option>
             <option value="approved">Approved</option>
+            <option value="changes_requested">Changes Requested</option>
             <option value="rejected">Rejected</option>
             <option value="completed">Completed</option>
           </NativeSelect>
@@ -205,6 +257,9 @@ onMounted(() => {
                   {{ selectedRequest.files.length }} attached files
                 </span>
               </div>
+              <p class="rounded border bg-muted/40 p-3 text-sm leading-6 text-muted-foreground">
+                {{ selectedRequest.status_explanation }}
+              </p>
 
               <div class="space-y-1">
                 <h3 class="text-sm font-semibold">Description</h3>
@@ -244,24 +299,35 @@ onMounted(() => {
                 </div>
               </div>
 
-              <div v-if="selectedRequest.files.length" class="space-y-2">
+              <div class="space-y-2">
                 <h3 class="text-sm font-semibold">Uploaded Files</h3>
-                <div class="grid gap-2 sm:grid-cols-2">
+                <div v-if="selectedRequest.files.length" class="grid gap-2 sm:grid-cols-2">
                   <a
                     v-for="file in selectedRequest.files"
                     :key="file.id"
                     :href="file.url"
                     target="_blank"
                     rel="noreferrer"
-                    class="flex items-center gap-2 rounded border p-3 text-sm hover:bg-muted"
+                    class="overflow-hidden rounded border text-sm hover:bg-muted"
                   >
-                    <FileText class="size-4" />
-                    <span class="min-w-0 flex-1 truncate">{{ file.name }}</span>
-                    <span class="text-xs text-muted-foreground">
-                      {{ formatFileSize(file.size) }}
-                    </span>
+                    <img
+                      v-if="file.is_image"
+                      :src="file.url"
+                      :alt="file.name"
+                      class="aspect-video w-full object-cover"
+                    />
+                    <div class="flex items-center gap-2 p-3">
+                      <FileText class="size-4" />
+                      <span class="min-w-0 flex-1 truncate">{{ file.name }}</span>
+                      <span class="text-xs text-muted-foreground">
+                        {{ formatFileSize(file.size) }}
+                      </span>
+                    </div>
                   </a>
                 </div>
+                <p v-else class="rounded border bg-muted/40 p-3 text-sm text-muted-foreground">
+                  No files were attached to this request.
+                </p>
               </div>
             </div>
 
@@ -279,6 +345,7 @@ onMounted(() => {
                       <option value="pending">Pending</option>
                       <option value="under_review">Under Review</option>
                       <option value="approved">Approved</option>
+                      <option value="changes_requested">Changes Requested</option>
                       <option value="rejected">Rejected</option>
                       <option value="completed">Completed</option>
                     </NativeSelect>
@@ -322,6 +389,59 @@ onMounted(() => {
                   Save Review
                 </Button>
               </DialogFooter>
+
+              <div class="rounded border bg-card p-4">
+                <h3 class="text-sm font-semibold">Discussion</h3>
+                <Textarea
+                  v-field-help="'Send a message to the tenant about this request.'"
+                  v-model="commentText"
+                  class="mt-3 min-h-24"
+                  placeholder="Ask a question or add implementation notes."
+                />
+                <Button
+                  type="button"
+                  variant="update"
+                  class="mt-3 w-full"
+                  :disabled="designRequestStore.loading || !commentText.trim()"
+                  @click="submitComment"
+                >
+                  <MessageSquare class="size-4" />
+                  Add Comment
+                </Button>
+                <p
+                  v-if="collaborationError"
+                  class="mt-3 rounded border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive"
+                >
+                  {{ collaborationError }}
+                </p>
+              </div>
+
+              <div class="rounded border bg-card p-4">
+                <h3 class="text-sm font-semibold">Timeline</h3>
+                <div v-if="selectedRequest.events?.length" class="mt-4 space-y-4">
+                  <div
+                    v-for="event in selectedRequest.events"
+                    :key="event.id"
+                    class="border-l pl-3"
+                  >
+                    <div class="flex items-start justify-between gap-3">
+                      <p class="text-sm font-medium">{{ eventTitle(event) }}</p>
+                      <span class="text-xs text-muted-foreground">
+                        {{ formatDisplayDate(event.created_at) }}
+                      </span>
+                    </div>
+                    <p class="mt-1 text-xs text-muted-foreground">
+                      {{ actorLabel(event) }}
+                    </p>
+                    <p v-if="event.message" class="mt-2 whitespace-pre-line text-sm text-muted-foreground">
+                      {{ event.message }}
+                    </p>
+                  </div>
+                </div>
+                <p v-else class="mt-3 rounded border bg-muted/40 p-3 text-sm text-muted-foreground">
+                  No timeline activity yet.
+                </p>
+              </div>
             </form>
           </div>
         </DialogScrollContent>

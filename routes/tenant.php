@@ -30,6 +30,7 @@ Route::prefix('app')->name('app.')->group(function (): void {
             Route::post('logout', [AuthController::class, 'logout']);
 
             Route::get('dashboard', [TenantDashboardController::class, 'index'])->name('dashboard.index');
+            Route::get('analytics/export', [AnalyticsController::class, 'export'])->name('analytics.export');
             Route::get('analytics', [AnalyticsController::class, 'index'])->name('analytics.index');
 
             Route::get('leads/export', [TenantLeadController::class, 'export'])->name('leads.export');
@@ -40,6 +41,8 @@ Route::prefix('app')->name('app.')->group(function (): void {
             Route::get('design-requests', [DesignRequestController::class, 'index'])->name('design-requests.index');
             Route::post('design-requests', [DesignRequestController::class, 'store'])->name('design-requests.store');
             Route::get('design-requests/{designRequest}', [DesignRequestController::class, 'show'])->name('design-requests.show');
+            Route::post('design-requests/{designRequest}/comments', [DesignRequestController::class, 'comment'])->name('design-requests.comments.store');
+            Route::post('design-requests/{designRequest}/actions', [DesignRequestController::class, 'action'])->name('design-requests.actions.store');
 
             Route::apiResource('sidebars', TenantSidebarController::class);
 

@@ -14,6 +14,7 @@ import {
 import { formatDisplayDate } from '@/shared/utils/date'
 import { useAnalyticsStore } from '@/tenant/dashboard/analytics-store'
 import type {
+  AnalyticsChange,
   AnalyticsCtaTotalRow,
   AnalyticsDailyTotal,
   AnalyticsEventTypeRow,
@@ -23,9 +24,13 @@ import type {
 import {
   BarChart3,
   CalendarDays,
+  Download,
   Eye,
+  Lightbulb,
   MousePointerClick,
   Percent,
+  Save,
+  Smartphone,
   Target,
   Users,
 } from 'lucide-vue-next'
@@ -34,51 +39,44 @@ import { computed, onMounted, ref } from 'vue'
 const analyticsStore = useAnalyticsStore()
 const customFrom = ref('')
 const customTo = ref('')
+const savedRanges = ref<{ label: string; from: string; to: string }[]>([])
 
 const dashboard = computed(() => analyticsStore.dashboard)
 const summary = computed(() => dashboard.value?.summary)
+const rangeSummary = computed(() => dashboard.value?.range_summary)
+const comparison = computed(() => dashboard.value?.comparison)
 
 const summaryCards = computed(() => [
   {
-    label: 'Total Visits',
-    value: summary.value?.total_visits ?? 0,
+    label: 'Visits',
+    value: rangeSummary.value?.visits ?? 0,
     icon: Eye,
+    change: comparison.value?.changes.visits,
   },
   {
     label: 'Unique Visitors',
-    value: summary.value?.unique_visitors ?? 0,
+    value: rangeSummary.value?.unique_visitors ?? 0,
     icon: Users,
+    change: comparison.value?.changes.unique_visitors,
   },
   {
-    label: 'Total CTA Events',
-    value: summary.value?.total_cta_events ?? 0,
+    label: 'CTA Events',
+    value: rangeSummary.value?.cta_events ?? 0,
     icon: MousePointerClick,
+    change: comparison.value?.changes.cta_events,
   },
   {
-    label: 'Unique CTA Visitors',
-    value: summary.value?.unique_cta_visitors ?? 0,
+    label: 'Submissions',
+    value: rangeSummary.value?.submissions ?? 0,
     icon: Target,
+    change: comparison.value?.changes.submissions,
   },
   {
-    label: "Today's CTA Events",
-    value: summary.value?.today_cta_events ?? 0,
-    icon: CalendarDays,
-  },
-  {
-    label: 'Last 7 Days CTA Events',
-    value: summary.value?.last_7_days_cta_events ?? 0,
-    icon: BarChart3,
-  },
-  {
-    label: 'Last 30 Days CTA Events',
-    value: summary.value?.last_30_days_cta_events ?? 0,
-    icon: BarChart3,
-  },
-  {
-    label: 'Overall Conversion Rate',
-    value: dashboard.value?.conversions.overall_conversion_rate ?? 0,
+    label: 'Submission Rate',
+    value: rangeSummary.value?.submission_rate ?? 0,
     icon: Percent,
     percent: true,
+    change: comparison.value?.changes.submission_rate,
   },
 ])
 
@@ -99,6 +97,12 @@ const referrers = computed(() => dashboard.value?.top_referrers.data ?? [])
 const topCtas = computed(() => dashboard.value?.top_ctas.data ?? [])
 const ctaEventTypes = computed(() => dashboard.value?.cta_events_by_type ?? [])
 const conversions = computed(() => dashboard.value?.conversions)
+const insights = computed(() => dashboard.value?.insights ?? [])
+const campaigns = computed(() => dashboard.value?.campaigns ?? [])
+const devices = computed(() => dashboard.value?.devices ?? [])
+const browsers = computed(() => dashboard.value?.browsers ?? [])
+const funnel = computed(() => dashboard.value?.funnel)
+const ctaDrilldowns = computed(() => dashboard.value?.cta_drilldowns ?? [])
 const pagePagination = computed(() => dashboard.value?.top_pages.pagination)
 const referrerPagination = computed(() => dashboard.value?.top_referrers.pagination)
 const ctaPagination = computed(() => dashboard.value?.top_ctas.pagination)
@@ -109,6 +113,24 @@ const formatNumber = (value: number): string => {
 
 const formatPercent = (value: number): string => {
   return `${new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(value)}%`
+}
+
+const changeText = (change?: AnalyticsChange): string => {
+  if (!change) return 'No comparison yet'
+  if (change.direction === 'flat') return 'No change vs previous period'
+
+  const percent =
+    change.percent === null || change.percent === undefined
+      ? 'from no prior activity'
+      : `${Math.abs(change.percent)}%`
+
+  return `${change.direction === 'up' ? 'Up' : 'Down'} ${percent}`
+}
+
+const changeClass = (change?: AnalyticsChange): string => {
+  if (!change || change.direction === 'flat') return 'text-muted-foreground'
+
+  return change.direction === 'up' ? 'text-emerald-600' : 'text-amber-600'
 }
 
 const titleCase = (value: string): string => {
@@ -159,6 +181,10 @@ const maxTypeTotal = (items: AnalyticsEventTypeRow[]): number => {
   return Math.max(1, ...items.map((item) => item.total))
 }
 
+const maxNameTotal = (items: { total: number }[]): number => {
+  return Math.max(1, ...items.map((item) => item.total))
+}
+
 const applyCustomRange = async (): Promise<void> => {
   await analyticsStore.index({
     period: 'custom',
@@ -168,6 +194,34 @@ const applyCustomRange = async (): Promise<void> => {
     referrers_page: 1,
     top_ctas_page: 1,
   })
+}
+
+const saveCurrentRange = (): void => {
+  if (!customFrom.value || !customTo.value) return
+
+  const label = `${formatDisplayDate(customFrom.value)} - ${formatDisplayDate(customTo.value)}`
+  const next = [
+    { label, from: customFrom.value, to: customTo.value },
+    ...savedRanges.value.filter((range) => range.from !== customFrom.value || range.to !== customTo.value),
+  ].slice(0, 5)
+
+  savedRanges.value = next
+  localStorage.setItem('tenant.analytics.savedRanges', JSON.stringify(next))
+}
+
+const applySavedRange = async (event: Event): Promise<void> => {
+  const index = Number((event.target as HTMLSelectElement).value)
+  const range = savedRanges.value[index]
+
+  if (!range) return
+
+  customFrom.value = range.from
+  customTo.value = range.to
+  await applyCustomRange()
+}
+
+const exportAnalytics = async (): Promise<void> => {
+  await analyticsStore.exportCsv()
 }
 
 const updatePage = async (
@@ -182,6 +236,13 @@ const rowLabel = (row: AnalyticsTotalRow): string => {
 }
 
 onMounted(() => {
+  try {
+    const saved = JSON.parse(localStorage.getItem('tenant.analytics.savedRanges') || '[]')
+    savedRanges.value = Array.isArray(saved) ? saved.slice(0, 5) : []
+  } catch {
+    savedRanges.value = []
+  }
+
   analyticsStore.index()
 })
 </script>
@@ -198,7 +259,7 @@ onMounted(() => {
         </div>
       </div>
 
-      <div class="mb-4 flex flex-col gap-3 rounded border bg-card p-3 sm:flex-row sm:items-end">
+      <div class="mb-4 flex flex-col gap-3 rounded border bg-card p-3 xl:flex-row xl:items-end">
         <div class="w-full sm:max-w-48">
           <label class="mb-1 block text-xs font-medium text-muted-foreground">Date Range</label>
 
@@ -236,10 +297,57 @@ onMounted(() => {
             />
           </div>
           <Button type="button" size="sm" class="h-9" @click="applyCustomRange">Apply</Button>
+          <Button type="button" size="sm" variant="outline" class="h-9" @click="saveCurrentRange">
+            <Save class="size-4" />
+            Save Range
+          </Button>
         </template>
+
+        <div v-if="savedRanges.length" class="w-full sm:max-w-64">
+          <label class="mb-1 block text-xs font-medium text-muted-foreground">Saved Ranges</label>
+          <NativeSelect
+            v-field-help="'Apply one of your saved analytics date ranges.'"
+            class="h-9"
+            @change="applySavedRange"
+          >
+            <option value="">Choose saved range</option>
+            <option v-for="(range, index) in savedRanges" :key="range.label" :value="index">
+              {{ range.label }}
+            </option>
+          </NativeSelect>
+        </div>
+
+        <Button type="button" size="sm" variant="navigate" class="h-9 xl:ml-auto" @click="exportAnalytics">
+          <Download class="size-4" />
+          Export CSV
+        </Button>
       </div>
 
-      <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+      <div
+        v-if="insights.length"
+        class="mb-4 grid gap-3 md:grid-cols-2 xl:grid-cols-5"
+      >
+        <Card v-for="insight in insights" :key="insight.title">
+          <CardHeader class="space-y-0 pb-2">
+            <CardTitle class="flex items-center gap-2 text-sm font-medium">
+              <Lightbulb class="size-4 text-primary" />
+              {{ insight.title }}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p class="text-sm leading-6 text-muted-foreground">{{ insight.body }}</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div
+        v-else-if="!analyticsStore.loading"
+        class="mb-4 rounded border bg-muted/40 p-6 text-center text-sm text-muted-foreground"
+      >
+        Analytics insights will appear after visits or CTA activity are recorded for this range.
+      </div>
+
+      <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
         <Card v-for="card in summaryCards" :key="card.label">
           <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle class="text-sm font-medium text-muted-foreground">
@@ -251,6 +359,228 @@ onMounted(() => {
             <div class="text-2xl font-semibold">
               {{ card.percent ? formatPercent(card.value) : formatNumber(card.value) }}
             </div>
+            <p class="mt-1 text-xs" :class="changeClass(card.change)">
+              {{ changeText(card.change) }}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div class="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
+        <Card>
+          <CardHeader>
+            <CardTitle class="text-base">Conversion Funnel</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div class="grid gap-3 md:grid-cols-4">
+              <div class="rounded border p-3">
+                <p class="text-xs text-muted-foreground">Visits</p>
+                <p class="mt-1 text-xl font-semibold">{{ formatNumber(funnel?.visits ?? 0) }}</p>
+              </div>
+              <div class="rounded border p-3">
+                <p class="text-xs text-muted-foreground">CTA Views</p>
+                <p class="mt-1 text-xl font-semibold">{{ formatNumber(funnel?.cta_views ?? 0) }}</p>
+                <p class="mt-1 text-xs text-muted-foreground">
+                  {{ formatPercent(funnel?.visit_to_view_rate ?? 0) }}
+                </p>
+              </div>
+              <div class="rounded border p-3">
+                <p class="text-xs text-muted-foreground">Clicks</p>
+                <p class="mt-1 text-xl font-semibold">{{ formatNumber(funnel?.cta_clicks ?? 0) }}</p>
+                <p class="mt-1 text-xs text-muted-foreground">
+                  {{ formatPercent(funnel?.view_to_click_rate ?? 0) }}
+                </p>
+              </div>
+              <div class="rounded border p-3">
+                <p class="text-xs text-muted-foreground">Submissions</p>
+                <p class="mt-1 text-xl font-semibold">{{ formatNumber(funnel?.submissions ?? 0) }}</p>
+                <p class="mt-1 text-xs text-muted-foreground">
+                  {{ formatPercent(funnel?.click_to_submission_rate ?? 0) }}
+                </p>
+              </div>
+            </div>
+            <p class="mt-3 text-sm leading-6 text-muted-foreground">
+              The funnel separates visits, CTA exposure, CTA clicks, and submission goals so you can spot where users stop.
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle class="text-base">Previous Period</CardTitle>
+          </CardHeader>
+          <CardContent class="space-y-3">
+            <p class="text-sm text-muted-foreground">
+              Compared with {{ formatDisplayDate(comparison?.previous_range.from) }} -
+              {{ formatDisplayDate(comparison?.previous_range.to) }}.
+            </p>
+            <div class="grid gap-2 sm:grid-cols-2">
+              <div class="rounded border p-3">
+                <p class="text-xs text-muted-foreground">Previous visits</p>
+                <p class="mt-1 text-lg font-semibold">
+                  {{ formatNumber(comparison?.previous.visits ?? 0) }}
+                </p>
+              </div>
+              <div class="rounded border p-3">
+                <p class="text-xs text-muted-foreground">Previous submissions</p>
+                <p class="mt-1 text-lg font-semibold">
+                  {{ formatNumber(comparison?.previous.submissions ?? 0) }}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div class="mt-4 grid gap-4 xl:grid-cols-3">
+        <Card>
+          <CardHeader>
+            <CardTitle class="text-base">Campaigns / UTM</CardTitle>
+          </CardHeader>
+          <CardContent class="space-y-3">
+            <div v-if="!campaigns.length" class="py-16 text-center text-sm text-muted-foreground">
+              No UTM-tagged visits found for this range.
+            </div>
+            <div v-for="campaign in campaigns" v-else :key="`${campaign.source}-${campaign.medium}-${campaign.campaign}`" class="rounded border p-3">
+              <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <p class="truncate text-sm font-medium">{{ campaign.campaign }}</p>
+                  <p class="mt-1 text-xs text-muted-foreground">
+                    {{ campaign.source }} / {{ campaign.medium }}
+                  </p>
+                </div>
+                <div class="text-right text-sm">
+                  <p class="font-semibold">{{ formatNumber(campaign.visits) }}</p>
+                  <p class="text-xs text-muted-foreground">visits</p>
+                </div>
+              </div>
+              <p class="mt-2 text-xs text-muted-foreground">
+                {{ formatNumber(campaign.cta_events) }} CTA events
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle class="text-base">Devices</CardTitle>
+          </CardHeader>
+          <CardContent class="space-y-3">
+            <div v-if="!devices.length" class="py-16 text-center text-sm text-muted-foreground">
+              No device data found.
+            </div>
+            <div v-for="row in devices" v-else :key="row.name" class="space-y-1.5">
+              <div class="flex items-center justify-between gap-3 text-sm">
+                <span class="flex items-center gap-2 font-medium">
+                  <Smartphone class="size-4 text-muted-foreground" />
+                  {{ row.name }}
+                </span>
+                <span class="text-muted-foreground">{{ formatNumber(row.total) }}</span>
+              </div>
+              <div class="h-2 rounded bg-muted">
+                <div
+                  class="h-2 rounded bg-[var(--chart-2)]"
+                  :style="{ width: `${(row.total / maxNameTotal(devices)) * 100}%` }"
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle class="text-base">Browsers</CardTitle>
+          </CardHeader>
+          <CardContent class="space-y-3">
+            <div v-if="!browsers.length" class="py-16 text-center text-sm text-muted-foreground">
+              No browser data found.
+            </div>
+            <div v-for="row in browsers" v-else :key="row.name" class="space-y-1.5">
+              <div class="flex items-center justify-between gap-3 text-sm">
+                <span class="font-medium">{{ row.name }}</span>
+                <span class="text-muted-foreground">{{ formatNumber(row.total) }}</span>
+              </div>
+              <div class="h-2 rounded bg-muted">
+                <div
+                  class="h-2 rounded bg-[var(--chart-5)]"
+                  :style="{ width: `${(row.total / maxNameTotal(browsers)) * 100}%` }"
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div class="mt-4 grid gap-4 xl:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle class="text-base">CTA Drilldowns</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div class="overflow-hidden rounded border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>CTA</TableHead>
+                    <TableHead class="w-24 text-right">Views</TableHead>
+                    <TableHead class="w-24 text-right">Clicks</TableHead>
+                    <TableHead class="w-28 text-right">Submits</TableHead>
+                    <TableHead class="w-24 text-right">Click Rate</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <TableRow v-if="!ctaDrilldowns.length">
+                    <TableCell :colspan="5" class="h-24 text-center text-muted-foreground">
+                      No CTA drilldown data found.
+                    </TableCell>
+                  </TableRow>
+                  <template v-else>
+                    <TableRow v-for="row in ctaDrilldowns" :key="row.cta_identifier">
+                      <TableCell>
+                        <span class="block max-w-sm truncate" :title="row.cta_label">
+                          {{ row.cta_label }}
+                        </span>
+                      </TableCell>
+                      <TableCell class="text-right font-medium">
+                        {{ formatNumber(row.views) }}
+                      </TableCell>
+                      <TableCell class="text-right font-medium">
+                        {{ formatNumber(row.clicks) }}
+                      </TableCell>
+                      <TableCell class="text-right font-medium">
+                        {{ formatNumber(row.submissions) }}
+                      </TableCell>
+                      <TableCell class="text-right font-medium">
+                        {{ formatPercent(row.click_rate) }}
+                      </TableCell>
+                    </TableRow>
+                  </template>
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle class="text-base">Goal Summary</CardTitle>
+          </CardHeader>
+          <CardContent class="space-y-3">
+            <div class="rounded border p-3">
+              <p class="text-xs text-muted-foreground">Visit to submission rate</p>
+              <p class="mt-1 text-2xl font-semibold">
+                {{ formatPercent(funnel?.visit_to_submission_rate ?? 0) }}
+              </p>
+            </div>
+            <div class="rounded border p-3">
+              <p class="text-xs text-muted-foreground">CTA click to submission rate</p>
+              <p class="mt-1 text-2xl font-semibold">
+                {{ formatPercent(funnel?.click_to_submission_rate ?? 0) }}
+              </p>
+            </div>
+            <p class="text-sm leading-6 text-muted-foreground">
+              Submission goals include CTA events ending in submitted, such as contact, quote, booking, message, and newsletter submissions.
+            </p>
           </CardContent>
         </Card>
       </div>

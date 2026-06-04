@@ -17,8 +17,12 @@ import { Textarea } from '@/shared/components/ui/textarea'
 import { formatDisplayDate } from '@/shared/utils/date'
 import { getStatusBadgeVariant, getStatusLabel } from '@/shared/utils/status'
 import { useDesignRequestStore } from '@/tenant/design-requests/design-request-store'
-import type { DesignRequestRecord, DesignRequestStatus } from '@/shared/types/design-requests'
-import { Eye, FileText, Link2, Send } from 'lucide-vue-next'
+import type {
+  DesignRequestEventRecord,
+  DesignRequestRecord,
+  DesignRequestStatus,
+} from '@/shared/types/design-requests'
+import { CheckCircle2, Eye, FileText, Link2, MessageSquare, Send, Undo2 } from 'lucide-vue-next'
 import { computed, onMounted, reactive, ref } from 'vue'
 
 type SortDirection = 'asc' | 'desc' | ''
@@ -30,6 +34,9 @@ const selectedRequest = ref<DesignRequestRecord | null>(null)
 const selectedFiles = ref<File[]>([])
 const referenceLinksText = ref('')
 const formError = ref('')
+const commentText = ref('')
+const actionMessage = ref('')
+const collaborationError = ref('')
 
 const columns = [
   { key: 'title', label: 'Request', sortable: true },
@@ -95,9 +102,14 @@ const openCreateDialog = (): void => {
   createDialogOpen.value = true
 }
 
-const openDetailsDialog = (request: DesignRequestRecord): void => {
+const openDetailsDialog = async (request: DesignRequestRecord): Promise<void> => {
   selectedRequest.value = request
   detailsDialogOpen.value = true
+  commentText.value = ''
+  actionMessage.value = ''
+  collaborationError.value = ''
+  await designRequestStore.show(request.id)
+  selectedRequest.value = designRequestStore.request
 }
 
 const parseReferenceLinks = (): string[] => {
@@ -138,6 +150,57 @@ const formatFileSize = (size: number): string => {
   if (size < 1024 * 1024) return `${Math.max(1, Math.round(size / 1024))} KB`
 
   return `${(size / 1024 / 1024).toFixed(1)} MB`
+}
+
+const eventTitle = (event: DesignRequestEventRecord): string => {
+  if (event.event_type === 'status_changed') {
+    return `Status changed to ${getStatusLabel(event.to_status ?? '')}`
+  }
+
+  if (event.event_type === 'approval') return 'Approved'
+  if (event.event_type === 'changes_requested') return 'Changes requested'
+  if (event.event_type === 'feedback') return 'Admin feedback'
+  if (event.event_type === 'comment') return 'Comment'
+  if (event.event_type === 'created') return 'Request submitted'
+
+  return event.event_type.replace(/_/g, ' ')
+}
+
+const actorLabel = (event: DesignRequestEventRecord): string => {
+  if (event.actor_name) return event.actor_name
+  if (event.actor_type === 'admin') return 'Admin'
+  if (event.actor_type === 'tenant') return 'Tenant'
+
+  return 'System'
+}
+
+const submitComment = async (): Promise<void> => {
+  if (!selectedRequest.value || !commentText.value.trim()) return
+
+  try {
+    collaborationError.value = ''
+    selectedRequest.value = await designRequestStore.comment(selectedRequest.value.id, {
+      message: commentText.value.trim(),
+    })
+    commentText.value = ''
+  } catch {
+    collaborationError.value = 'Could not add the comment. Please try again.'
+  }
+}
+
+const runAction = async (action: 'approve' | 'request_changes'): Promise<void> => {
+  if (!selectedRequest.value) return
+
+  try {
+    collaborationError.value = ''
+    selectedRequest.value = await designRequestStore.action(selectedRequest.value.id, {
+      action,
+      message: actionMessage.value.trim() || null,
+    })
+    actionMessage.value = ''
+  } catch {
+    collaborationError.value = 'Could not update the request. Please try again.'
+  }
 }
 
 onMounted(() => {
@@ -191,6 +254,7 @@ onMounted(() => {
             <option value="pending">Pending</option>
             <option value="under_review">Under Review</option>
             <option value="approved">Approved</option>
+            <option value="changes_requested">Changes Requested</option>
             <option value="rejected">Rejected</option>
             <option value="completed">Completed</option>
           </NativeSelect>
@@ -374,78 +438,179 @@ onMounted(() => {
             </DialogDescription>
           </DialogHeader>
 
-          <div v-if="selectedRequest" class="space-y-5">
-            <div class="flex flex-wrap items-center gap-2">
-              <Badge :variant="getStatusBadgeVariant(selectedRequest.status)">
-                {{ getStatusLabel(selectedRequest.status) }}
-              </Badge>
-              <span class="text-sm text-muted-foreground">
-                {{ selectedRequest.files.length }} attached files
-              </span>
-            </div>
+          <div v-if="selectedRequest" class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+            <div class="space-y-5">
+              <div class="rounded border bg-card p-4 text-card-foreground">
+                <div class="flex flex-wrap items-center gap-2">
+                  <Badge :variant="getStatusBadgeVariant(selectedRequest.status)">
+                    {{ getStatusLabel(selectedRequest.status) }}
+                  </Badge>
+                  <span class="text-sm text-muted-foreground">
+                    {{ selectedRequest.files.length }} attached files
+                  </span>
+                </div>
+                <p class="mt-3 text-sm leading-6 text-muted-foreground">
+                  {{ selectedRequest.status_explanation }}
+                </p>
+              </div>
 
-            <div class="space-y-1">
-              <h3 class="text-sm font-semibold">Description</h3>
-              <p class="whitespace-pre-line text-sm text-muted-foreground">
-                {{ selectedRequest.description }}
-              </p>
-            </div>
-
-            <div v-if="selectedRequest.notes" class="space-y-1">
-              <h3 class="text-sm font-semibold">Notes / Instructions</h3>
-              <p class="whitespace-pre-line text-sm text-muted-foreground">
-                {{ selectedRequest.notes }}
-              </p>
-            </div>
-
-            <div v-if="selectedRequest.mockup_concept" class="space-y-1">
-              <h3 class="text-sm font-semibold">Mockup / Template Concept</h3>
-              <p class="whitespace-pre-line text-sm text-muted-foreground">
-                {{ selectedRequest.mockup_concept }}
-              </p>
-            </div>
-
-            <div v-if="selectedRequest.reference_links.length" class="space-y-2">
-              <h3 class="text-sm font-semibold">Reference Links</h3>
               <div class="space-y-1">
-                <a
-                  v-for="link in selectedRequest.reference_links"
-                  :key="link"
-                  :href="link"
-                  target="_blank"
-                  rel="noreferrer"
-                  class="flex items-center gap-2 text-sm text-primary hover:underline"
-                >
-                  <Link2 class="size-4" />
-                  {{ link }}
-                </a>
+                <h3 class="text-sm font-semibold">Description</h3>
+                <p class="whitespace-pre-line text-sm text-muted-foreground">
+                  {{ selectedRequest.description }}
+                </p>
+              </div>
+
+              <div v-if="selectedRequest.notes" class="space-y-1">
+                <h3 class="text-sm font-semibold">Notes / Instructions</h3>
+                <p class="whitespace-pre-line text-sm text-muted-foreground">
+                  {{ selectedRequest.notes }}
+                </p>
+              </div>
+
+              <div v-if="selectedRequest.mockup_concept" class="space-y-1">
+                <h3 class="text-sm font-semibold">Mockup / Template Concept</h3>
+                <p class="whitespace-pre-line text-sm text-muted-foreground">
+                  {{ selectedRequest.mockup_concept }}
+                </p>
+              </div>
+
+              <div v-if="selectedRequest.reference_links.length" class="space-y-2">
+                <h3 class="text-sm font-semibold">Reference Links</h3>
+                <div class="space-y-1">
+                  <a
+                    v-for="link in selectedRequest.reference_links"
+                    :key="link"
+                    :href="link"
+                    target="_blank"
+                    rel="noreferrer"
+                    class="flex items-center gap-2 text-sm text-primary hover:underline"
+                  >
+                    <Link2 class="size-4" />
+                    {{ link }}
+                  </a>
+                </div>
+              </div>
+
+              <div class="space-y-2">
+                <h3 class="text-sm font-semibold">Files</h3>
+                <div v-if="selectedRequest.files.length" class="grid gap-2 sm:grid-cols-2">
+                  <a
+                    v-for="file in selectedRequest.files"
+                    :key="file.id"
+                    :href="file.url"
+                    target="_blank"
+                    rel="noreferrer"
+                    class="overflow-hidden rounded border text-sm hover:bg-muted"
+                  >
+                    <img
+                      v-if="file.is_image"
+                      :src="file.url"
+                      :alt="file.name"
+                      class="aspect-video w-full object-cover"
+                    />
+                    <div class="flex items-center gap-2 p-3">
+                      <FileText class="size-4" />
+                      <span class="min-w-0 flex-1 truncate">{{ file.name }}</span>
+                      <span class="text-xs text-muted-foreground">
+                        {{ formatFileSize(file.size) }}
+                      </span>
+                    </div>
+                  </a>
+                </div>
+                <p v-else class="rounded border bg-muted/40 p-3 text-sm text-muted-foreground">
+                  No files were attached to this request.
+                </p>
               </div>
             </div>
 
-            <div v-if="selectedRequest.files.length" class="space-y-2">
-              <h3 class="text-sm font-semibold">Files</h3>
-              <div class="grid gap-2 sm:grid-cols-2">
-                <a
-                  v-for="file in selectedRequest.files"
-                  :key="file.id"
-                  :href="file.url"
-                  target="_blank"
-                  rel="noreferrer"
-                  class="flex items-center gap-2 rounded border p-3 text-sm hover:bg-muted"
-                >
-                  <FileText class="size-4" />
-                  <span class="min-w-0 flex-1 truncate">{{ file.name }}</span>
-                  <span class="text-xs text-muted-foreground">{{ formatFileSize(file.size) }}</span>
-                </a>
+            <aside class="space-y-4">
+              <div class="rounded border bg-card p-4">
+                <h3 class="text-sm font-semibold">Tenant Actions</h3>
+                <p class="mt-2 text-xs leading-5 text-muted-foreground">
+                  Approve the current direction or ask the design team for changes.
+                </p>
+                <Textarea
+                  v-field-help="'Add optional context for approval or requested changes.'"
+                  v-model="actionMessage"
+                  class="mt-3 min-h-24"
+                  placeholder="Optional note for the design team."
+                />
+                <div class="mt-3 grid gap-2 sm:grid-cols-2">
+                  <Button
+                    type="button"
+                    variant="create"
+                    :disabled="designRequestStore.loading"
+                    @click="runAction('approve')"
+                  >
+                    <CheckCircle2 class="size-4" />
+                    Approve
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="restore"
+                    :disabled="designRequestStore.loading"
+                    @click="runAction('request_changes')"
+                  >
+                    <Undo2 class="size-4" />
+                    Request Changes
+                  </Button>
+                </div>
               </div>
-            </div>
 
-            <div v-if="selectedRequest.admin_remarks" class="space-y-1 rounded border p-3">
-              <h3 class="text-sm font-semibold">Admin Feedback</h3>
-              <p class="whitespace-pre-line text-sm text-muted-foreground">
-                {{ selectedRequest.admin_remarks }}
-              </p>
-            </div>
+              <div class="rounded border bg-card p-4">
+                <h3 class="text-sm font-semibold">Discussion</h3>
+                <Textarea
+                  v-field-help="'Send a message about this request.'"
+                  v-model="commentText"
+                  class="mt-3 min-h-24"
+                  placeholder="Ask a question or add more context."
+                />
+                <Button
+                  type="button"
+                  variant="update"
+                  class="mt-3 w-full"
+                  :disabled="designRequestStore.loading || !commentText.trim()"
+                  @click="submitComment"
+                >
+                  <MessageSquare class="size-4" />
+                  Add Comment
+                </Button>
+                <p
+                  v-if="collaborationError"
+                  class="mt-3 rounded border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive"
+                >
+                  {{ collaborationError }}
+                </p>
+              </div>
+
+              <div class="rounded border bg-card p-4">
+                <h3 class="text-sm font-semibold">Timeline</h3>
+                <div v-if="selectedRequest.events?.length" class="mt-4 space-y-4">
+                  <div
+                    v-for="event in selectedRequest.events"
+                    :key="event.id"
+                    class="border-l pl-3"
+                  >
+                    <div class="flex items-start justify-between gap-3">
+                      <p class="text-sm font-medium">{{ eventTitle(event) }}</p>
+                      <span class="text-xs text-muted-foreground">
+                        {{ formatDisplayDate(event.created_at) }}
+                      </span>
+                    </div>
+                    <p class="mt-1 text-xs text-muted-foreground">
+                      {{ actorLabel(event) }}
+                    </p>
+                    <p v-if="event.message" class="mt-2 whitespace-pre-line text-sm text-muted-foreground">
+                      {{ event.message }}
+                    </p>
+                  </div>
+                </div>
+                <p v-else class="mt-3 rounded border bg-muted/40 p-3 text-sm text-muted-foreground">
+                  No timeline activity yet.
+                </p>
+              </div>
+            </aside>
           </div>
         </DialogScrollContent>
       </Dialog>

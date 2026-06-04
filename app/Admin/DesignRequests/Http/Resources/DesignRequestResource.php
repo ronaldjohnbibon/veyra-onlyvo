@@ -23,12 +23,28 @@ class DesignRequestResource extends JsonResource
             'reference_links' => $this->reference_links ?? [],
             'mockup_concept'  => $this->mockup_concept,
             'status'          => $this->status,
+            'status_label'    => str((string) $this->status)->replace('_', ' ')->title()->toString(),
+            'status_explanation' => $this->statusExplanation((string) $this->status),
             'admin_remarks'   => $this->admin_remarks,
             'files'           => DesignRequestFileResource::collection($this->whenLoaded('files')),
+            'events'          => DesignRequestEventResource::collection($this->whenLoaded('events')),
             'reviewed_at'     => $this->reviewed_at,
             'completed_at'    => $this->completed_at,
             'created_at'      => $this->created_at,
             'updated_at'      => $this->updated_at,
         ];
+    }
+
+    private function statusExplanation(string $status): string
+    {
+        return match ($status) {
+            'pending' => 'The request is waiting for admin triage.',
+            'under_review' => 'The request is actively being reviewed with the tenant.',
+            'approved' => 'The current direction has been approved.',
+            'changes_requested' => 'The tenant or admin requested changes before completion.',
+            'rejected' => 'The request was declined or cannot be completed as submitted.',
+            'completed' => 'The design request has been completed.',
+            default => 'The request status has been updated.',
+        };
     }
 }

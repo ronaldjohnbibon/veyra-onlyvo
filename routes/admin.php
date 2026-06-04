@@ -19,6 +19,7 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
         Route::get('design-requests', [AdminDesignRequestController::class, 'index'])->name('design-requests.index');
         Route::get('design-requests/{designRequest}', [AdminDesignRequestController::class, 'show'])->name('design-requests.show');
         Route::put('design-requests/{designRequest}', [AdminDesignRequestController::class, 'update'])->name('design-requests.update');
+        Route::post('design-requests/{designRequest}/comments', [AdminDesignRequestController::class, 'comment'])->name('design-requests.comments.store');
 
         Route::apiResource('sidebars', AdminSidebarController::class);
         Route::get('system-settings/history', [AdminSystemSettingController::class, 'history'])->name('system-settings.history');

@@ -27,6 +27,7 @@ class DesignRequestService
             ]));
 
             $this->storeFiles($request, is_array($files) ? $files : []);
+            $this->recordEvent($request, 'tenant', $user->name, $user->id, 'created', null, 'pending', 'Request submitted.');
 
             return $request->fresh(['files', 'tenant', 'requester']);
         });
@@ -51,6 +52,39 @@ class DesignRequestService
         return $request;
     }
 
+    public function comment(DesignRequest $request, User $user, string $message): DesignRequest
+    {
+        $this->recordEvent($request, 'tenant', $user->name, $user->id, 'comment', null, null, $message);
+
+        return $request->fresh(['files', 'events', 'tenant', 'requester']);
+    }
+
+    public function tenantAction(DesignRequest $request, User $user, string $action, ?string $message = null): DesignRequest
+    {
+        $fromStatus = $request->status;
+        $toStatus   = $action === 'approve' ? 'approved' : 'changes_requested';
+        $eventType  = $action === 'approve' ? 'approval' : 'changes_requested';
+
+        $request->update([
+            'status'       => $toStatus,
+            'reviewed_at'  => now(),
+            'completed_at' => null,
+        ]);
+
+        $this->recordEvent(
+            $request,
+            'tenant',
+            $user->name,
+            $user->id,
+            $eventType,
+            $fromStatus,
+            $toStatus,
+            $message ?: ($action === 'approve' ? 'Tenant approved the current direction.' : 'Tenant requested changes.')
+        );
+
+        return $request->fresh(['files', 'events', 'tenant', 'requester']);
+    }
+
     /**
      * @param  array<int, mixed>  $files
      */
@@ -73,5 +107,26 @@ class DesignRequestService
                 'size'      => $file->getSize() ?: 0,
             ]);
         }
+    }
+
+    private function recordEvent(
+        DesignRequest $request,
+        string $actorType,
+        ?string $actorName,
+        int|string|null $actorId,
+        string $eventType,
+        ?string $fromStatus,
+        ?string $toStatus,
+        ?string $message,
+    ): void {
+        $request->events()->create([
+            'actor_type'  => $actorType,
+            'actor_name'  => $actorName,
+            'actor_id'    => $actorId,
+            'event_type'  => $eventType,
+            'from_status' => $fromStatus,
+            'to_status'   => $toStatus,
+            'message'     => $message,
+        ]);
     }
 }

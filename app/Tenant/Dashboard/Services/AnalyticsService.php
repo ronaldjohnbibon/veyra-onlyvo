@@ -23,14 +23,22 @@ class AnalyticsService
                 'from' => $startDate->toDateString(),
                 'to'   => $endDate->toDateString(),
             ],
+            'range_summary'      => $this->rangeSummary($tenantId, $startDate, $endDate),
+            'comparison'         => $this->comparison($tenantId, $startDate, $endDate),
             'daily_visits'       => $this->dailySeries('visitor_visits', 'visit_date', $tenantId, $startDate, $endDate),
             'daily_uniques'      => $this->dailySeries('visitor_unique_visitors', 'visit_date', $tenantId, $startDate, $endDate),
             'daily_cta_events'   => $this->dailySeries('cta_events', 'event_date', $tenantId, $startDate, $endDate),
             'cta_events_by_type' => $this->ctaEventsByType($tenantId, $startDate, $endDate),
+            'campaigns'          => $this->campaigns($tenantId, $startDate, $endDate),
+            'devices'            => $this->userAgentSummary('device', $tenantId, $startDate, $endDate),
+            'browsers'           => $this->userAgentSummary('browser', $tenantId, $startDate, $endDate),
+            'cta_drilldowns'     => $this->ctaDrilldowns($tenantId, $startDate, $endDate),
             'top_ctas'           => $this->paginatedCtaTotals($tenantId, $startDate, $endDate, $filters),
             'top_pages'          => $this->paginatedTotals('visitor_visits', 'url', $tenantId, $startDate, $endDate, $filters, 'top_pages_page'),
             'top_referrers'      => $this->paginatedTotals('visitor_visits', 'referrer', $tenantId, $startDate, $endDate, $filters, 'referrers_page', true),
-            'conversions'        => $this->conversions($tenantId, $startDate, $endDate),
+            'conversions'        => $conversions = $this->conversions($tenantId, $startDate, $endDate),
+            'funnel'             => $funnel = $this->funnel($tenantId, $startDate, $endDate),
+            'insights'           => $this->insights($tenantId, $startDate, $endDate, $conversions, $funnel),
         ];
     }
 
@@ -88,6 +96,54 @@ class AnalyticsService
     }
 
     /**
+     * @return array<string, int|float>
+     */
+    private function rangeSummary(string $tenantId, CarbonImmutable $startDate, CarbonImmutable $endDate): array
+    {
+        $visits = $this->countRange('visitor_visits', 'visit_date', $tenantId, $startDate, $endDate);
+        $uniques = $this->countRange('visitor_unique_visitors', 'visit_date', $tenantId, $startDate, $endDate);
+        $ctaEvents = $this->countRange('cta_events', 'event_date', $tenantId, $startDate, $endDate);
+        $submissions = $this->submissionCount($tenantId, $startDate, $endDate);
+
+        return [
+            'visits' => $visits,
+            'unique_visitors' => $uniques,
+            'cta_events' => $ctaEvents,
+            'submissions' => $submissions,
+            'cta_rate' => $this->conversionRate($ctaEvents, $visits),
+            'submission_rate' => $this->conversionRate($submissions, $visits),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function comparison(string $tenantId, CarbonImmutable $startDate, CarbonImmutable $endDate): array
+    {
+        $days = $startDate->diffInDays($endDate) + 1;
+        $previousEnd = $startDate->subDay();
+        $previousStart = $previousEnd->subDays($days - 1);
+        $current = $this->rangeSummary($tenantId, $startDate, $endDate);
+        $previous = $this->rangeSummary($tenantId, $previousStart, $previousEnd);
+
+        return [
+            'current' => $current,
+            'previous' => $previous,
+            'previous_range' => [
+                'from' => $previousStart->toDateString(),
+                'to' => $previousEnd->toDateString(),
+            ],
+            'changes' => [
+                'visits' => $this->change((float) $current['visits'], (float) $previous['visits']),
+                'unique_visitors' => $this->change((float) $current['unique_visitors'], (float) $previous['unique_visitors']),
+                'cta_events' => $this->change((float) $current['cta_events'], (float) $previous['cta_events']),
+                'submissions' => $this->change((float) $current['submissions'], (float) $previous['submissions']),
+                'submission_rate' => $this->change((float) $current['submission_rate'], (float) $previous['submission_rate']),
+            ],
+        ];
+    }
+
+    /**
      * @return array<int, array{date: string, total: int}>
      */
     private function dailySeries(string $table, string $dateColumn, string $tenantId, CarbonImmutable $startDate, CarbonImmutable $endDate): array
@@ -125,6 +181,122 @@ class AnalyticsService
                 'event_type' => (string) $row->event_type,
                 'total'      => (int) $row->total,
             ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return array<int, array{source: string, medium: string, campaign: string, visits: int, cta_events: int}>
+     */
+    private function campaigns(string $tenantId, CarbonImmutable $startDate, CarbonImmutable $endDate): array
+    {
+        $campaigns = [];
+
+        foreach ($this->urlRows('visitor_visits', 'visit_date', $tenantId, $startDate, $endDate) as $row) {
+            $campaign = $this->campaignKey((string) $row->url);
+            if (! $campaign) {
+                continue;
+            }
+
+            $key = $campaign['key'];
+            $campaigns[$key] ??= [
+                'source' => $campaign['source'],
+                'medium' => $campaign['medium'],
+                'campaign' => $campaign['campaign'],
+                'visits' => 0,
+                'cta_events' => 0,
+            ];
+            $campaigns[$key]['visits'] += (int) $row->total;
+        }
+
+        foreach ($this->urlRows('cta_events', 'event_date', $tenantId, $startDate, $endDate) as $row) {
+            $campaign = $this->campaignKey((string) $row->url);
+            if (! $campaign) {
+                continue;
+            }
+
+            $key = $campaign['key'];
+            $campaigns[$key] ??= [
+                'source' => $campaign['source'],
+                'medium' => $campaign['medium'],
+                'campaign' => $campaign['campaign'],
+                'visits' => 0,
+                'cta_events' => 0,
+            ];
+            $campaigns[$key]['cta_events'] += (int) $row->total;
+        }
+
+        return collect($campaigns)
+            ->sortByDesc(fn (array $row): int => $row['visits'] + $row['cta_events'])
+            ->take(10)
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return array<int, array{name: string, total: int}>
+     */
+    private function userAgentSummary(string $mode, string $tenantId, CarbonImmutable $startDate, CarbonImmutable $endDate): array
+    {
+        return DB::table('visitor_visits')
+            ->selectRaw('user_agent, count(*) as total')
+            ->where('tenant_id', $tenantId)
+            ->whereBetween('visit_date', [$startDate->toDateString(), $endDate->toDateString()])
+            ->groupBy('user_agent')
+            ->get()
+            ->groupBy(fn (object $row): string => $mode === 'browser'
+                ? $this->browserName((string) $row->user_agent)
+                : $this->deviceName((string) $row->user_agent))
+            ->map(fn ($rows, string $name): array => [
+                'name' => $name,
+                'total' => (int) collect($rows)->sum('total'),
+            ])
+            ->sortByDesc('total')
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function ctaDrilldowns(string $tenantId, CarbonImmutable $startDate, CarbonImmutable $endDate): array
+    {
+        $rows = DB::table('cta_events')
+            ->selectRaw('cta_identifier, cta_label, cta_type, event_type, count(*) as total')
+            ->where('tenant_id', $tenantId)
+            ->whereBetween('event_date', [$startDate->toDateString(), $endDate->toDateString()])
+            ->groupBy('cta_identifier', 'cta_label', 'cta_type', 'event_type')
+            ->get();
+
+        return $rows
+            ->groupBy('cta_identifier')
+            ->map(function ($events, string $identifier): array {
+                $first = $events->first();
+                $eventTotals = $events->mapWithKeys(fn (object $row): array => [
+                    (string) $row->event_type => (int) $row->total,
+                ]);
+                $views = (int) ($eventTotals['cta_view'] ?? 0);
+                $clicks = collect($eventTotals)
+                    ->filter(fn (int $total, string $type): bool => $this->isClickEvent($type))
+                    ->sum();
+                $submissions = collect($eventTotals)
+                    ->filter(fn (int $total, string $type): bool => $this->isSubmissionEvent($type))
+                    ->sum();
+
+                return [
+                    'cta_identifier' => $identifier,
+                    'cta_label' => (string) ($first->cta_label ?: $identifier),
+                    'cta_type' => (string) $first->cta_type,
+                    'views' => $views,
+                    'clicks' => $clicks,
+                    'submissions' => $submissions,
+                    'total_events' => (int) $events->sum('total'),
+                    'click_rate' => $this->conversionRate((int) $clicks, $views),
+                    'submission_rate' => $this->conversionRate((int) $submissions, max(1, (int) $clicks)),
+                ];
+            })
+            ->sortByDesc('total_events')
+            ->take(10)
             ->values()
             ->all();
     }
@@ -187,6 +359,70 @@ class AnalyticsService
             'per_cta'                 => $this->conversionRatePerCta($tenantId, $startDate, $endDate, $totalVisits),
             'per_page'                => $this->conversionRatePerPage($tenantId, $startDate, $endDate),
         ];
+    }
+
+    /**
+     * @return array<string, int|float>
+     */
+    private function funnel(string $tenantId, CarbonImmutable $startDate, CarbonImmutable $endDate): array
+    {
+        $visits = $this->countRange('visitor_visits', 'visit_date', $tenantId, $startDate, $endDate);
+        $views = $this->eventTypeCount($tenantId, $startDate, $endDate, fn (string $event): bool => $event === 'cta_view');
+        $clicks = $this->eventTypeCount($tenantId, $startDate, $endDate, fn (string $event): bool => $this->isClickEvent($event));
+        $submissions = $this->submissionCount($tenantId, $startDate, $endDate);
+
+        return [
+            'visits' => $visits,
+            'cta_views' => $views,
+            'cta_clicks' => $clicks,
+            'submissions' => $submissions,
+            'visit_to_view_rate' => $this->conversionRate($views, $visits),
+            'view_to_click_rate' => $this->conversionRate($clicks, $views),
+            'click_to_submission_rate' => $this->conversionRate($submissions, $clicks),
+            'visit_to_submission_rate' => $this->conversionRate($submissions, $visits),
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $conversions
+     * @param  array<string, int|float>  $funnel
+     * @return array<int, array{title: string, body: string, tone: string}>
+     */
+    private function insights(string $tenantId, CarbonImmutable $startDate, CarbonImmutable $endDate, array $conversions, array $funnel): array
+    {
+        $comparison = $this->comparison($tenantId, $startDate, $endDate);
+        $topPage = $this->paginatedTotals('visitor_visits', 'url', $tenantId, $startDate, $endDate, ['pageSize' => 1], 'top_pages_page')['data'][0] ?? null;
+        $topCta = $this->ctaDrilldowns($tenantId, $startDate, $endDate)[0] ?? null;
+        $insights = [];
+
+        $insights[] = $this->changeInsight('Visits', $comparison['changes']['visits']);
+        $insights[] = $this->changeInsight('CTA events', $comparison['changes']['cta_events']);
+
+        if ($topPage) {
+            $insights[] = [
+                'title' => 'Top traffic page',
+                'body' => $topPage['value'].' received '.$topPage['total'].' visits in this range.',
+                'tone' => 'info',
+            ];
+        }
+
+        if ($topCta) {
+            $insights[] = [
+                'title' => 'Best CTA',
+                'body' => $topCta['cta_label'].' generated '.$topCta['total_events'].' events with a '.$topCta['click_rate'].'% click rate.',
+                'tone' => ((float) $topCta['click_rate']) > 0 ? 'success' : 'warning',
+            ];
+        }
+
+        if ((int) $funnel['visits'] > 0 && (int) $funnel['submissions'] === 0) {
+            $insights[] = [
+                'title' => 'No form conversions yet',
+                'body' => 'Visitors are arriving, but no submission goal was recorded in this range.',
+                'tone' => 'warning',
+            ];
+        }
+
+        return collect($insights)->filter()->take(5)->values()->all();
     }
 
     /**
@@ -292,6 +528,145 @@ class AnalyticsService
                 ])
                 ->values(),
             'pagination' => $this->pagination($paginator),
+        ];
+    }
+
+    private function countRange(string $table, string $dateColumn, string $tenantId, CarbonImmutable $startDate, CarbonImmutable $endDate): int
+    {
+        return DB::table($table)
+            ->where('tenant_id', $tenantId)
+            ->whereBetween($dateColumn, [$startDate->toDateString(), $endDate->toDateString()])
+            ->count();
+    }
+
+    /**
+     * @return array{value: float, percent: float|null, direction: string}
+     */
+    private function change(float $current, float $previous): array
+    {
+        $value = round($current - $previous, 2);
+
+        return [
+            'value' => $value,
+            'percent' => $previous <= 0 ? null : round(($value / $previous) * 100, 2),
+            'direction' => $value > 0 ? 'up' : ($value < 0 ? 'down' : 'flat'),
+        ];
+    }
+
+    /**
+     * @return array<int, object>
+     */
+    private function urlRows(string $table, string $dateColumn, string $tenantId, CarbonImmutable $startDate, CarbonImmutable $endDate): array
+    {
+        return DB::table($table)
+            ->selectRaw('url, count(*) as total')
+            ->where('tenant_id', $tenantId)
+            ->whereBetween($dateColumn, [$startDate->toDateString(), $endDate->toDateString()])
+            ->groupBy('url')
+            ->get()
+            ->all();
+    }
+
+    /**
+     * @return array{key: string, source: string, medium: string, campaign: string}|null
+     */
+    private function campaignKey(string $url): ?array
+    {
+        $query = parse_url($url, PHP_URL_QUERY);
+
+        if (! $query) {
+            return null;
+        }
+
+        parse_str($query, $params);
+
+        $source = trim((string) ($params['utm_source'] ?? ''));
+        $medium = trim((string) ($params['utm_medium'] ?? ''));
+        $campaign = trim((string) ($params['utm_campaign'] ?? ''));
+
+        if ($source === '' && $medium === '' && $campaign === '') {
+            return null;
+        }
+
+        return [
+            'key' => implode('|', [$source ?: 'unknown', $medium ?: 'unknown', $campaign ?: 'uncategorized']),
+            'source' => $source ?: 'unknown',
+            'medium' => $medium ?: 'unknown',
+            'campaign' => $campaign ?: 'uncategorized',
+        ];
+    }
+
+    private function deviceName(string $userAgent): string
+    {
+        $ua = strtolower($userAgent);
+
+        if (str_contains($ua, 'tablet') || str_contains($ua, 'ipad')) {
+            return 'Tablet';
+        }
+
+        if (str_contains($ua, 'mobi') || str_contains($ua, 'iphone') || str_contains($ua, 'android')) {
+            return 'Mobile';
+        }
+
+        return $userAgent === '' ? 'Unknown' : 'Desktop';
+    }
+
+    private function browserName(string $userAgent): string
+    {
+        $ua = strtolower($userAgent);
+
+        return match (true) {
+            str_contains($ua, 'edg/') => 'Edge',
+            str_contains($ua, 'opr/') || str_contains($ua, 'opera') => 'Opera',
+            str_contains($ua, 'chrome/') && ! str_contains($ua, 'chromium') => 'Chrome',
+            str_contains($ua, 'firefox/') => 'Firefox',
+            str_contains($ua, 'safari/') && ! str_contains($ua, 'chrome/') => 'Safari',
+            default => $userAgent === '' ? 'Unknown' : 'Other',
+        };
+    }
+
+    private function eventTypeCount(string $tenantId, CarbonImmutable $startDate, CarbonImmutable $endDate, callable $filter): int
+    {
+        return DB::table('cta_events')
+            ->selectRaw('event_type, count(*) as total')
+            ->where('tenant_id', $tenantId)
+            ->whereBetween('event_date', [$startDate->toDateString(), $endDate->toDateString()])
+            ->groupBy('event_type')
+            ->get()
+            ->filter(fn (object $row): bool => $filter((string) $row->event_type))
+            ->sum('total');
+    }
+
+    private function submissionCount(string $tenantId, CarbonImmutable $startDate, CarbonImmutable $endDate): int
+    {
+        return $this->eventTypeCount($tenantId, $startDate, $endDate, fn (string $event): bool => $this->isSubmissionEvent($event));
+    }
+
+    private function isClickEvent(string $event): bool
+    {
+        return str_ends_with($event, '_click') || in_array($event, ['button_click', 'link_click'], true);
+    }
+
+    private function isSubmissionEvent(string $event): bool
+    {
+        return str_ends_with($event, '_submitted') || $event === 'newsletter_signup_submitted';
+    }
+
+    /**
+     * @param  array{value: float, percent: float|null, direction: string}  $change
+     * @return array{title: string, body: string, tone: string}
+     */
+    private function changeInsight(string $label, array $change): array
+    {
+        $direction = $change['direction'];
+        $percent = $change['percent'] === null ? 'from no prior activity' : abs($change['percent']).'%';
+
+        return [
+            'title' => $label.' '.$direction,
+            'body' => $direction === 'flat'
+                ? $label.' stayed level compared with the previous period.'
+                : $label.' moved '.$direction.' by '.$percent.' compared with the previous period.',
+            'tone' => $direction === 'up' ? 'success' : ($direction === 'down' ? 'warning' : 'neutral'),
         ];
     }
 

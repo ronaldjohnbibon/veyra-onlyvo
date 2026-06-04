@@ -37,8 +37,9 @@ class DesignRequestService
      */
     public function review(DesignRequest $request, array $data, int|string|null $reviewerId): DesignRequest
     {
-        $status = (string) $data['status'];
-        $now    = Carbon::now();
+        $status     = (string) $data['status'];
+        $fromStatus = $request->status;
+        $now        = Carbon::now();
 
         $request->update([
             'status'        => $status,
@@ -48,7 +49,25 @@ class DesignRequestService
             'completed_at'  => $status === 'completed' ? $now : null,
         ]);
 
+        $this->recordEvent(
+            $request,
+            'admin',
+            $this->actorName($reviewerId),
+            $reviewerId,
+            $fromStatus === $status ? 'feedback' : 'status_changed',
+            $fromStatus,
+            $status,
+            $data['admin_remarks'] ?? null,
+        );
+
         return $request;
+    }
+
+    public function comment(DesignRequest $request, int|string|null $adminId, string $message): DesignRequest
+    {
+        $this->recordEvent($request, 'admin', $this->actorName($adminId), $adminId, 'comment', null, null, $message);
+
+        return $request->fresh(['files', 'events', 'tenant', 'requester']);
     }
 
     /**
@@ -73,5 +92,35 @@ class DesignRequestService
                 'size'      => $file->getSize() ?: 0,
             ]);
         }
+    }
+
+    private function recordEvent(
+        DesignRequest $request,
+        string $actorType,
+        ?string $actorName,
+        int|string|null $actorId,
+        string $eventType,
+        ?string $fromStatus,
+        ?string $toStatus,
+        ?string $message,
+    ): void {
+        $request->events()->create([
+            'actor_type'  => $actorType,
+            'actor_name'  => $actorName,
+            'actor_id'    => $actorId,
+            'event_type'  => $eventType,
+            'from_status' => $fromStatus,
+            'to_status'   => $toStatus,
+            'message'     => $message,
+        ]);
+    }
+
+    private function actorName(int|string|null $actorId): ?string
+    {
+        if (! $actorId) {
+            return null;
+        }
+
+        return User::query()->find($actorId)?->name;
     }
 }

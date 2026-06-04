@@ -6,6 +6,7 @@ const statusLabels: Record<string, string> = {
   active: 'Active',
   approved: 'Approved',
   archived: 'Archived',
+  changes_requested: 'Changes Requested',
   disabled: 'Disabled',
   draft: 'Draft',
   enabled: 'Enabled',
@@ -25,6 +26,7 @@ const statusLabels: Record<string, string> = {
 const statusVariants: Record<string, BadgeVariant> = {
   active: 'success',
   approved: 'success',
+  changes_requested: 'warning',
   completed: 'success',
   contacted: 'success',
   enabled: 'success',

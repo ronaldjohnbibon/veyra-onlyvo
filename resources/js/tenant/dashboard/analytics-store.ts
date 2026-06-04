@@ -43,6 +43,19 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     })
   }
 
+  const exportCsv = async (): Promise<void> => {
+    const blob = await analyticsService.exportCsv(params.value)
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+
+    link.href = url
+    link.download = 'tenant-analytics.csv'
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(url)
+  }
+
   const trackPublicVisit = async (templateId: string, url: string): Promise<void> => {
     const routeKey = `${templateId}:${url}`
 
@@ -88,6 +101,7 @@ export const useAnalyticsStore = defineStore('analytics', () => {
 
   return {
     dashboard,
+    exportCsv,
     index,
     loading,
     params,
