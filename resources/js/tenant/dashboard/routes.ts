@@ -9,7 +9,7 @@ const routes: RouteRecordRaw[] = [
       requiresAuth: true,
       layout: 'tenant',
       title: 'Dashboard',
-      description: 'Launch and grow your tenant website',
+      description: 'Launch checklist, site health, activity, and growth summary',
     },
   },
   {
@@ -20,7 +20,7 @@ const routes: RouteRecordRaw[] = [
       requiresAuth: true,
       layout: 'tenant',
       title: 'Analytics',
-      description: 'Review public website visitor analytics',
+      description: 'Understand visitor trends, campaigns, CTA activity, and conversions',
       featureFlag: 'feature_flags.enable_analytics_module',
     },
   },

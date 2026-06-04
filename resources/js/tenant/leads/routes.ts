@@ -8,7 +8,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       layout: 'tenant',
-      title: 'Leads',
+      title: 'Leads/Submissions',
       description: 'Review website form submissions and follow-up status',
       featureFlag: 'feature_flags.enable_cta_forms',
     },

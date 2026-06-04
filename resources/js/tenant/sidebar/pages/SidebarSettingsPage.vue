@@ -46,13 +46,17 @@ const iconNames = Object.keys(iconMap) as IconName[]
 const routeSuggestions = [
   'dashboard',
   'templates',
+  'template-builder',
   'posts',
+  'navigation-builder',
   'design-requests',
   'analytics',
   'leads',
   'tracking-logs',
   'sidebar',
   'system-settings',
+  'account',
+  'team-management',
 ]
 
 const selectedGroup = computed(() => groups.value[selected.value.groupIndex] ?? null)

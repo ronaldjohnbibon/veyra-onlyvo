@@ -18,12 +18,21 @@ import {
   Users,
 } from 'lucide-vue-next'
 import { computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 
 const accountStore = useAccountStore()
+const route = useRoute()
 
 const workspace = computed(() => accountStore.account?.workspace ?? null)
 const user = computed(() => accountStore.account?.user ?? null)
 const ownerMember = computed(() => workspace.value?.members.find((member) => member.is_owner) ?? null)
+const isTeamManagement = computed(() => route.name === 'tenant.team-management')
+const pageTitle = computed(() => (isTeamManagement.value ? 'Team Management' : 'Account/Profile'))
+const pageDescription = computed(() =>
+  isTeamManagement.value
+    ? 'Review workspace ownership, team members, and access capabilities.'
+    : 'Manage your sign-in profile, password, and workspace access.'
+)
 const profileComplete = computed(() => {
   return Boolean(
     accountStore.profileForm.name &&
@@ -51,9 +60,9 @@ onMounted(accountStore.show)
     <div class="min-h-screen pb-16">
       <div class="module-heading-container">
         <div>
-          <h2 class="module-container-title">Account</h2>
+          <h2 class="module-container-title">{{ pageTitle }}</h2>
           <p class="module-container-description">
-            Manage your sign-in profile, password, and workspace access.
+            {{ pageDescription }}
           </p>
         </div>
       </div>

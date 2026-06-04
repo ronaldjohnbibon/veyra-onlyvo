@@ -33,6 +33,7 @@ const runtimeSettings =
 const hiddenUrls = computed(() => {
   const flags: Record<string, string> = {
     templates: 'feature_flags.enable_templates_module',
+    'template-builder': 'feature_flags.enable_templates_module',
     posts: 'feature_flags.enable_posts_module',
     leads: 'feature_flags.enable_cta_forms',
     analytics: 'feature_flags.enable_analytics_module',

@@ -14,6 +14,18 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
+    path: '/template-builder',
+    name: 'templates.builder',
+    component: () => import('@/tenant/templates/pages/TemplateSelectionPage.vue'),
+    meta: {
+      requiresAuth: true,
+      layout: 'tenant',
+      title: 'Template Builder',
+      description: 'Build, preview, and publish tenant website templates',
+      featureFlag: 'feature_flags.enable_templates_module',
+    },
+  },
+  {
     path: '/templates/:id/published',
     name: 'templates.published',
     component: () => import('@/tenant/templates/pages/TemplatePublishedPage.vue'),

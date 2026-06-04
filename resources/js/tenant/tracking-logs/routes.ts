@@ -8,8 +8,8 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       layout: 'tenant',
-      title: 'Tracking Logs',
-      description: 'Inspect raw public website tracking events',
+      title: 'Tracking Activity',
+      description: 'Review visitor activity and keep raw tracking logs available',
       featureFlag: 'feature_flags.enable_tracking_logs',
     },
   },

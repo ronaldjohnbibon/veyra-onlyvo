@@ -8,8 +8,19 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       layout: 'tenant',
-      title: 'Sidebar Settings',
-      description: 'Manage tenant sidebar navigation',
+      title: 'Navigation Builder',
+      description: 'Build the tenant workspace sidebar navigation',
+    },
+  },
+  {
+    path: '/navigation-builder',
+    name: 'navigation-builder.index',
+    component: () => import('@/tenant/sidebar/pages/SidebarSettingsPage.vue'),
+    meta: {
+      requiresAuth: true,
+      layout: 'tenant',
+      title: 'Navigation Builder',
+      description: 'Build the tenant workspace sidebar navigation',
     },
   },
 ]
