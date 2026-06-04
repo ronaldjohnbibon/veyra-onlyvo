@@ -74,7 +74,7 @@ router.beforeEach(async (to) => {
   }
 
   if (featureFlag && runtimeSettings[featureFlag] === false) {
-    return to.meta.requiresAuth ? { name: 'sidebar.index' } : { name: 'marketing.home' }
+    return to.meta.requiresAuth ? { name: 'tenant.dashboard' } : { name: 'marketing.home' }
   }
 
   if (
@@ -92,7 +92,7 @@ router.beforeEach(async (to) => {
     auth.isAuthenticated &&
     (to.name === 'TenantLogin' || to.name === 'TenantRegister' || to.name === 'ForgotPassword')
   ) {
-    return { name: 'sidebar.index' }
+    return { name: 'tenant.dashboard' }
   }
 
   return true

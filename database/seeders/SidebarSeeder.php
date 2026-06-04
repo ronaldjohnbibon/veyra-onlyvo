@@ -33,6 +33,13 @@ class SidebarSeeder extends Seeder
                     ],
                     'main_nav' => [
                         [
+                            'title'       => 'Dashboard',
+                            'url'         => 'dashboard',
+                            'icon'        => 'LayoutDashboard',
+                            'description' => '',
+                            'is_active'   => true,
+                        ],
+                        [
                             'title'       => 'Site Builder',
                             'url'         => '#',
                             'icon'        => 'Sparkles',

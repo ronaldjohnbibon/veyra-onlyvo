@@ -4,6 +4,7 @@ use App\Tenant\Auth\Http\Controllers\AuthController;
 use App\Tenant\Dashboard\Http\Controllers\AnalyticsController;
 use App\Tenant\Dashboard\Http\Controllers\PublicCtaTrackingController;
 use App\Tenant\Dashboard\Http\Controllers\PublicVisitorTrackingController;
+use App\Tenant\Dashboard\Http\Controllers\TenantDashboardController;
 use App\Tenant\DesignRequests\Http\Controllers\DesignRequestController;
 use App\Tenant\Sidebar\Http\Controllers\TenantSidebarController;
 use App\Tenant\SystemSettings\Http\Controllers\TenantSystemSettingController;
@@ -27,6 +28,7 @@ Route::prefix('app')->name('app.')->group(function (): void {
             Route::get('me', [AuthController::class, 'me']);
             Route::post('logout', [AuthController::class, 'logout']);
 
+            Route::get('dashboard', [TenantDashboardController::class, 'index'])->name('dashboard.index');
             Route::get('analytics', [AnalyticsController::class, 'index'])->name('analytics.index');
 
             Route::get('design-requests', [DesignRequestController::class, 'index'])->name('design-requests.index');

@@ -81,7 +81,7 @@ export const useAuthStore = defineStore('tenant-auth', () => {
       setToken(data.data.tenant_token)
       user.value = data.data.user
 
-      await router.push({ name: 'sidebar.index' })
+      await router.push({ name: 'tenant.dashboard' })
     } catch (err) {
       errors.value = validationErrorsFrom(err)
       message.value = apiMessageFrom(err, 'Unable to log in.')
