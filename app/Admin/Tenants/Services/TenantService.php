@@ -161,6 +161,7 @@ class TenantService
                             'is_active'   => true,
                             'items'       => [
                                 ['title' => 'Analytics', 'url' => 'analytics', 'is_active' => true],
+                                ['title' => 'Leads', 'url' => 'leads', 'is_active' => true],
                                 ['title' => 'Tracking Logs', 'url' => 'tracking-logs', 'is_active' => true],
                             ],
                         ],

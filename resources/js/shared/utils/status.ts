@@ -18,12 +18,14 @@ const statusLabels: Record<string, string> = {
   signed_in: 'Signed in',
   under_review: 'Under Review',
   completed: 'Completed',
+  contacted: 'Contacted',
 }
 
 const statusVariants: Record<string, BadgeVariant> = {
   active: 'success',
   approved: 'success',
   completed: 'success',
+  contacted: 'success',
   enabled: 'success',
   published: 'success',
   signed_in: 'success',

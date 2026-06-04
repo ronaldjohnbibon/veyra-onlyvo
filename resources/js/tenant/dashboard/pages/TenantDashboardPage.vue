@@ -309,9 +309,14 @@ onMounted(() => {
               <Card>
                 <CardHeader class="flex flex-row items-center justify-between">
                   <CardTitle class="text-base">New Leads</CardTitle>
-                  <Badge :variant="dashboard.site.cta_forms_enabled ? 'info' : 'outline'">
-                    Forms {{ dashboard.site.cta_forms_enabled ? 'On' : 'Off' }}
-                  </Badge>
+                  <div class="flex items-center gap-2">
+                    <Badge :variant="dashboard.site.cta_forms_enabled ? 'info' : 'outline'">
+                      Forms {{ dashboard.site.cta_forms_enabled ? 'On' : 'Off' }}
+                    </Badge>
+                    <Button as-child variant="navigate" size="sm">
+                      <RouterLink to="/leads">Open</RouterLink>
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div v-if="dashboard.recent_leads.length" class="space-y-3">

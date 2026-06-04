@@ -34,6 +34,7 @@ const hiddenUrls = computed(() => {
   const flags: Record<string, string> = {
     templates: 'feature_flags.enable_templates_module',
     posts: 'feature_flags.enable_posts_module',
+    leads: 'feature_flags.enable_cta_forms',
     analytics: 'feature_flags.enable_analytics_module',
     'design-requests': 'feature_flags.enable_design_requests_module',
     'tracking-logs': 'feature_flags.enable_tracking_logs',

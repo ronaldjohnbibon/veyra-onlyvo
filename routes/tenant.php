@@ -9,6 +9,7 @@ use App\Tenant\DesignRequests\Http\Controllers\DesignRequestController;
 use App\Tenant\Sidebar\Http\Controllers\TenantSidebarController;
 use App\Tenant\SystemSettings\Http\Controllers\TenantSystemSettingController;
 use App\Tenant\Templates\Http\Controllers\PublicTemplateController;
+use App\Tenant\Templates\Http\Controllers\TenantLeadController;
 use App\Tenant\Templates\Http\Controllers\TemplateController;
 use App\Tenant\Templates\Http\Controllers\TemplateCtaSubmissionController;
 use App\Tenant\Templates\Posts\Http\Controllers\PostController;
@@ -30,6 +31,11 @@ Route::prefix('app')->name('app.')->group(function (): void {
 
             Route::get('dashboard', [TenantDashboardController::class, 'index'])->name('dashboard.index');
             Route::get('analytics', [AnalyticsController::class, 'index'])->name('analytics.index');
+
+            Route::get('leads/export', [TenantLeadController::class, 'export'])->name('leads.export');
+            Route::get('leads', [TenantLeadController::class, 'index'])->name('leads.index');
+            Route::get('leads/{lead}', [TenantLeadController::class, 'show'])->name('leads.show');
+            Route::put('leads/{lead}/status', [TenantLeadController::class, 'updateStatus'])->name('leads.status.update');
 
             Route::get('design-requests', [DesignRequestController::class, 'index'])->name('design-requests.index');
             Route::post('design-requests', [DesignRequestController::class, 'store'])->name('design-requests.store');
