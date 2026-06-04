@@ -25,7 +25,9 @@ import { computed, onMounted, ref } from 'vue'
 
 type BuilderGroup = SidebarNavItem & { items: BuilderLink[] }
 type BuilderLink = SidebarNavChild
-type Selection = { type: 'group'; groupIndex: number } | { type: 'link'; groupIndex: number; linkIndex: number }
+type Selection =
+  | { type: 'group'; groupIndex: number }
+  | { type: 'link'; groupIndex: number; linkIndex: number }
 
 interface ValidationIssue {
   key: string
@@ -61,10 +63,13 @@ const selectedLink = computed(() => {
 })
 const selectedItem = computed(() => selectedLink.value ?? selectedGroup.value)
 const selectedIsLink = computed(() => Boolean(selectedLink.value))
-const visibleGroupCount = computed(() => groups.value.filter((group) => group.is_active !== false).length)
+const visibleGroupCount = computed(
+  () => groups.value.filter((group) => group.is_active !== false).length
+)
 const linkCount = computed(() => groups.value.flatMap((group) => group.items).length)
 const visibleLinkCount = computed(() => {
-  return groups.value.flatMap((group) => group.items).filter((link) => link.is_active !== false).length
+  return groups.value.flatMap((group) => group.items).filter((link) => link.is_active !== false)
+    .length
 })
 const hiddenCount = computed(() => {
   const hiddenGroups = groups.value.filter((group) => group.is_active === false).length
@@ -176,7 +181,10 @@ const addGroup = (): void => {
 
 const deleteGroup = (index: number): void => {
   groups.value.splice(index, 1)
-  selected.value = { type: 'group', groupIndex: Math.max(0, Math.min(index, groups.value.length - 1)) }
+  selected.value = {
+    type: 'group',
+    groupIndex: Math.max(0, Math.min(index, groups.value.length - 1)),
+  }
 }
 
 const addLink = (groupIndex: number): void => {
@@ -338,7 +346,9 @@ onMounted(loadSidebar)
         </div>
       </div>
 
-      <div class="mb-4 flex flex-col gap-3 rounded border bg-card p-3 md:flex-row md:items-center md:justify-between">
+      <div
+        class="mb-4 flex flex-col gap-3 rounded border bg-card p-3 md:flex-row md:items-center md:justify-between"
+      >
         <div class="flex flex-wrap gap-2">
           <Badge variant="secondary">{{ groups.length }} groups</Badge>
           <Badge variant="secondary">{{ linkCount }} links</Badge>
@@ -351,7 +361,13 @@ onMounted(loadSidebar)
             <Plus class="size-4" />
             Add Group
           </Button>
-          <Button type="button" variant="update" size="sm" :disabled="!canSave" @click="saveSidebar">
+          <Button
+            type="button"
+            variant="update"
+            size="sm"
+            :disabled="!canSave"
+            @click="saveSidebar"
+          >
             <Save class="size-4" />
             {{ sidebarStore.loading ? 'Saving...' : 'Save Navigation' }}
           </Button>
@@ -376,15 +392,28 @@ onMounted(loadSidebar)
           </div>
 
           <div v-else class="space-y-2 p-3">
-            <div v-for="(group, groupIndex) in groups" :key="`group-outline-${groupIndex}`" class="space-y-1">
+            <div
+              v-for="(group, groupIndex) in groups"
+              :key="`group-outline-${groupIndex}`"
+              class="space-y-1"
+            >
               <button
                 type="button"
                 class="flex w-full items-center gap-2 rounded border px-3 py-2 text-left text-sm transition hover:bg-muted/60"
-                :class="selected.type === 'group' && selected.groupIndex === groupIndex ? 'border-primary bg-primary/5' : 'border-input'"
+                :class="
+                  selected.type === 'group' && selected.groupIndex === groupIndex
+                    ? 'border-primary bg-primary/5'
+                    : 'border-input'
+                "
                 @click="selectGroup(groupIndex)"
               >
-                <component :is="iconFor(group.icon)" class="size-4 shrink-0 text-muted-foreground" />
-                <span class="min-w-0 flex-1 truncate font-medium">{{ group.title || 'Untitled group' }}</span>
+                <component
+                  :is="iconFor(group.icon)"
+                  class="size-4 shrink-0 text-muted-foreground"
+                />
+                <span class="min-w-0 flex-1 truncate font-medium">{{
+                  group.title || 'Untitled group'
+                }}</span>
                 <Badge v-if="group.is_active === false" variant="outline">Hidden</Badge>
               </button>
 
@@ -394,11 +423,19 @@ onMounted(loadSidebar)
                   :key="`link-outline-${groupIndex}-${linkIndex}`"
                   type="button"
                   class="flex w-full items-center gap-2 rounded px-3 py-1.5 text-left text-sm transition hover:bg-muted/60"
-                  :class="selected.type === 'link' && selected.groupIndex === groupIndex && selected.linkIndex === linkIndex ? 'bg-primary/10 text-primary' : 'text-muted-foreground'"
+                  :class="
+                    selected.type === 'link' &&
+                    selected.groupIndex === groupIndex &&
+                    selected.linkIndex === linkIndex
+                      ? 'bg-primary/10 text-primary'
+                      : 'text-muted-foreground'
+                  "
                   @click="selectLink(groupIndex, linkIndex)"
                 >
                   <component :is="iconFor(linkItem.icon)" class="size-3.5 shrink-0" />
-                  <span class="min-w-0 flex-1 truncate">{{ linkItem.title || 'Untitled link' }}</span>
+                  <span class="min-w-0 flex-1 truncate">{{
+                    linkItem.title || 'Untitled link'
+                  }}</span>
                   <EyeOff v-if="linkItem.is_active === false" class="size-3.5 shrink-0" />
                 </button>
 
@@ -416,13 +453,19 @@ onMounted(loadSidebar)
         </section>
 
         <section class="rounded border bg-background">
-          <div class="flex flex-col gap-3 border-b p-4 md:flex-row md:items-center md:justify-between">
+          <div
+            class="flex flex-col gap-3 border-b p-4 md:flex-row md:items-center md:justify-between"
+          >
             <div>
               <h3 class="text-base font-semibold">
                 {{ selectedIsLink ? 'Edit Link' : 'Edit Group' }}
               </h3>
               <p class="text-sm text-muted-foreground">
-                {{ selectedIsLink ? 'Set the link label, route, icon, and visibility.' : 'Set the group label, icon, behavior, and child links.' }}
+                {{
+                  selectedIsLink
+                    ? 'Set the link label, route, icon, and visibility.'
+                    : 'Set the group label, icon, behavior, and child links.'
+                }}
               </p>
             </div>
 
@@ -496,7 +539,9 @@ onMounted(loadSidebar)
 
           <div v-if="!selectedItem" class="p-8 text-center">
             <h3 class="text-base font-semibold">Nothing selected</h3>
-            <p class="mt-2 text-sm text-muted-foreground">Add or select a group to edit the sidebar.</p>
+            <p class="mt-2 text-sm text-muted-foreground">
+              Add or select a group to edit the sidebar.
+            </p>
             <Button type="button" variant="create" class="mt-4" @click="addGroup">
               <Plus class="size-4" />
               Add Group
@@ -507,7 +552,11 @@ onMounted(loadSidebar)
             <div class="grid gap-4 md:grid-cols-[minmax(0,1fr)_12rem]">
               <Field>
                 <FieldLabel for="selected-title">Title</FieldLabel>
-                <Input id="selected-title" v-model="selectedItem.title" placeholder="Navigation label" />
+                <Input
+                  id="selected-title"
+                  v-model="selectedItem.title"
+                  placeholder="Navigation label"
+                />
               </Field>
 
               <Field>
@@ -556,7 +605,9 @@ onMounted(loadSidebar)
             <label class="flex items-center justify-between gap-4 rounded border p-3 text-sm">
               <span>
                 <span class="block font-medium">Visible in tenant sidebar</span>
-                <span class="block text-xs text-muted-foreground">Hidden items stay saved but do not show in navigation.</span>
+                <span class="block text-xs text-muted-foreground"
+                  >Hidden items stay saved but do not show in navigation.</span
+                >
               </span>
               <Checkbox
                 :model-value="selectedItem.is_active !== false"
@@ -572,7 +623,12 @@ onMounted(loadSidebar)
                     {{ selectedGroup.items.length || 'No' }} links added.
                   </p>
                 </div>
-                <Button type="button" size="sm" variant="outline" @click="addLink(selected.groupIndex)">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  @click="addLink(selected.groupIndex)"
+                >
                   <Plus class="size-4" />
                   Add Link
                 </Button>
@@ -604,36 +660,60 @@ onMounted(loadSidebar)
             <CardContent>
               <div
                 class="rounded border bg-sidebar text-sidebar-foreground transition-all"
-                :class="previewMode === 'collapsed' ? 'w-20' : 'w-full'"
+                :class="previewMode === 'collapsed' ? 'w-14' : 'w-full'"
               >
                 <div class="border-b p-3">
                   <div class="flex items-center gap-2">
-                    <div class="flex size-8 items-center justify-center rounded bg-teal-600 text-white">
+                    <div
+                      class="flex size-8 items-center justify-center rounded bg-teal-600 text-white"
+                    >
                       <component :is="iconFor(sidebar?.data.teams?.[0]?.logo)" class="size-4" />
                     </div>
                     <div v-if="previewMode === 'expanded'" class="min-w-0">
-                      <p class="truncate text-sm font-medium">{{ sidebar?.data.teams?.[0]?.name || 'Workspace' }}</p>
-                      <p class="truncate text-xs text-muted-foreground">{{ sidebar?.data.teams?.[0]?.plan || 'Tenant' }}</p>
+                      <p class="truncate text-sm font-medium">
+                        {{ sidebar?.data.teams?.[0]?.name || 'Workspace' }}
+                      </p>
+                      <p class="truncate text-xs text-muted-foreground">
+                        {{ sidebar?.data.teams?.[0]?.plan || 'Tenant' }}
+                      </p>
                     </div>
                   </div>
                 </div>
 
                 <div class="space-y-2 p-3">
-                  <p v-if="previewMode === 'expanded'" class="text-xs font-medium text-muted-foreground">
+                  <p
+                    v-if="previewMode === 'expanded'"
+                    class="text-xs font-medium text-muted-foreground"
+                  >
                     Navigation
                   </p>
                   <template v-for="(group, groupIndex) in groups" :key="`preview-${groupIndex}`">
                     <div v-if="group.is_active !== false" class="space-y-1">
-                      <div class="flex items-center gap-2 rounded px-2 py-2 text-sm hover:bg-sidebar-accent">
+                      <div
+                        class="flex items-center gap-2 rounded px-2 py-2 text-sm hover:bg-sidebar-accent"
+                      >
                         <component :is="iconFor(group.icon)" class="size-4 shrink-0" />
-                        <span v-if="previewMode === 'expanded'" class="truncate">{{ group.title || 'Untitled group' }}</span>
-                        <Badge v-if="previewMode === 'expanded' && group.items.length" variant="outline" class="ml-auto">
-                          {{ group.items.filter((linkItem) => linkItem.is_active !== false).length }}
+                        <span v-if="previewMode === 'expanded'" class="truncate">{{
+                          group.title || 'Untitled group'
+                        }}</span>
+                        <Badge
+                          v-if="previewMode === 'expanded' && group.items.length"
+                          variant="outline"
+                          class="ml-auto"
+                        >
+                          {{
+                            group.items.filter((linkItem) => linkItem.is_active !== false).length
+                          }}
                         </Badge>
                       </div>
-                      <div v-if="previewMode === 'expanded' && group.items.length" class="ml-6 space-y-1 border-l pl-2">
+                      <div
+                        v-if="previewMode === 'expanded' && group.items.length"
+                        class="ml-6 space-y-1 border-l pl-2"
+                      >
                         <div
-                          v-for="(linkItem, linkIndex) in group.items.filter((linkItem) => linkItem.is_active !== false)"
+                          v-for="(linkItem, linkIndex) in group.items.filter(
+                            (linkItem) => linkItem.is_active !== false
+                          )"
                           :key="`preview-${groupIndex}-${linkIndex}`"
                           class="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-muted-foreground"
                         >
@@ -653,7 +733,10 @@ onMounted(loadSidebar)
               <CardTitle class="text-base">Checks</CardTitle>
             </CardHeader>
             <CardContent class="space-y-3">
-              <div v-if="!errors.length && !warnings.length && !sidebarDataError && !saveError" class="rounded border bg-emerald-50 p-3 text-sm text-emerald-800">
+              <div
+                v-if="!errors.length && !warnings.length && !sidebarDataError && !saveError"
+                class="rounded border bg-emerald-50 p-3 text-sm text-emerald-800"
+              >
                 Navigation looks ready to save.
               </div>
               <div
@@ -672,10 +755,16 @@ onMounted(loadSidebar)
                 <AlertCircle class="mt-0.5 size-4 shrink-0" />
                 <span>{{ issue.message }}</span>
               </div>
-              <div v-if="sidebarDataError" class="rounded border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+              <div
+                v-if="sidebarDataError"
+                class="rounded border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive"
+              >
                 {{ sidebarDataError }}
               </div>
-              <div v-if="saveError" class="rounded border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+              <div
+                v-if="saveError"
+                class="rounded border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive"
+              >
                 {{ saveError }}
               </div>
 
