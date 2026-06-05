@@ -2,6 +2,7 @@
 
 namespace App\Admin\Templates\Http\Resources;
 
+use App\Admin\Templates\Services\TemplateCatalogMaintenanceService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -12,6 +13,8 @@ class TemplateCatalogItemResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $maintenance = app(TemplateCatalogMaintenanceService::class);
+
         return [
             'id'                => $this->id,
             'website_type_id'   => $this->website_type_id,
@@ -24,8 +27,12 @@ class TemplateCatalogItemResource extends JsonResource
             'field_schema'      => $this->field_schema    ?? [],
             'default_content'   => $this->default_content ?? [],
             'is_active'         => (bool) $this->is_active,
-            'created_at'        => $this->created_at,
-            'updated_at'        => $this->updated_at,
+            'usage_summary'     => $maintenance->usageSummary($this->resource),
+            'validation'        => $maintenance->validation($this->resource),
+            'qa_checklists'     => $maintenance->qaChecklist($this->resource),
+            'versions'          => $maintenance->versions($this->resource),
+            'created_at'        => $this->created_at?->toISOString(),
+            'updated_at'        => $this->updated_at?->toISOString(),
         ];
     }
 }

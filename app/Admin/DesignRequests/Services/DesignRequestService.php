@@ -37,16 +37,23 @@ class DesignRequestService
      */
     public function review(DesignRequest $request, array $data, int|string|null $reviewerId): DesignRequest
     {
-        $status     = (string) $data['status'];
-        $fromStatus = $request->status;
-        $now        = Carbon::now();
+        $status       = (string) $data['status'];
+        $fromStatus   = $request->status;
+        $fromAssignee = $request->assigned_to;
+        $fromPriority = $request->priority;
+        $now          = Carbon::now();
 
         $request->update([
-            'status'        => $status,
-            'admin_remarks' => $data['admin_remarks'] ?? null,
-            'reviewed_by'   => $reviewerId,
-            'reviewed_at'   => $now,
-            'completed_at'  => $status === 'completed' ? $now : null,
+            'status'         => $status,
+            'assigned_to'    => $data['assigned_to']    ?? null,
+            'priority'       => $data['priority']       ?? 'normal',
+            'due_at'         => $data['due_at']         ?? null,
+            'sla_due_at'     => $data['sla_due_at']     ?? null,
+            'admin_remarks'  => $data['admin_remarks']  ?? null,
+            'internal_notes' => $data['internal_notes'] ?? null,
+            'reviewed_by'    => $reviewerId,
+            'reviewed_at'    => $now,
+            'completed_at'   => $status === 'completed' ? $now : null,
         ]);
 
         $this->recordEvent(
@@ -60,6 +67,14 @@ class DesignRequestService
             $data['admin_remarks'] ?? null,
         );
 
+        if ((string) $fromAssignee !== (string) ($data['assigned_to'] ?? '')) {
+            $this->recordEvent($request, 'admin', $this->actorName($reviewerId), $reviewerId, 'assigned', null, null, 'Assigned to '.$this->actorName($data['assigned_to'] ?? null));
+        }
+
+        if ($fromPriority !== ($data['priority'] ?? 'normal')) {
+            $this->recordEvent($request, 'admin', $this->actorName($reviewerId), $reviewerId, 'priority_changed', null, null, 'Priority changed to '.($data['priority'] ?? 'normal'));
+        }
+
         return $request;
     }
 
@@ -68,6 +83,63 @@ class DesignRequestService
         $this->recordEvent($request, 'admin', $this->actorName($adminId), $adminId, 'comment', null, null, $message);
 
         return $request->fresh(['files', 'events', 'tenant', 'requester']);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    public function convert(DesignRequest $request, string $type, array $data, int|string|null $adminId): DesignRequest
+    {
+        $request->update([
+            'conversion_type'    => $type,
+            'conversion_payload' => [
+                'summary'    => $data['summary']    ?? null,
+                'changelog'  => $data['changelog']  ?? null,
+                'target_key' => $data['target_key'] ?? null,
+            ],
+            'converted_at' => now(),
+            'converted_by' => $adminId,
+        ]);
+
+        $this->recordEvent(
+            $request,
+            'admin',
+            $this->actorName($adminId),
+            $adminId,
+            $type === 'template_improvement' ? 'converted_to_template_improvement' : 'converted_to_catalog_change',
+            null,
+            null,
+            $data['summary'] ?? null,
+        );
+
+        return $request->fresh(['files', 'events', 'tenant', 'requester', 'assignee']);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    public function linkCompletedWork(DesignRequest $request, array $data, int|string|null $adminId): DesignRequest
+    {
+        $request->update([
+            'linked_template_id' => $data['linked_template_id'] ?? null,
+            'linked_site_url'    => $data['linked_site_url']    ?? null,
+        ]);
+
+        $this->recordEvent($request, 'admin', $this->actorName($adminId), $adminId, 'linked_completed_work', null, null, $data['linked_site_url'] ?? null);
+
+        return $request->fresh(['files', 'events', 'tenant', 'requester', 'assignee']);
+    }
+
+    public function markNotification(DesignRequest $request, int|string|null $adminId): DesignRequest
+    {
+        $request->update([
+            'notification_requested' => true,
+            'notification_sent_at'   => now(),
+        ]);
+
+        $this->recordEvent($request, 'admin', $this->actorName($adminId), $adminId, 'notification_marked', null, null, 'Notification marked for tenant follow-up.');
+
+        return $request->fresh(['files', 'events', 'tenant', 'requester', 'assignee']);
     }
 
     /**

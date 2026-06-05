@@ -23,8 +23,10 @@ import { Input } from '@/shared/components/ui/input'
 import { Label } from '@/shared/components/ui/label'
 import { NativeSelect, NativeSelectOption } from '@/shared/components/ui/native-select'
 import { Textarea } from '@/shared/components/ui/textarea'
+import { formatDisplayDate } from '@/shared/utils/date'
 import { getStatusBadgeVariant, getStatusLabel } from '@/shared/utils/status'
 import { useTemplateMaintenanceStore } from '@/admin/templates/template-maintenance-store'
+import { useConfirmStore } from '@/shared/stores/confirm-store'
 import {
   blankCatalogItem,
   blankSchemaField,
@@ -48,6 +50,7 @@ import { contentRecord } from '@/shared/templates/utils/template-form'
 import type {
   TemplateContent,
   TemplateCatalogItem,
+  TemplateCatalogQaItem,
   TemplateCatalogPayload,
   TemplateFieldOption,
   TemplateFieldSchema,
@@ -55,15 +58,35 @@ import type {
   WebsiteType,
   WebsiteTypePayload,
 } from '@/shared/types/templates'
-import { ArrowDown, ArrowUp, Check, FileCode2, Pencil, Plus, Save, Trash2 } from 'lucide-vue-next'
+import {
+  ArrowDown,
+  ArrowUp,
+  Check,
+  CircleAlert,
+  CircleCheck,
+  Copy,
+  Download,
+  FileCode2,
+  Pencil,
+  Plus,
+  RotateCcw,
+  Save,
+  Trash2,
+  Upload,
+} from 'lucide-vue-next'
 import { computed, onMounted, ref, watch } from 'vue'
 
 const maintenanceStore = useTemplateMaintenanceStore()
+const confirmStore = useConfirmStore()
 const selectedWebsiteTypeId = ref<string | null>(null)
 const selectedCatalogItemId = ref<string | null>(null)
 const websiteTypeDialogOpen = ref(false)
 const catalogDialogOpen = ref(false)
+const schemaExportDialogOpen = ref(false)
+const schemaImportDialogOpen = ref(false)
 const formError = ref('')
+const schemaImportError = ref('')
+const schemaImportText = ref('')
 const typeSlugTouched = ref(false)
 const itemKeyTouched = ref(false)
 const schemaFields = ref<TemplateFieldSchema[]>([])
@@ -104,6 +127,23 @@ const renderPath = computed(() => {
   // The catalog key must match a real Vue file in this folder.
   return `resources/js/tenant/templates/templates/${selectedWebsiteType.value.slug}/${catalogItemForm.value.key}.vue`
 })
+
+const selectedUsage = computed(() => selectedCatalogItem.value?.usage_summary)
+const selectedValidation = computed(() => selectedCatalogItem.value?.validation)
+const selectedQa = computed(() => selectedCatalogItem.value?.qa_checklists)
+const selectedVersions = computed(() => selectedCatalogItem.value?.versions ?? [])
+const visibleDefaultContent = computed(() => {
+  const entries = Object.entries(selectedCatalogItem.value?.default_content ?? {})
+
+  return entries.slice(0, 6).map(([key, value]) => ({
+    key,
+    value: typeof value === 'object' ? JSON.stringify(value) : String(value ?? ''),
+  }))
+})
+
+const passedQaCount = (items: TemplateCatalogQaItem[] = []): number => {
+  return items.filter((item) => item.passed).length
+}
 
 interface SchemaFieldDialogTarget {
   fields: TemplateFieldSchema[]
@@ -352,6 +392,7 @@ const selectCatalogItem = (item: TemplateCatalogItem): void => {
     field_schema: item.field_schema ?? [],
     default_content: item.default_content ?? {},
     is_active: item.is_active ?? true,
+    changelog: '',
   }
   schemaFields.value = normalizeLoadedSchema(item.field_schema)
   openSchemaFieldSections.value = []
@@ -482,6 +523,93 @@ const deleteCatalogItem = async (): Promise<void> => {
   await maintenanceStore.deleteCatalogItem(selectedCatalogItemId.value, selectedWebsiteTypeId.value)
   newCatalogItem()
   catalogDialogOpen.value = false
+}
+
+const cloneCatalogItem = async (): Promise<void> => {
+  if (!selectedCatalogItem.value) return
+
+  const cloned = await maintenanceStore.cloneCatalogItem(selectedCatalogItem.value)
+  selectCatalogItem(cloned)
+}
+
+const toggleCatalogPublish = async (): Promise<void> => {
+  if (!selectedCatalogItem.value) return
+
+  const action = selectedCatalogItem.value.is_active ? 'unpublish' : 'publish'
+  const confirmed = await confirmStore.confirm(`Are you sure you want to ${action} this template?`)
+
+  if (!confirmed) return
+
+  const updated = await maintenanceStore.publishCatalogItem(selectedCatalogItem.value)
+  selectCatalogItem(updated)
+}
+
+const validateCatalogItem = async (): Promise<void> => {
+  if (!selectedCatalogItem.value?.id) return
+
+  await maintenanceStore.validateCatalogItem(selectedCatalogItem.value.id)
+  await maintenanceStore.loadCatalogItems(selectedCatalogItem.value.website_type_id)
+
+  const refreshed = maintenanceStore.catalogItems.find(
+    (item) => item.id === selectedCatalogItemId.value
+  )
+  if (refreshed) selectCatalogItem(refreshed)
+}
+
+const exportCatalogSchema = async (): Promise<void> => {
+  if (!selectedCatalogItem.value?.id) return
+
+  await maintenanceStore.exportCatalogSchema(selectedCatalogItem.value.id)
+  schemaExportDialogOpen.value = true
+}
+
+const openImportSchemaDialog = (): void => {
+  if (!selectedCatalogItem.value) return
+
+  schemaImportText.value = JSON.stringify(
+    {
+      field_schema: selectedCatalogItem.value.field_schema ?? [],
+      default_content: selectedCatalogItem.value.default_content ?? {},
+      changelog: 'Imported schema and default content.',
+    },
+    null,
+    2
+  )
+  schemaImportError.value = ''
+  schemaImportDialogOpen.value = true
+}
+
+const importCatalogSchema = async (): Promise<void> => {
+  if (!selectedCatalogItem.value) return
+
+  try {
+    const payload = JSON.parse(schemaImportText.value || '{}') as Pick<
+      TemplateCatalogPayload,
+      'field_schema' | 'default_content' | 'changelog'
+    >
+
+    if (!Array.isArray(payload.field_schema)) {
+      schemaImportError.value = 'Import JSON must include a field_schema array.'
+      return
+    }
+
+    const updated = await maintenanceStore.importCatalogSchema(selectedCatalogItem.value, payload)
+    selectCatalogItem(updated)
+    schemaImportDialogOpen.value = false
+  } catch {
+    schemaImportError.value = 'Import JSON is invalid.'
+  }
+}
+
+const rollbackCatalogItem = async (versionId: string): Promise<void> => {
+  if (!selectedCatalogItem.value) return
+
+  const confirmed = await confirmStore.confirm('Rollback this template to the selected version?')
+
+  if (!confirmed) return
+
+  const updated = await maintenanceStore.rollbackCatalogItem(selectedCatalogItem.value, versionId)
+  selectCatalogItem(updated)
 }
 
 onMounted(async () => {
@@ -906,6 +1034,19 @@ watch(
                                   {{ maintenanceStore.errors.preview_image[0] }}
                                 </Label>
                               </Field>
+
+                              <Field>
+                                <FieldLabel for="catalog-changelog">Changelog</FieldLabel>
+
+                                <Textarea
+                                  v-field-help="'Summarize what changed in this template version.'"
+                                  id="catalog-changelog"
+                                  v-model="catalogItemForm.changelog"
+                                  class="min-h-20"
+                                  placeholder="Updated hero defaults and CTA field labels."
+                                  :disabled="!selectedWebsiteType"
+                                />
+                              </Field>
                             </AccordionContent>
                           </AccordionItem>
 
@@ -1123,6 +1264,61 @@ watch(
                   >
                     <Save class="size-4" />
                     Save
+                  </Button>
+                </DialogFooter>
+              </DialogScrollContent>
+            </Dialog>
+
+            <Dialog :open="schemaExportDialogOpen" @update:open="schemaExportDialogOpen = $event">
+              <DialogScrollContent class="max-w-[calc(100%-2rem)] md:max-w-3xl">
+                <DialogHeader>
+                  <DialogTitle>Export Schema</DialogTitle>
+                  <DialogDescription>
+                    Copy the current field schema and default content for this catalog template.
+                  </DialogDescription>
+                </DialogHeader>
+
+                <Textarea
+                  :model-value="JSON.stringify(maintenanceStore.schemaExport, null, 2)"
+                  class="min-h-96 font-mono text-xs"
+                  readonly
+                />
+
+                <DialogFooter>
+                  <Button type="button" variant="cancel" @click="schemaExportDialogOpen = false">
+                    Close
+                  </Button>
+                </DialogFooter>
+              </DialogScrollContent>
+            </Dialog>
+
+            <Dialog :open="schemaImportDialogOpen" @update:open="schemaImportDialogOpen = $event">
+              <DialogScrollContent class="max-w-[calc(100%-2rem)] md:max-w-3xl">
+                <DialogHeader>
+                  <DialogTitle>Import Schema</DialogTitle>
+                  <DialogDescription>
+                    Paste JSON with field_schema and default_content. Importing creates a new
+                    version snapshot.
+                  </DialogDescription>
+                </DialogHeader>
+
+                <Textarea
+                  v-model="schemaImportText"
+                  class="min-h-96 font-mono text-xs"
+                  spellcheck="false"
+                />
+
+                <p v-if="schemaImportError" class="text-sm font-medium text-destructive">
+                  {{ schemaImportError }}
+                </p>
+
+                <DialogFooter>
+                  <Button type="button" variant="cancel" @click="schemaImportDialogOpen = false">
+                    Cancel
+                  </Button>
+                  <Button type="button" variant="update" @click="importCatalogSchema">
+                    <Upload class="size-4" />
+                    Import
                   </Button>
                 </DialogFooter>
               </DialogScrollContent>
@@ -1610,16 +1806,67 @@ watch(
                     for {{ selectedWebsiteType.name }}
                   </span>
                 </CardTitle>
-                <Button
-                  size="sm"
-                  variant="create"
-                  type="button"
-                  :disabled="!selectedWebsiteType"
-                  @click="createCatalogItem"
-                >
-                  <Plus class="size-4" />
-                  New
-                </Button>
+                <div class="flex flex-wrap items-center justify-end gap-2">
+                  <Button
+                    size="sm"
+                    variant="navigate"
+                    type="button"
+                    :disabled="!selectedCatalogItem"
+                    @click="validateCatalogItem"
+                  >
+                    <CircleCheck class="size-4" />
+                    Validate
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="navigate"
+                    type="button"
+                    :disabled="!selectedCatalogItem"
+                    @click="exportCatalogSchema"
+                  >
+                    <Download class="size-4" />
+                    Export
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="navigate"
+                    type="button"
+                    :disabled="!selectedCatalogItem"
+                    @click="openImportSchemaDialog"
+                  >
+                    <Upload class="size-4" />
+                    Import
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="edit"
+                    type="button"
+                    :disabled="!selectedCatalogItem"
+                    @click="cloneCatalogItem"
+                  >
+                    <Copy class="size-4" />
+                    Clone
+                  </Button>
+                  <Button
+                    size="sm"
+                    :variant="selectedCatalogItem?.is_active ? 'restore' : 'publish'"
+                    type="button"
+                    :disabled="!selectedCatalogItem"
+                    @click="toggleCatalogPublish"
+                  >
+                    {{ selectedCatalogItem?.is_active ? 'Unpublish' : 'Publish' }}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="create"
+                    type="button"
+                    :disabled="!selectedWebsiteType"
+                    @click="createCatalogItem"
+                  >
+                    <Plus class="size-4" />
+                    New
+                  </Button>
+                </div>
               </CardHeader>
 
               <CardContent class="px-4">
@@ -1661,6 +1908,12 @@ watch(
                           >
                             {{ getStatusLabel(item.is_active ? 'active' : 'inactive') }}
                           </Badge>
+                          <Badge :variant="item.validation?.render.ok ? 'success' : 'warning'">
+                            {{ item.validation?.render.ok ? 'Render ready' : 'Needs QA' }}
+                          </Badge>
+                          <Badge variant="secondary">
+                            {{ item.usage_summary?.total ?? 0 }} tenants
+                          </Badge>
                         </span>
                       </span>
                       <Check
@@ -1672,6 +1925,225 @@ watch(
                 </div>
               </CardContent>
             </Card>
+
+            <div v-if="selectedCatalogItem" class="grid gap-4 xl:grid-cols-2">
+              <Card class="gap-4 py-4">
+                <CardHeader class="px-4">
+                  <CardTitle class="text-sm">Live Preview</CardTitle>
+                </CardHeader>
+                <CardContent class="space-y-4 px-4">
+                  <div class="overflow-hidden rounded border bg-background">
+                    <img
+                      v-if="selectedCatalogItem.preview_image"
+                      :src="selectedCatalogItem.preview_image"
+                      :alt="selectedCatalogItem.name"
+                      class="h-56 w-full object-cover"
+                    />
+                    <Empty v-else class="min-h-56 border-0">
+                      <EmptyHeader>
+                        <EmptyTitle>No preview image</EmptyTitle>
+                        <EmptyDescription>
+                          Add a preview image to make catalog QA faster.
+                        </EmptyDescription>
+                      </EmptyHeader>
+                    </Empty>
+                  </div>
+
+                  <div class="rounded border bg-muted/20 p-3">
+                    <div class="flex items-start gap-2">
+                      <component
+                        :is="selectedValidation?.render.ok ? CircleCheck : CircleAlert"
+                        class="mt-0.5 size-4 shrink-0"
+                        :class="
+                          selectedValidation?.render.ok ? 'text-emerald-600' : 'text-amber-600'
+                        "
+                      />
+                      <div>
+                        <p class="text-sm font-semibold">
+                          {{
+                            selectedValidation?.render.ok
+                              ? 'Render Ready'
+                              : 'Render Needs Attention'
+                          }}
+                        </p>
+                        <p class="mt-1 text-xs text-muted-foreground">
+                          {{ selectedValidation?.render.message ?? 'Validation has not run yet.' }}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div v-if="visibleDefaultContent.length" class="grid gap-2 sm:grid-cols-2">
+                    <div
+                      v-for="entry in visibleDefaultContent"
+                      :key="entry.key"
+                      class="rounded border p-3"
+                    >
+                      <p class="text-xs font-semibold text-muted-foreground">{{ entry.key }}</p>
+                      <p class="mt-1 line-clamp-3 text-sm">{{ entry.value }}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card class="gap-4 py-4">
+                <CardHeader class="px-4">
+                  <CardTitle class="text-sm">Tenant Usage Summary</CardTitle>
+                </CardHeader>
+                <CardContent class="space-y-4 px-4">
+                  <div class="grid gap-3 sm:grid-cols-5">
+                    <div class="rounded border p-3">
+                      <p class="text-xs text-muted-foreground">Total</p>
+                      <p class="mt-1 text-lg font-semibold">{{ selectedUsage?.total ?? 0 }}</p>
+                    </div>
+                    <div class="rounded border p-3">
+                      <p class="text-xs text-muted-foreground">Published</p>
+                      <p class="mt-1 text-lg font-semibold">{{ selectedUsage?.published ?? 0 }}</p>
+                    </div>
+                    <div class="rounded border p-3">
+                      <p class="text-xs text-muted-foreground">Draft</p>
+                      <p class="mt-1 text-lg font-semibold">{{ selectedUsage?.draft ?? 0 }}</p>
+                    </div>
+                    <div class="rounded border p-3">
+                      <p class="text-xs text-muted-foreground">Tenants</p>
+                      <p class="mt-1 text-lg font-semibold">{{ selectedUsage?.tenants ?? 0 }}</p>
+                    </div>
+                    <div class="rounded border p-3">
+                      <p class="text-xs text-muted-foreground">Default</p>
+                      <p class="mt-1 text-lg font-semibold">
+                        {{ selectedUsage?.default_instances ?? 0 }}
+                      </p>
+                    </div>
+                  </div>
+
+                  <Empty v-if="!selectedUsage?.recent.length" class="min-h-28 border">
+                    <EmptyHeader>
+                      <EmptyTitle>No tenant usage</EmptyTitle>
+                      <EmptyDescription>
+                        Tenant instances appear after this catalog item is used.
+                      </EmptyDescription>
+                    </EmptyHeader>
+                  </Empty>
+
+                  <div v-else class="space-y-2">
+                    <div
+                      v-for="template in selectedUsage.recent"
+                      :key="template.id"
+                      class="flex items-center justify-between gap-3 rounded border p-3"
+                    >
+                      <div>
+                        <p class="text-sm font-semibold">{{ template.business_name }}</p>
+                        <p class="text-xs text-muted-foreground">
+                          {{ template.tenant_name ?? template.tenant_id }}
+                        </p>
+                      </div>
+                      <Badge :variant="getStatusBadgeVariant(template.status)">
+                        {{ getStatusLabel(template.status) }}
+                      </Badge>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card class="gap-4 py-4">
+                <CardHeader class="px-4">
+                  <CardTitle class="text-sm">QA Checklists</CardTitle>
+                </CardHeader>
+                <CardContent class="grid gap-4 px-4 lg:grid-cols-2">
+                  <div class="space-y-2 rounded border p-3">
+                    <div class="flex items-center justify-between gap-3">
+                      <p class="text-sm font-semibold">Mobile QA</p>
+                      <Badge variant="outline">
+                        {{ passedQaCount(selectedQa?.mobile) }}/{{ selectedQa?.mobile.length ?? 0 }}
+                      </Badge>
+                    </div>
+                    <div
+                      v-for="item in selectedQa?.mobile ?? []"
+                      :key="item.key"
+                      class="flex items-center gap-2 text-sm"
+                    >
+                      <component
+                        :is="item.passed ? CircleCheck : CircleAlert"
+                        class="size-4"
+                        :class="item.passed ? 'text-emerald-600' : 'text-amber-600'"
+                      />
+                      <span>{{ item.label }}</span>
+                    </div>
+                  </div>
+
+                  <div class="space-y-2 rounded border p-3">
+                    <div class="flex items-center justify-between gap-3">
+                      <p class="text-sm font-semibold">Desktop QA</p>
+                      <Badge variant="outline">
+                        {{ passedQaCount(selectedQa?.desktop) }}/{{
+                          selectedQa?.desktop.length ?? 0
+                        }}
+                      </Badge>
+                    </div>
+                    <div
+                      v-for="item in selectedQa?.desktop ?? []"
+                      :key="item.key"
+                      class="flex items-center gap-2 text-sm"
+                    >
+                      <component
+                        :is="item.passed ? CircleCheck : CircleAlert"
+                        class="size-4"
+                        :class="item.passed ? 'text-emerald-600' : 'text-amber-600'"
+                      />
+                      <span>{{ item.label }}</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card class="gap-4 py-4">
+                <CardHeader class="px-4">
+                  <CardTitle class="text-sm">Versions and Changelog</CardTitle>
+                </CardHeader>
+                <CardContent class="space-y-2 px-4">
+                  <Empty v-if="!selectedVersions.length" class="min-h-32 border">
+                    <EmptyHeader>
+                      <EmptyTitle>No versions yet</EmptyTitle>
+                      <EmptyDescription>
+                        Versions are created when this catalog item is saved.
+                      </EmptyDescription>
+                    </EmptyHeader>
+                  </Empty>
+
+                  <template v-else>
+                    <div
+                      v-for="version in selectedVersions"
+                      :key="version.id"
+                      class="rounded border p-3"
+                    >
+                      <div class="flex items-start justify-between gap-3">
+                        <div>
+                          <p class="text-sm font-semibold">
+                            Version {{ version.version }} · {{ version.action }}
+                          </p>
+                          <p class="mt-1 text-xs text-muted-foreground">
+                            {{ version.changelog || 'No changelog provided.' }}
+                          </p>
+                          <p class="mt-1 text-xs text-muted-foreground">
+                            {{ version.created_by_name || version.created_by_email || 'System' }} ·
+                            {{ formatDisplayDate(version.created_at) }}
+                          </p>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="restore"
+                          type="button"
+                          @click="rollbackCatalogItem(version.id)"
+                        >
+                          <RotateCcw class="size-4" />
+                          Rollback
+                        </Button>
+                      </div>
+                    </div>
+                  </template>
+                </CardContent>
+              </Card>
+            </div>
           </section>
         </main>
       </div>

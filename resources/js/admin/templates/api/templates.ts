@@ -1,6 +1,9 @@
 import http from '@/shared/api/http'
 import type {
   TemplateCatalogItem,
+  TemplateCatalogExport,
+  TemplateCatalogQaChecklists,
+  TemplateCatalogValidation,
   TemplateCatalogPayload,
   TemplateParams,
   WebsiteType,
@@ -27,6 +30,21 @@ interface TemplateCatalogCollectionResponse {
 
 interface TemplateCatalogResponse {
   data: TemplateCatalogItem
+}
+
+interface TemplateCatalogExportResponse {
+  data: TemplateCatalogExport
+}
+
+interface TemplateCatalogValidationResponse {
+  data: {
+    validation: TemplateCatalogValidation
+    qa_checklists: TemplateCatalogQaChecklists
+  }
+}
+
+interface TemplateCatalogVersionResponse {
+  data: NonNullable<TemplateCatalogItem['versions']>
 }
 
 export const adminTemplateService = {
@@ -67,6 +85,59 @@ export const adminTemplateService = {
   updateCatalogItem(id: string, payload: TemplateCatalogPayload) {
     return http
       .put<TemplateCatalogResponse>(`admin/template-catalog-items/${id}`, payload)
+      .then((response) => response.data)
+  },
+
+  cloneCatalogItem(id: string, payload: Partial<TemplateCatalogPayload> = {}) {
+    return http
+      .post<TemplateCatalogResponse>(`admin/template-catalog-items/${id}/clone`, payload)
+      .then((response) => response.data)
+  },
+
+  publishCatalogItem(id: string) {
+    return http
+      .post<TemplateCatalogResponse>(`admin/template-catalog-items/${id}/publish`)
+      .then((response) => response.data)
+  },
+
+  unpublishCatalogItem(id: string) {
+    return http
+      .post<TemplateCatalogResponse>(`admin/template-catalog-items/${id}/unpublish`)
+      .then((response) => response.data)
+  },
+
+  exportCatalogSchema(id: string) {
+    return http
+      .get<TemplateCatalogExportResponse>(`admin/template-catalog-items/${id}/export-schema`)
+      .then((response) => response.data)
+  },
+
+  importCatalogSchema(
+    id: string,
+    payload: Pick<TemplateCatalogPayload, 'field_schema' | 'default_content' | 'changelog'>
+  ) {
+    return http
+      .post<TemplateCatalogResponse>(`admin/template-catalog-items/${id}/import-schema`, payload)
+      .then((response) => response.data)
+  },
+
+  validateCatalogItem(id: string) {
+    return http
+      .get<TemplateCatalogValidationResponse>(`admin/template-catalog-items/${id}/validate`)
+      .then((response) => response.data)
+  },
+
+  versions(id: string) {
+    return http
+      .get<TemplateCatalogVersionResponse>(`admin/template-catalog-items/${id}/versions`)
+      .then((response) => response.data)
+  },
+
+  rollbackCatalogItem(id: string, versionId: string) {
+    return http
+      .post<TemplateCatalogResponse>(
+        `admin/template-catalog-items/${id}/versions/${versionId}/rollback`
+      )
       .then((response) => response.data)
   },
 

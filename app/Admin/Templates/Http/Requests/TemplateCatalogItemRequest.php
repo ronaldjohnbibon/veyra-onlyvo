@@ -42,6 +42,7 @@ class TemplateCatalogItemRequest extends FormRequest
             'field_schema'    => ['nullable', 'array'],
             'default_content' => ['nullable', 'array'],
             'is_active'       => ['required', 'boolean'],
+            'changelog'       => ['nullable', 'string', 'max:1000'],
         ];
     }
 

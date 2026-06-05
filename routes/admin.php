@@ -27,10 +27,16 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
             ->parameters(['admin-users' => 'adminUser'])
             ->except(['destroy']);
 
+        Route::get('design-requests/board', [AdminDesignRequestController::class, 'board'])->name('design-requests.board');
+        Route::get('design-requests/workload', [AdminDesignRequestController::class, 'workload'])->name('design-requests.workload');
         Route::get('design-requests', [AdminDesignRequestController::class, 'index'])->name('design-requests.index');
         Route::get('design-requests/{designRequest}', [AdminDesignRequestController::class, 'show'])->name('design-requests.show');
         Route::put('design-requests/{designRequest}', [AdminDesignRequestController::class, 'update'])->name('design-requests.update');
         Route::post('design-requests/{designRequest}/comments', [AdminDesignRequestController::class, 'comment'])->name('design-requests.comments.store');
+        Route::post('design-requests/{designRequest}/convert-template-improvement', [AdminDesignRequestController::class, 'convertTemplateImprovement'])->name('design-requests.convert-template-improvement');
+        Route::post('design-requests/{designRequest}/convert-catalog-change', [AdminDesignRequestController::class, 'convertCatalogChange'])->name('design-requests.convert-catalog-change');
+        Route::post('design-requests/{designRequest}/link-completed-work', [AdminDesignRequestController::class, 'linkCompletedWork'])->name('design-requests.link-completed-work');
+        Route::post('design-requests/{designRequest}/notify', [AdminDesignRequestController::class, 'notifyTenant'])->name('design-requests.notify');
 
         Route::apiResource('sidebars', AdminSidebarController::class);
         Route::get('system-settings/history', [AdminSystemSettingController::class, 'history'])->name('system-settings.history');
@@ -39,6 +45,14 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
         Route::apiResource('system-settings', AdminSystemSettingController::class)
             ->parameters(['system-settings' => 'systemSetting']);
 
+        Route::post('template-catalog-items/{templateCatalogItem}/clone', [AdminTemplateCatalogController::class, 'cloneItem'])->name('template-catalog-items.clone');
+        Route::post('template-catalog-items/{templateCatalogItem}/publish', [AdminTemplateCatalogController::class, 'publish'])->name('template-catalog-items.publish');
+        Route::post('template-catalog-items/{templateCatalogItem}/unpublish', [AdminTemplateCatalogController::class, 'unpublish'])->name('template-catalog-items.unpublish');
+        Route::get('template-catalog-items/{templateCatalogItem}/versions', [AdminTemplateCatalogController::class, 'versions'])->name('template-catalog-items.versions');
+        Route::post('template-catalog-items/{templateCatalogItem}/versions/{version}/rollback', [AdminTemplateCatalogController::class, 'rollback'])->name('template-catalog-items.rollback');
+        Route::get('template-catalog-items/{templateCatalogItem}/export-schema', [AdminTemplateCatalogController::class, 'exportSchema'])->name('template-catalog-items.export-schema');
+        Route::post('template-catalog-items/{templateCatalogItem}/import-schema', [AdminTemplateCatalogController::class, 'importSchema'])->name('template-catalog-items.import-schema');
+        Route::get('template-catalog-items/{templateCatalogItem}/validate', [AdminTemplateCatalogController::class, 'validateTemplate'])->name('template-catalog-items.validate');
         Route::apiResource('template-catalog-items', AdminTemplateCatalogController::class)
             ->parameters(['template-catalog-items' => 'templateCatalogItem']);
         Route::apiResource('website-types', AdminWebsiteTypeController::class)

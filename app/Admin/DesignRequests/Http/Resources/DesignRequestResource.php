@@ -13,38 +13,85 @@ class DesignRequestResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id'              => $this->id,
-            'tenant_id'       => $this->tenant_id,
-            'tenant_name'     => $this->whenLoaded('tenant', fn () => $this->tenant?->name),
-            'requester_name'  => $this->whenLoaded('requester', fn () => $this->requester?->name),
-            'title'           => $this->title,
-            'description'     => $this->description,
-            'notes'           => $this->notes,
-            'reference_links' => $this->reference_links ?? [],
-            'mockup_concept'  => $this->mockup_concept,
-            'status'          => $this->status,
-            'status_label'    => str((string) $this->status)->replace('_', ' ')->title()->toString(),
-            'status_explanation' => $this->statusExplanation((string) $this->status),
-            'admin_remarks'   => $this->admin_remarks,
-            'files'           => DesignRequestFileResource::collection($this->whenLoaded('files')),
-            'events'          => DesignRequestEventResource::collection($this->whenLoaded('events')),
-            'reviewed_at'     => $this->reviewed_at,
-            'completed_at'    => $this->completed_at,
-            'created_at'      => $this->created_at,
-            'updated_at'      => $this->updated_at,
+            'id'                     => $this->id,
+            'tenant_id'              => $this->tenant_id,
+            'tenant_name'            => $this->whenLoaded('tenant', fn () => $this->tenant?->name),
+            'requester_name'         => $this->whenLoaded('requester', fn () => $this->requester?->name),
+            'assigned_to'            => $this->assigned_to,
+            'assignee_name'          => $this->whenLoaded('assignee', fn () => $this->assignee?->name),
+            'title'                  => $this->title,
+            'description'            => $this->description,
+            'notes'                  => $this->notes,
+            'reference_links'        => $this->reference_links ?? [],
+            'mockup_concept'         => $this->mockup_concept,
+            'status'                 => $this->status,
+            'status_label'           => str((string) $this->status)->replace('_', ' ')->title()->toString(),
+            'status_explanation'     => $this->statusExplanation((string) $this->status),
+            'priority'               => $this->priority ?? 'normal',
+            'due_at'                 => $this->due_at?->toISOString(),
+            'sla_due_at'             => $this->sla_due_at?->toISOString(),
+            'sla'                    => $this->slaSummary(),
+            'admin_remarks'          => $this->admin_remarks,
+            'internal_notes'         => $this->internal_notes,
+            'notification_requested' => (bool) $this->notification_requested,
+            'notification_sent_at'   => $this->notification_sent_at?->toISOString(),
+            'conversion_type'        => $this->conversion_type,
+            'conversion_payload'     => $this->conversion_payload ?? [],
+            'converted_at'           => $this->converted_at?->toISOString(),
+            'linked_template_id'     => $this->linked_template_id,
+            'linked_template_name'   => $this->whenLoaded('linkedTemplate', fn () => $this->linkedTemplate?->name),
+            'linked_site_url'        => $this->linked_site_url,
+            'files'                  => DesignRequestFileResource::collection($this->whenLoaded('files')),
+            'events'                 => DesignRequestEventResource::collection($this->whenLoaded('events')),
+            'reviewed_at'            => $this->reviewed_at,
+            'completed_at'           => $this->completed_at,
+            'created_at'             => $this->created_at,
+            'updated_at'             => $this->updated_at,
         ];
     }
 
     private function statusExplanation(string $status): string
     {
         return match ($status) {
-            'pending' => 'The request is waiting for admin triage.',
-            'under_review' => 'The request is actively being reviewed with the tenant.',
-            'approved' => 'The current direction has been approved.',
+            'pending'           => 'The request is waiting for admin triage.',
+            'under_review'      => 'The request is actively being reviewed with the tenant.',
+            'approved'          => 'The current direction has been approved.',
             'changes_requested' => 'The tenant or admin requested changes before completion.',
-            'rejected' => 'The request was declined or cannot be completed as submitted.',
-            'completed' => 'The design request has been completed.',
-            default => 'The request status has been updated.',
+            'rejected'          => 'The request was declined or cannot be completed as submitted.',
+            'completed'         => 'The design request has been completed.',
+            default             => 'The request status has been updated.',
+        };
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function slaSummary(): array
+    {
+        $target = $this->sla_due_at ?? $this->due_at;
+
+        if (! $target) {
+            return [
+                'state'      => 'not_set',
+                'label'      => 'No SLA target',
+                'hours_left' => null,
+            ];
+        }
+
+        if ($this->completed_at) {
+            return [
+                'state'      => $this->completed_at->lessThanOrEqualTo($target) ? 'met' : 'missed',
+                'label'      => $this->completed_at->lessThanOrEqualTo($target) ? 'SLA met' : 'SLA missed',
+                'hours_left' => 0,
+            ];
+        }
+
+        $hoursLeft = now()->diffInHours($target, false);
+
+        return match (true) {
+            $hoursLeft < 0   => ['state' => 'overdue', 'label' => 'Overdue', 'hours_left' => $hoursLeft],
+            $hoursLeft <= 24 => ['state' => 'due_soon', 'label' => 'Due soon', 'hours_left' => $hoursLeft],
+            default          => ['state' => 'on_track', 'label' => 'On track', 'hours_left' => $hoursLeft],
         };
     }
 }

@@ -127,8 +127,78 @@ export interface TemplateCatalogItem {
   field_schema?: TemplateFieldSchema[]
   default_content?: TemplateContent
   is_active?: boolean
+  usage_summary?: TemplateCatalogUsageSummary
+  validation?: TemplateCatalogValidation
+  qa_checklists?: TemplateCatalogQaChecklists
+  versions?: TemplateCatalogVersion[]
   created_at?: string
   updated_at?: string
+}
+
+export interface TemplateCatalogUsageSummary {
+  total: number
+  published: number
+  draft: number
+  tenants: number
+  default_instances: number
+  recent: {
+    id: string
+    name: string
+    business_name: string
+    status: string
+    tenant_id: string
+    tenant_name?: string | null
+    updated_at?: string | null
+  }[]
+}
+
+export interface TemplateCatalogValidation {
+  template_file: {
+    path: string
+    exists: boolean
+  }
+  registry_key: string
+  dependencies: {
+    missing: string[]
+    ok: boolean
+  }
+  render: {
+    ok: boolean
+    message: string
+  }
+}
+
+export interface TemplateCatalogQaItem {
+  key: string
+  label: string
+  passed: boolean
+}
+
+export interface TemplateCatalogQaChecklists {
+  mobile: TemplateCatalogQaItem[]
+  desktop: TemplateCatalogQaItem[]
+}
+
+export interface TemplateCatalogVersion {
+  id: string
+  version: number
+  action: string
+  changelog?: string | null
+  created_by_name?: string | null
+  created_by_email?: string | null
+  created_at?: string | null
+  field_schema_count: number
+  is_active: boolean
+}
+
+export interface TemplateCatalogExport {
+  website_type_slug?: string | null
+  template_key: string
+  name: string
+  description?: string | null
+  field_schema: TemplateFieldSchema[]
+  default_content: TemplateContent
+  exported_at: string
 }
 
 export interface WebsiteTypePayload {
@@ -147,6 +217,7 @@ export interface TemplateCatalogPayload {
   field_schema?: TemplateFieldSchema[] | null
   default_content?: TemplateContent | null
   is_active: boolean
+  changelog?: string
 }
 
 export interface TemplateRecord {
