@@ -6,6 +6,7 @@ use App\Admin\Tenants\Http\Requests\TenantRequest;
 use App\Admin\Tenants\Http\Resources\TenantResource;
 use App\Admin\Tenants\Models\Tenant;
 use App\Admin\Tenants\Services\TenantService;
+use App\Admin\Tenants\Services\TenantWorkspaceService;
 use App\Http\Controllers\Controller;
 use App\Shared\Enums\UserType;
 use Illuminate\Http\JsonResponse;
@@ -16,6 +17,7 @@ class AdminTenantController extends Controller
 {
     public function __construct(
         private readonly TenantService $service,
+        private readonly TenantWorkspaceService $workspaceService,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -69,6 +71,19 @@ class AdminTenantController extends Controller
         }
 
         return $this->success(new TenantResource($record), 'Tenant retrieved.');
+    }
+
+    public function workspace(Request $request, string $tenant): JsonResponse
+    {
+        $this->authorizeAdmin();
+
+        $record = Tenant::query()->with('owner')->withCount(['users', 'templates'])->find($tenant);
+
+        if (! $record) {
+            return $this->error('Tenant not found.', 404);
+        }
+
+        return $this->success($this->workspaceService->workspace($record, $request), 'Tenant workspace retrieved.');
     }
 
     public function update(TenantRequest $request, string $tenant): JsonResponse

@@ -2,11 +2,13 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { validationErrorsFrom } from '@/shared/api/errors'
 import { adminTenantService } from './api/tenants'
+import type { TenantWorkspace } from '@/admin/tenants/types'
 import type { TenantParams, TenantPayload, TenantRecord } from '@/shared/types/tenants'
 
 export const useAdminTenantStore = defineStore('admin-tenants', () => {
   const tenants = ref<TenantRecord[]>([])
   const tenant = ref<TenantRecord | null>(null)
+  const workspace = ref<TenantWorkspace | null>(null)
   const loading = ref(false)
   const errors = ref<Record<string, string[]>>({})
   const total = ref(0)
@@ -53,6 +55,15 @@ export const useAdminTenantStore = defineStore('admin-tenants', () => {
     }
   }
 
+  const showWorkspace = async (id: string): Promise<void> => {
+    try {
+      loading.value = true
+      workspace.value = (await adminTenantService.workspace(id)).data
+    } finally {
+      loading.value = false
+    }
+  }
+
   const deactivate = async (id: string): Promise<void> => {
     try {
       loading.value = true
@@ -92,8 +103,10 @@ export const useAdminTenantStore = defineStore('admin-tenants', () => {
     params,
     reactivate,
     save,
+    showWorkspace,
     tenant,
     tenants,
     total,
+    workspace,
   }
 })

@@ -44,6 +44,7 @@ class AdminSidebarSeeder extends Seeder
                             'is_active'   => true,
                             'items'       => [
                                 ['title' => 'Tenants', 'url' => 'tenants', 'is_active' => true],
+                                ['title' => 'Admin Users', 'url' => 'admin-users', 'is_active' => true],
                             ],
                         ],
                         [

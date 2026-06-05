@@ -1,4 +1,5 @@
 import http from '@/shared/api/http'
+import type { TenantWorkspace } from '@/admin/tenants/types'
 import type { TenantParams, TenantPayload, TenantRecord } from '@/shared/types/tenants'
 
 interface TenantCollectionResponse {
@@ -10,6 +11,10 @@ interface TenantCollectionResponse {
 
 interface TenantResponse {
   data: TenantRecord
+}
+
+interface TenantWorkspaceResponse {
+  data: TenantWorkspace
 }
 
 export const adminTenantService = {
@@ -26,6 +31,12 @@ export const adminTenantService = {
   update(id: string, payload: TenantPayload) {
     return http
       .put<TenantResponse>(`admin/tenants/${id}`, payload)
+      .then((response) => response.data)
+  },
+
+  workspace(id: string) {
+    return http
+      .get<TenantWorkspaceResponse>(`admin/tenants/${id}/workspace`)
       .then((response) => response.data)
   },
 

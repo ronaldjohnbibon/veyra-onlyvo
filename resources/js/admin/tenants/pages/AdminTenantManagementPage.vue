@@ -20,14 +20,17 @@ import { useAdminSystemSettingStore } from '@/admin/system-settings/system-setti
 import { useAdminTenantStore } from '@/admin/tenants/tenant-store'
 import { useConfirmStore } from '@/shared/stores/confirm-store'
 import type { TenantPayload, TenantRecord, TenantStatus } from '@/shared/types/tenants'
-import { Pencil, Power, PowerOff, Trash2 } from 'lucide-vue-next'
-import { computed, onMounted, reactive, ref } from 'vue'
+import { Eye, Pencil, Power, PowerOff, Trash2 } from 'lucide-vue-next'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 type SortDirection = 'asc' | 'desc' | ''
 
 const tenantStore = useAdminTenantStore()
 const systemSettingStore = useAdminSystemSettingStore()
 const confirmStore = useConfirmStore()
+const route = useRoute()
+const router = useRouter()
 const dialogOpen = ref(false)
 const editingTenant = ref<TenantRecord | null>(null)
 const settingsText = ref('{}')
@@ -40,7 +43,7 @@ const columns = [
   { key: 'status', label: 'Status', sortable: true },
   { key: 'usage', label: 'Usage' },
   { key: 'created_at', label: 'Created', sortable: true },
-  { key: 'actions', label: '', headerClass: 'w-[190px]', cellClass: 'text-right' },
+  { key: 'actions', label: '', headerClass: 'w-[245px]', cellClass: 'text-right' },
 ] as const
 
 const form = reactive<TenantPayload>({
@@ -164,10 +167,27 @@ const updateSort = (key: string, direction: SortDirection): void => {
   })
 }
 
+const openWorkspace = (tenant: TenantRecord): void => {
+  router.push({ name: 'admin.tenants.show', params: { tenantId: tenant.id } })
+}
+
 onMounted(async () => {
   await Promise.all([tenantStore.index(), systemSettingStore.index()])
   resetForm()
+
+  if (route.query.action === 'create') {
+    openCreateDialog()
+  }
 })
+
+watch(
+  () => route.query.action,
+  (action) => {
+    if (action === 'create') {
+      openCreateDialog()
+    }
+  }
+)
 </script>
 
 <template>
@@ -194,11 +214,13 @@ onMounted(async () => {
         :sort-direction="sortDirection"
         with-search
         with-create
+        with-details
         with-page-size
         create-label="Create Tenant"
         empty-text="No tenants found."
         search-placeholder="Search tenants..."
         @create="openCreateDialog"
+        @details="openWorkspace"
         @update:page="tenantStore.index({ page: $event })"
         @update:page-size="tenantStore.index({ pageSize: $event, page: 1 })"
         @update:search="tenantStore.index({ search: $event, page: 1 })"
@@ -242,6 +264,10 @@ onMounted(async () => {
 
         <template #cell-actions="{ row }">
           <div class="flex justify-end gap-2">
+            <Button size="xs" variant="navigate" type="button" @click.stop="openWorkspace(row)">
+              <Eye class="size-3" />
+              View
+            </Button>
             <Button size="xs" variant="edit" type="button" @click.stop="openEditDialog(row)">
               <Pencil class="size-3" />
               Edit

@@ -42,7 +42,7 @@ class AuthController extends Controller
             return $this->error(__('auth.invalid'), 401);
         }
 
-        if ($user->user_type !== UserType::ADMIN) {
+        if ($user->user_type !== UserType::ADMIN || ! $user->is_active) {
             return $this->error(__('auth.unauthorized'), 403);
         }
 
@@ -57,7 +57,7 @@ class AuthController extends Controller
             return $this->error(__('auth.unauthorized'), 403);
         }
 
-        if (Auth::user()?->user_type !== UserType::ADMIN) {
+        if (Auth::user()?->user_type !== UserType::ADMIN || ! Auth::user()?->is_active) {
             return $this->error(__('auth.unauthorized'), 403);
         }
 
@@ -70,7 +70,7 @@ class AuthController extends Controller
             return $this->error(__('auth.unauthorized'), 403);
         }
 
-        if (Auth::user()?->user_type !== UserType::ADMIN) {
+        if (Auth::user()?->user_type !== UserType::ADMIN || ! Auth::user()?->is_active) {
             return $this->error(__('auth.unauthorized'), 403);
         }
 

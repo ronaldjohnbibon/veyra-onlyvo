@@ -9,6 +9,7 @@ import adminDashboardRoutes from '@/admin/dashboard/routes'
 import analyticsRoutes from '@/tenant/dashboard/routes'
 import adminTemplateRoutes from '@/admin/templates/routes'
 import adminTenantRoutes from '@/admin/tenants/routes'
+import adminUserRoutes from '@/admin/users/routes'
 import adminDesignRequestRoutes from '@/admin/design-requests/routes'
 import sidebarRoutes from '@/tenant/sidebar/routes'
 import tenantSystemSettingRoutes from '@/tenant/system-settings/routes'
@@ -28,6 +29,7 @@ const routes: RouteRecordRaw[] = [
   ...adminAuthRoutes,
   ...adminDashboardRoutes,
   ...adminTenantRoutes,
+  ...adminUserRoutes,
   ...adminDesignRequestRoutes,
   ...adminTemplateRoutes,
   ...adminSidebarRoutes,
