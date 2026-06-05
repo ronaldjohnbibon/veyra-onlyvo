@@ -1,5 +1,13 @@
 <script setup lang="ts" generic="TData extends object">
 import { Button } from '@/shared/components/ui/button'
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '@/shared/components/ui/empty'
 import { Input } from '@/shared/components/ui/input'
 import { NativeSelect } from '@/shared/components/ui/native-select'
 import {
@@ -11,7 +19,7 @@ import {
   TableRow,
 } from '@/shared/components/ui/table'
 import { cn } from '@/shared/utils/utils'
-import { ArrowDown, ArrowUp, ArrowUpDown, Plus } from 'lucide-vue-next'
+import { ArrowDown, ArrowUp, ArrowUpDown, Inbox, Loader2, Plus } from 'lucide-vue-next'
 import { computed, ref, watch, type HTMLAttributes } from 'vue'
 
 type SortDirection = 'asc' | 'desc' | ''
@@ -41,6 +49,7 @@ const props = withDefaults(
     withPageSize?: boolean
     createLabel?: string
     emptyText?: string
+    emptyTitle?: string
     loadingText?: string
     rowKey?: string | ((row: TData) => string | number)
     searchPlaceholder?: string
@@ -52,6 +61,7 @@ const props = withDefaults(
     createLabel: 'Create',
     createDisabled: false,
     emptyText: 'No results.',
+    emptyTitle: '',
     loadingText: 'Loading...',
     pageSizeOptions: () => [10, 15, 25, 50],
     rowKey: 'id',
@@ -258,13 +268,33 @@ const updatePageSize = (event: Event): void => {
         <TableBody>
           <TableRow v-if="loading">
             <TableCell :colspan="visibleColspan" class="h-24 text-center text-muted-foreground">
-              {{ loadingText }}
+              <div class="flex items-center justify-center gap-2 py-8 text-sm">
+                <Loader2 class="size-4 animate-spin" />
+                {{ loadingText }}
+              </div>
             </TableCell>
           </TableRow>
 
           <TableRow v-else-if="!data.length">
-            <TableCell :colspan="visibleColspan" class="h-24 text-center text-muted-foreground">
-              {{ emptyText }}
+            <TableCell :colspan="visibleColspan" class="p-0">
+              <Empty class="min-h-56 border-0">
+                <EmptyMedia variant="icon">
+                  <slot name="empty-icon">
+                    <Inbox class="size-5" />
+                  </slot>
+                </EmptyMedia>
+                <EmptyHeader>
+                  <EmptyTitle>{{ emptyTitle || emptyText }}</EmptyTitle>
+                  <EmptyDescription v-if="$slots['empty-description'] || emptyTitle">
+                    <slot name="empty-description">
+                      {{ emptyText }}
+                    </slot>
+                  </EmptyDescription>
+                </EmptyHeader>
+                <EmptyContent v-if="$slots['empty-actions']">
+                  <slot name="empty-actions" />
+                </EmptyContent>
+              </Empty>
             </TableCell>
           </TableRow>
 

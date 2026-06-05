@@ -40,6 +40,7 @@ const groups = ref<BuilderGroup[]>([])
 const selected = ref<Selection>({ type: 'group', groupIndex: 0 })
 const previewMode = ref<'expanded' | 'collapsed'>('expanded')
 const saveError = ref('')
+const saveSuccess = ref('')
 
 const sidebar = computed(() => sidebarStore.sidebars[0] ?? null)
 const iconNames = Object.keys(iconMap) as IconName[]
@@ -135,6 +136,7 @@ const canSave = computed(
 const sidebarDataError = computed(() => {
   return Object.entries(sidebarStore.errors).find(([field]) => field.startsWith('data'))?.[1]?.[0]
 })
+const isInitialLoading = computed(() => sidebarStore.loading && !sidebar.value && !groups.value.length)
 
 const iconFor = (icon?: string) => {
   return icon && icon in iconMap ? iconMap[icon as IconName] : iconMap.Circle
@@ -324,13 +326,16 @@ const saveSidebar = async (): Promise<void> => {
 
   try {
     saveError.value = ''
+    saveSuccess.value = ''
     await sidebarStore.update(sidebar.value.id, {
       name: sidebar.value.name,
       description: sidebar.value.description,
       data: payloadData(),
     })
     groups.value = cloneGroups(sidebar.value?.data)
+    saveSuccess.value = 'Navigation saved. The tenant sidebar will use this structure.'
   } catch {
+    saveSuccess.value = ''
     saveError.value = 'Unable to save the navigation builder changes.'
   }
 }
@@ -391,7 +396,11 @@ onMounted(loadSidebar)
             </Button>
           </div>
 
-          <div v-if="!groups.length" class="p-5 text-sm text-muted-foreground">
+          <div v-if="isInitialLoading" class="space-y-2 p-3">
+            <div v-for="item in 4" :key="item" class="h-10 animate-pulse rounded bg-primary/10" />
+          </div>
+
+          <div v-else-if="!groups.length" class="p-5 text-sm text-muted-foreground">
             No navigation groups yet. Add a group to start.
           </div>
 
@@ -741,7 +750,7 @@ onMounted(loadSidebar)
                 v-if="!errors.length && !warnings.length && !sidebarDataError && !saveError"
                 class="rounded border bg-emerald-50 p-3 text-sm text-emerald-800"
               >
-                Navigation looks ready to save.
+                {{ saveSuccess || 'Navigation looks ready to save.' }}
               </div>
               <div
                 v-for="issue in errors"

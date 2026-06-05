@@ -27,18 +27,37 @@ class AdminSidebarSeeder extends Seeder
                     ],
                     'main_nav' => [
                         [
-                            'title'       => 'Platform',
+                            'title'       => 'Home',
                             'url'         => '#',
                             'icon'        => 'LayoutDashboard',
                             'description' => '',
                             'is_active'   => true,
                             'items'       => [
                                 ['title' => 'Dashboard', 'url' => 'dashboard', 'is_active' => true],
+                            ],
+                        ],
+                        [
+                            'title'       => 'Platform',
+                            'url'         => '#',
+                            'icon'        => 'ShieldCheck',
+                            'description' => '',
+                            'is_active'   => true,
+                            'items'       => [
                                 ['title' => 'Tenants', 'url' => 'tenants', 'is_active' => true],
                             ],
                         ],
                         [
-                            'title'       => 'Operations',
+                            'title'       => 'Website',
+                            'url'         => '#',
+                            'icon'        => 'Package',
+                            'description' => '',
+                            'is_active'   => true,
+                            'items'       => [
+                                ['title' => 'Template Library', 'url' => 'templates', 'is_active' => true],
+                            ],
+                        ],
+                        [
+                            'title'       => 'Collaboration',
                             'url'         => '#',
                             'icon'        => 'Palette',
                             'description' => '',
@@ -48,23 +67,13 @@ class AdminSidebarSeeder extends Seeder
                             ],
                         ],
                         [
-                            'title'       => 'Template Library',
+                            'title'       => 'Workspace',
                             'url'         => '#',
-                            'icon'        => 'Package',
+                            'icon'        => 'Settings',
                             'description' => '',
                             'is_active'   => true,
                             'items'       => [
-                                ['title' => 'Templates', 'url' => 'templates', 'is_active' => true],
-                            ],
-                        ],
-                        [
-                            'title'       => 'Maintenance',
-                            'url'         => '#',
-                            'icon'        => 'Wrench',
-                            'description' => '',
-                            'is_active'   => true,
-                            'items'       => [
-                                ['title' => 'Sidebars', 'url' => 'sidebar', 'is_active' => true],
+                                ['title' => 'Navigation Builder', 'url' => 'sidebar', 'is_active' => true],
                                 ['title' => 'System Settings', 'url' => 'system-settings', 'is_active' => true],
                             ],
                         ],

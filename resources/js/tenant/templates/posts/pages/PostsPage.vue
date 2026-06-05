@@ -9,7 +9,7 @@ import { Button } from '@/shared/components/ui/button'
 import { NativeSelect, NativeSelectOption } from '@/shared/components/ui/native-select'
 import { formatDisplayDate } from '@/shared/utils/date'
 import { getStatusBadgeVariant, getStatusLabel } from '@/shared/utils/status'
-import { Eye, Globe2, Pencil, Trash2 } from 'lucide-vue-next'
+import { Eye, FileText, Globe2, Pencil, Trash2 } from 'lucide-vue-next'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
@@ -46,6 +46,25 @@ const emptyText = computed(() => {
   return `No posts found for ${selectedTemplate.value?.name || 'this template'}.`
 })
 
+const emptyTitle = computed(() => {
+  if (!selectedTemplateId.value) return 'Choose a website first'
+  if (postStore.params.search || postStore.params.status) return 'No posts match these filters'
+
+  return 'Start your first post'
+})
+
+const emptyDescription = computed(() => {
+  if (!selectedTemplateId.value) {
+    return 'Posts belong to a published or draft website. Pick a template to view, edit, or create posts.'
+  }
+
+  if (postStore.params.search || postStore.params.status) {
+    return 'Try clearing the search or status filter to see more posts.'
+  }
+
+  return 'Create a draft, add an excerpt and SEO details, then publish when it is ready.'
+})
+
 const loadPosts = async (params: Partial<PostParams> = {}): Promise<void> => {
   if (!selectedTemplateId.value) return
 
@@ -68,6 +87,16 @@ const updateStatus = (event: Event): void => {
   loadPosts({
     page: 1,
     status: (event.target as HTMLSelectElement).value as PostStatus | '',
+  })
+}
+
+const resetFilters = (): void => {
+  loadPosts({
+    direction: undefined,
+    page: 1,
+    search: '',
+    sort: undefined,
+    status: '',
   })
 }
 
@@ -133,7 +162,9 @@ watch(selectedTemplateId, (templateId) => {
           :create-disabled="!canCreate"
           :data="postRows"
           :empty-text="emptyText"
+          :empty-title="emptyTitle"
           :loading="postStore.loading"
+          loading-text="Loading posts..."
           :page="postStore.params.page ?? 1"
           :page-size="postStore.params.pageSize ?? 15"
           :search="postStore.params.search ?? ''"
@@ -151,6 +182,34 @@ watch(selectedTemplateId, (templateId) => {
           @update:search="loadPosts({ page: 1, search: $event })"
           @update:sort="updateSort"
         >
+          <template #empty-icon>
+            <FileText class="size-5" />
+          </template>
+
+          <template #empty-description>
+            {{ emptyDescription }}
+          </template>
+
+          <template #empty-actions>
+            <div class="flex flex-col gap-2 sm:flex-row">
+              <Button v-if="!selectedTemplateId" as-child variant="navigate" size="sm">
+                <RouterLink to="/templates">Choose Template</RouterLink>
+              </Button>
+              <Button
+                v-else-if="postStore.params.search || postStore.params.status"
+                type="button"
+                variant="navigate"
+                size="sm"
+                @click="resetFilters"
+              >
+                Clear Filters
+              </Button>
+              <Button v-else type="button" variant="create" size="sm" @click="createPost">
+                Create Post
+              </Button>
+            </div>
+          </template>
+
           <template #filters>
             <NativeSelect
               v-field-help="'Choose the template whose posts you want to manage.'"

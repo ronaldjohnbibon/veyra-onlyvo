@@ -4,6 +4,7 @@ import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Field, FieldError, FieldLabel } from '@/shared/components/ui/field'
 import { Input } from '@/shared/components/ui/input'
+import { Skeleton } from '@/shared/components/ui/skeleton'
 import { useAccountStore } from '@/tenant/account/account-store'
 import {
   BadgeCheck,
@@ -26,6 +27,7 @@ const route = useRoute()
 const workspace = computed(() => accountStore.account?.workspace ?? null)
 const user = computed(() => accountStore.account?.user ?? null)
 const ownerMember = computed(() => workspace.value?.members.find((member) => member.is_owner) ?? null)
+const isInitialLoading = computed(() => accountStore.loading && !accountStore.account)
 const isTeamManagement = computed(() => route.name === 'tenant.team-management')
 const pageTitle = computed(() => (isTeamManagement.value ? 'Team Management' : 'Account/Profile'))
 const pageDescription = computed(() =>
@@ -67,7 +69,41 @@ onMounted(accountStore.show)
         </div>
       </div>
 
-      <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_24rem]">
+      <div v-if="isInitialLoading" class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_24rem]">
+        <main class="space-y-4">
+          <section
+            v-for="section in 3"
+            :key="section"
+            class="rounded border bg-background p-4"
+          >
+            <div class="flex items-start gap-3">
+              <Skeleton class="size-10 shrink-0" />
+              <div class="w-full space-y-3">
+                <Skeleton class="h-4 w-40" />
+                <Skeleton class="h-3 w-2/3" />
+                <div class="grid gap-3 pt-2 md:grid-cols-2">
+                  <Skeleton class="h-10 w-full" />
+                  <Skeleton class="h-10 w-full" />
+                </div>
+              </div>
+            </div>
+          </section>
+        </main>
+        <aside class="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle class="text-base">Loading workspace</CardTitle>
+            </CardHeader>
+            <CardContent class="space-y-3">
+              <Skeleton class="h-10 w-full" />
+              <Skeleton class="h-16 w-full" />
+              <Skeleton class="h-20 w-full" />
+            </CardContent>
+          </Card>
+        </aside>
+      </div>
+
+      <div v-else class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_24rem]">
         <main class="space-y-4">
           <section class="rounded border bg-background">
             <div class="flex flex-col gap-3 border-b p-4 md:flex-row md:items-start md:justify-between">
@@ -360,7 +396,10 @@ onMounted(accountStore.show)
             </CardContent>
           </Card>
 
-          <p v-if="accountStore.message" class="rounded border bg-muted/30 p-3 text-sm text-muted-foreground">
+          <p
+            v-if="accountStore.message"
+            class="rounded border border-emerald-200 bg-emerald-50 p-3 text-sm font-medium text-emerald-800"
+          >
             {{ accountStore.message }}
           </p>
           <p v-if="user?.email" class="flex items-center gap-2 text-xs text-muted-foreground">

@@ -112,6 +112,28 @@ const toFilter = computed({
     leadStore.index({ to: String(value), page: 1 })
   },
 })
+const hasActiveFilters = computed(() =>
+  Boolean(
+    statusFilter.value ||
+      templateFilter.value ||
+      ctaTypeFilter.value ||
+      fromFilter.value ||
+      toFilter.value ||
+      search.value
+  )
+)
+const emptyTitle = computed(() => {
+  if (hasActiveFilters.value) return 'No submissions match these filters'
+
+  return 'No submissions yet'
+})
+const emptyDescription = computed(() => {
+  if (hasActiveFilters.value) {
+    return 'Clear filters or broaden the date range to find more form submissions.'
+  }
+
+  return 'When visitors submit a CTA form on a published website, new leads will appear here for follow-up.'
+})
 
 const labelFor = (value: string): string => {
   return value
@@ -213,6 +235,7 @@ onMounted(() => {
             ? `No ${labelFor(statusFilter).toLowerCase()} submissions found.`
             : 'No form submissions yet.'
         "
+        :empty-title="emptyTitle"
         :loading="leadStore.loading"
         :page="page"
         :page-size="pageSize"
@@ -232,6 +255,32 @@ onMounted(() => {
         @update:search="leadStore.index({ page: 1, search: $event })"
         @update:sort="updateSort"
       >
+        <template #empty-icon>
+          <Inbox class="size-5" />
+        </template>
+
+        <template #empty-description>
+          {{ emptyDescription }}
+        </template>
+
+        <template #empty-actions>
+          <div class="flex flex-col gap-2 sm:flex-row">
+            <Button
+              v-if="hasActiveFilters"
+              type="button"
+              variant="navigate"
+              size="sm"
+              @click="leadStore.reset"
+            >
+              <RotateCcw class="size-4" />
+              Reset Filters
+            </Button>
+            <Button v-else as-child variant="navigate" size="sm">
+              <RouterLink to="/template-builder">Open Template Builder</RouterLink>
+            </Button>
+          </div>
+        </template>
+
         <template #filters>
           <NativeSelect
             v-field-help="'Filter leads by follow-up status.'"

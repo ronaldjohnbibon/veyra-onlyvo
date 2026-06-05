@@ -83,6 +83,15 @@ const statusFilter = computed({
 })
 const referenceLinksError = computed(() => firstFieldError('reference_links'))
 const filesError = computed(() => firstFieldError('files'))
+const hasActiveFilters = computed(() => Boolean(search.value || statusFilter.value))
+const emptyTitle = computed(() =>
+  hasActiveFilters.value ? 'No requests match these filters' : 'Start a design request'
+)
+const emptyDescription = computed(() =>
+  hasActiveFilters.value
+    ? 'Clear the search or status filter to see more design requests.'
+    : 'Share a goal, reference links, and optional files so the design team can review what you need.'
+)
 
 const resetForm = (): void => {
   form.title = ''
@@ -143,6 +152,16 @@ const updateSort = (key: string, direction: SortDirection): void => {
     sort: direction ? key : 'created_at',
     direction: direction || 'desc',
     page: 1,
+  })
+}
+
+const resetFilters = (): void => {
+  designRequestStore.index({
+    direction: 'desc',
+    page: 1,
+    search: '',
+    sort: 'created_at',
+    status: '',
   })
 }
 
@@ -230,12 +249,14 @@ onMounted(() => {
         :loading="designRequestStore.loading"
         :sort-key="sortKey"
         :sort-direction="sortDirection"
+        :empty-title="emptyTitle"
         with-search
         with-create
         with-details
         with-page-size
         create-label="Create Request"
         empty-text="No design requests found."
+        loading-text="Loading design requests..."
         search-placeholder="Search requests..."
         @create="openCreateDialog"
         @details="openDetailsDialog"
@@ -244,6 +265,32 @@ onMounted(() => {
         @update:search="designRequestStore.index({ search: $event, page: 1 })"
         @update:sort="updateSort"
       >
+        <template #empty-icon>
+          <MessageSquare class="size-5" />
+        </template>
+
+        <template #empty-description>
+          {{ emptyDescription }}
+        </template>
+
+        <template #empty-actions>
+          <div class="flex flex-col gap-2 sm:flex-row">
+            <Button
+              v-if="hasActiveFilters"
+              type="button"
+              variant="navigate"
+              size="sm"
+              @click="resetFilters"
+            >
+              Clear Filters
+            </Button>
+            <Button v-else type="button" variant="create" size="sm" @click="openCreateDialog">
+              <Send class="size-4" />
+              Create Request
+            </Button>
+          </div>
+        </template>
+
         <template #filters>
           <NativeSelect
             v-field-help="'Filter requests by review status.'"
@@ -422,7 +469,7 @@ onMounted(() => {
               </Button>
               <Button type="submit" variant="create" :disabled="designRequestStore.loading">
                 <Send class="size-4" />
-                Submit Request
+                {{ designRequestStore.loading ? 'Submitting...' : 'Submit Request' }}
               </Button>
             </DialogFooter>
           </form>
