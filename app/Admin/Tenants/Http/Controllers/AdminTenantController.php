@@ -2,6 +2,7 @@
 
 namespace App\Admin\Tenants\Http\Controllers;
 
+use App\Admin\AuditLogs\Services\AuditLogService;
 use App\Admin\Tenants\Http\Requests\TenantRequest;
 use App\Admin\Tenants\Http\Resources\TenantResource;
 use App\Admin\Tenants\Models\Tenant;
@@ -18,6 +19,7 @@ class AdminTenantController extends Controller
     public function __construct(
         private readonly TenantService $service,
         private readonly TenantWorkspaceService $workspaceService,
+        private readonly AuditLogService $auditLogs,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -56,6 +58,7 @@ class AdminTenantController extends Controller
         $this->authorizeAdmin();
 
         $tenant = $this->service->create($request->validated());
+        $this->auditLogs->recordModel('tenant.created', $tenant, Auth::user(), $request, null, $this->tenantSnapshot($tenant->load('owner')), 'tenant');
 
         return $this->success(new TenantResource($tenant->load('owner')), 'Tenant created.', 201);
     }
@@ -96,7 +99,10 @@ class AdminTenantController extends Controller
             return $this->error('Tenant not found.', 404);
         }
 
-        $updated = $this->service->update($record, $request->validated())->load('owner')->loadCount(['users', 'templates']);
+        $previous = $this->tenantSnapshot($record->load('owner'));
+        $updated  = $this->service->update($record, $request->validated())->load('owner')->loadCount(['users', 'templates']);
+
+        $this->auditLogs->recordModel('tenant.updated', $updated, Auth::user(), $request, $previous, $this->tenantSnapshot($updated), 'tenant');
 
         return $this->success(new TenantResource($updated), 'Tenant updated.');
     }
@@ -125,7 +131,10 @@ class AdminTenantController extends Controller
             return $this->error('Tenant not found.', 404);
         }
 
+        $previous = $this->tenantSnapshot($record->load('owner'));
+
         $this->service->delete($record);
+        $this->auditLogs->recordModel('tenant.deleted', $record, Auth::user(), request(), $previous, null, 'tenant');
 
         return $this->success(null, 'Tenant deleted.');
     }
@@ -139,7 +148,10 @@ class AdminTenantController extends Controller
         }
 
         // Status updates keep tenant history while toggling access.
-        $updated = $this->service->setStatus($record, $status)->load('owner')->loadCount(['users', 'templates']);
+        $previous = ['status' => $record->status];
+        $updated  = $this->service->setStatus($record, $status)->load('owner')->loadCount(['users', 'templates']);
+
+        $this->auditLogs->recordModel('tenant.status_changed', $updated, Auth::user(), request(), $previous, ['status' => $updated->status], 'tenant');
 
         return $this->success(new TenantResource($updated), $message);
     }
@@ -147,5 +159,16 @@ class AdminTenantController extends Controller
     private function authorizeAdmin(): void
     {
         abort_unless(Auth::user()?->user_type === UserType::ADMIN, 403);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function tenantSnapshot(Tenant $tenant): array
+    {
+        return [
+            'tenant' => $tenant->attributesToArray(),
+            'owner'  => $tenant->owner?->only(['id', 'name', 'first_name', 'last_name', 'email', 'phone', 'is_active']),
+        ];
     }
 }

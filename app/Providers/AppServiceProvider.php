@@ -25,6 +25,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->loadMigrationsFrom(app_path('Tenant/Dashboard/Database/Migrations'));
+        $this->loadMigrationsFrom(app_path('Admin/AuditLogs/Database/Migrations'));
         $this->loadMigrationsFrom(app_path('Admin/DesignRequests/Database/Migrations'));
         $this->loadMigrationsFrom(app_path('Admin/Templates/Database/Migrations'));
         $this->loadMigrationsFrom(app_path('Tenant/Auth/Database/Migrations'));

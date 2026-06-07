@@ -2,6 +2,7 @@
 
 namespace App\Admin\Auth\Http\Controllers;
 
+use App\Admin\AuditLogs\Services\AuditLogService;
 use App\Admin\Auth\Http\Requests\LoginRequest;
 use App\Admin\Auth\Http\Resources\UserResource;
 use App\Admin\SystemSettings\Services\SystemSettingService;
@@ -19,6 +20,7 @@ class AuthController extends Controller
 {
     public function __construct(
         private readonly SystemSettingService $settings,
+        private readonly AuditLogService $auditLogs,
     ) {}
 
     public function login(LoginRequest $request): JsonResponse
@@ -47,6 +49,12 @@ class AuthController extends Controller
         }
 
         RateLimiter::clear($rateLimitKey);
+        $this->auditLogs->record([
+            'entity_type'  => 'admin_session',
+            'entity_id'    => $user->id,
+            'entity_label' => $user->email,
+            'action'       => 'admin.login',
+        ], $user, $request);
 
         return $this->loginResponse($user);
     }
@@ -74,7 +82,18 @@ class AuthController extends Controller
             return $this->error(__('auth.unauthorized'), 403);
         }
 
-        Auth::user()?->tokens()->delete();
+        $user = Auth::user();
+
+        if ($user) {
+            $this->auditLogs->record([
+                'entity_type'  => 'admin_session',
+                'entity_id'    => $user->getAuthIdentifier(),
+                'entity_label' => data_get($user, 'email'),
+                'action'       => 'admin.logout',
+            ], $user, $request);
+        }
+
+        $user?->tokens()->delete();
 
         return $this->success(null, __('auth.logged_out'));
     }

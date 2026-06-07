@@ -2,12 +2,15 @@
 
 namespace App\Admin\SystemSettings\Services;
 
+use App\Admin\AuditLogs\Services\AuditLogService;
 use App\Admin\SystemSettings\Models\SystemSetting;
 use App\Admin\SystemSettings\Models\SystemSettingHistory;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Mail\Message;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\IpUtils;
@@ -15,6 +18,8 @@ use Symfony\Component\HttpFoundation\IpUtils;
 class SystemSettingService
 {
     public const CACHE_KEY = 'system_settings.values';
+
+    public const MASK_VALUE = '********';
 
     /**
      * @var array<string, array{group: string, label: string, type: string, default: mixed, public: bool, description?: string, options?: array<string, string>}>
@@ -51,6 +56,7 @@ class SystemSettingService
         'feature_flags.enable_design_requests_module' => ['group' => 'feature_flags', 'label' => 'Enable Design Requests Module', 'type' => 'boolean', 'default' => true, 'public' => true, 'description' => 'Show or hide design request features.'],
         'feature_flags.enable_cta_forms'              => ['group' => 'feature_flags', 'label' => 'Enable CTA Forms', 'type' => 'boolean', 'default' => true, 'public' => true, 'description' => 'Allow public CTA forms to collect submissions.'],
         'feature_flags.enable_tracking_logs'          => ['group' => 'feature_flags', 'label' => 'Enable Tracking Logs', 'type' => 'boolean', 'default' => true, 'public' => true, 'description' => 'Show or hide raw tracking log features.'],
+        'feature_flags.controlled_rollout_percentage' => ['group' => 'feature_flags', 'label' => 'Controlled Rollout Percentage', 'type' => 'integer', 'default' => 100, 'public' => true, 'description' => 'Limit feature availability to a percentage of tenants when rollout logic is enabled.'],
 
         'email.mail_driver'   => ['group' => 'email', 'label' => 'Mail Driver', 'type' => 'select', 'default' => 'smtp', 'public' => false, 'description' => 'Choose the mail service used to send platform email.', 'options' => ['smtp' => 'SMTP', 'sendmail' => 'Sendmail', 'mailgun' => 'Mailgun', 'ses' => 'Amazon SES', 'ses-v2' => 'Amazon SES v2', 'postmark' => 'Postmark', 'log' => 'Log', 'array' => 'Array']],
         'email.smtp_host'     => ['group' => 'email', 'label' => 'SMTP Host', 'type' => 'string', 'default' => '', 'public' => false, 'description' => 'Enter the SMTP server host name.'],
@@ -116,6 +122,7 @@ class SystemSettingService
         'feature_management.enable_design_requests_module'     => 'feature_flags.enable_design_requests_module',
         'feature_management.enable_cta_forms'                  => 'feature_flags.enable_cta_forms',
         'feature_management.enable_tracking_logs'              => 'feature_flags.enable_tracking_logs',
+        'feature_management.controlled_rollout_percentage'     => 'feature_flags.controlled_rollout_percentage',
         'email_settings.smtp_provider'                         => 'email.mail_driver',
         'email_settings.smtp_host'                             => 'email.smtp_host',
         'email_settings.smtp_port'                             => 'email.smtp_port',
@@ -153,7 +160,7 @@ class SystemSettingService
     /**
      * @return array<int, array<string, mixed>>
      */
-    public function groups(bool $publicOnly = false): array
+    public function groups(bool $publicOnly = false, bool $maskSensitive = false): array
     {
         $values = $this->values($publicOnly);
         $groups = [];
@@ -172,14 +179,16 @@ class SystemSettingService
             ];
 
             $groups[$group]['settings'][] = [
-                'key'         => $key,
-                'name'        => str($key)->after('.')->value(),
-                'label'       => $definition['label'],
-                'type'        => $definition['type'],
-                'value'       => $values[$key] ?? $definition['default'],
-                'is_public'   => $definition['public'],
-                'description' => $definition['description'] ?? null,
-                'options'     => $definition['options']     ?? null,
+                'key'          => $key,
+                'name'         => str($key)->after('.')->value(),
+                'label'        => $definition['label'],
+                'type'         => $definition['type'],
+                'value'        => $this->safeValue($key, $values[$key] ?? $definition['default'], $maskSensitive),
+                'is_public'    => $definition['public'],
+                'is_sensitive' => $this->isSensitiveKey($key, $definition),
+                'is_masked'    => $maskSensitive && $this->isSensitiveKey($key, $definition) && $this->string($key) !== '',
+                'description'  => $definition['description'] ?? null,
+                'options'      => $definition['options']     ?? null,
             ];
         }
 
@@ -189,13 +198,13 @@ class SystemSettingService
     /**
      * @return array<string, mixed>
      */
-    public function values(bool $publicOnly = false): array
+    public function values(bool $publicOnly = false, bool $maskSensitive = false): array
     {
         $stored = $this->storedValues();
 
         $values = collect(self::DEFINITIONS)
             ->when($publicOnly, fn ($definitions) => $definitions->filter(fn ($definition) => $definition['public']))
-            ->mapWithKeys(function (array $definition, string $key) use ($stored): array {
+            ->mapWithKeys(function (array $definition, string $key) use ($stored, $maskSensitive): array {
                 $aliasedValue = null;
 
                 foreach (self::ALIASES as $alias => $canonicalKey) {
@@ -206,7 +215,9 @@ class SystemSettingService
                     }
                 }
 
-                return [$key => $stored[$key] ?? $aliasedValue ?? $definition['default']];
+                $value = $stored[$key] ?? $aliasedValue ?? $definition['default'];
+
+                return [$key => $this->safeValue($key, $value, $maskSensitive)];
             })
             ->all();
 
@@ -217,7 +228,7 @@ class SystemSettingService
                 continue;
             }
 
-            $values[$legacyKey] = $values[$key] ?? $definition['default'];
+            $values[$legacyKey] = $this->safeValue($key, $values[$key] ?? $definition['default'], $maskSensitive);
         }
 
         return $values;
@@ -272,7 +283,9 @@ class SystemSettingService
         $key        = $this->canonicalKey($key);
         $definition = self::DEFINITIONS[$key];
         $existing   = SystemSetting::query()->where('key', $key)->first();
-        $newValue   = $this->castValue($definition['type'], $value);
+        $newValue   = $this->isMaskedPlaceholder($key, $value)
+            ? ($existing?->value ?? $definition['default'])
+            : $this->castValue($definition['type'], $value);
 
         $setting = SystemSetting::query()->updateOrCreate(
             ['key' => $key],
@@ -394,6 +407,204 @@ class SystemSettingService
         ];
     }
 
+    public function definitionExists(string $key): bool
+    {
+        return array_key_exists($this->canonicalKey($key), self::DEFINITIONS);
+    }
+
+    public function displayValue(string $key, mixed $value, bool $maskSensitive = true): mixed
+    {
+        return $this->safeValue($this->canonicalKey($key), $value, $maskSensitive);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function exportPayload(?Authenticatable $actor = null, string $type = 'export'): array
+    {
+        $payload = [
+            'type'             => $type,
+            'generated_at'     => now()->toISOString(),
+            'masked_sensitive' => true,
+            'groups'           => $this->groups(maskSensitive: true),
+            'values'           => $this->values(maskSensitive: true),
+        ];
+
+        $this->recordHistory(
+            'system_settings.'.$type,
+            null,
+            ['generated_at' => $payload['generated_at'], 'masked_sensitive' => true],
+            $actor,
+            $type === 'backup' ? 'backed_up' : 'exported',
+        );
+
+        return $payload;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function testSmtpConnection(): array
+    {
+        $this->applyRuntimeConfig();
+
+        $driver = $this->string('email.mail_driver', 'smtp');
+
+        if ($driver !== 'smtp') {
+            return [
+                'status'  => 'skipped',
+                'message' => 'SMTP connection test only applies when the SMTP mail driver is selected.',
+                'driver'  => $driver,
+            ];
+        }
+
+        $host = $this->string('email.smtp_host');
+        $port = $this->integer('email.smtp_port', 587);
+
+        if ($host === '') {
+            return [
+                'status'  => 'failed',
+                'message' => 'SMTP host is required before testing the connection.',
+                'driver'  => $driver,
+            ];
+        }
+
+        $startedAt = microtime(true);
+        $socket    = @stream_socket_client(
+            "tcp://{$host}:{$port}",
+            $errorCode,
+            $errorMessage,
+            8,
+            STREAM_CLIENT_CONNECT,
+        );
+
+        if (! $socket) {
+            return [
+                'status'  => 'failed',
+                'message' => trim($errorMessage) !== '' ? $errorMessage : 'Unable to connect to the SMTP server.',
+                'driver'  => $driver,
+                'host'    => $host,
+                'port'    => $port,
+                'code'    => $errorCode,
+            ];
+        }
+
+        fclose($socket);
+
+        return [
+            'status'     => 'ok',
+            'message'    => 'SMTP server accepted a TCP connection.',
+            'driver'     => $driver,
+            'host'       => $host,
+            'port'       => $port,
+            'latency_ms' => (int) round((microtime(true) - $startedAt) * 1000),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function sendTestEmail(string $recipient, ?Authenticatable $actor = null): array
+    {
+        $this->applyRuntimeConfig();
+        app('mail.manager')->forgetMailers();
+
+        Mail::raw(
+            'This is a test email from the Onlyvo admin System Settings console.',
+            function (Message $message) use ($recipient): void {
+                $message
+                    ->to($recipient)
+                    ->subject('Onlyvo test email');
+            },
+        );
+
+        $this->recordHistory('email.test_delivery', null, ['recipient' => $recipient], $actor, 'tested');
+
+        return [
+            'status'    => 'sent',
+            'recipient' => $recipient,
+            'driver'    => $this->string('email.mail_driver', 'smtp'),
+            'message'   => 'Test email handed to the configured mail transport.',
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $settings
+     * @return array<string, mixed>
+     */
+    public function maintenancePreview(array $settings = [], string $path = '/'): array
+    {
+        $values  = array_replace($this->values(), $this->flattenGroupedPayload($settings));
+        $enabled = filter_var($values['maintenance.maintenance_mode'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $areas   = $this->listFromText((string) ($values['maintenance.maintenance_affected_areas'] ?? ''));
+        $path    = '/'.trim($path, '/');
+        $path    = $path === '/' ? '/' : $path;
+
+        $startsAt = trim((string) ($values['maintenance.maintenance_start_time'] ?? ''));
+        $endsAt   = trim((string) ($values['maintenance.maintenance_end_time'] ?? ''));
+        $now      = now();
+        $active   = $enabled
+            && ($startsAt === '' || $now->greaterThanOrEqualTo($startsAt))
+            && ($endsAt === '' || $now->lessThanOrEqualTo($endsAt));
+
+        $pathAffected = $this->pathAffectedByAreas($path, $areas);
+
+        return [
+            'dry_run'          => true,
+            'enabled'          => $enabled,
+            'active_now'       => $active,
+            'path'             => $path,
+            'path_affected'    => $pathAffected,
+            'admin_bypass'     => filter_var($values['maintenance.allow_admin_bypass'] ?? true, FILTER_VALIDATE_BOOLEAN),
+            'message'          => $values['maintenance.maintenance_message'] ?? '',
+            'starts_at'        => $startsAt,
+            'ends_at'          => $endsAt,
+            'affected_areas'   => $areas,
+            'affected_summary' => $areas === [] ? 'All platform areas' : implode(', ', $areas),
+            'result'           => $active && $pathAffected ? 'blocked' : 'allowed',
+        ];
+    }
+
+    public function restoreHistory(SystemSettingHistory $history, ?Authenticatable $actor = null): ?SystemSetting
+    {
+        $key = $this->canonicalKey((string) $history->setting_key);
+
+        if (! $this->definitionExists($key)) {
+            return null;
+        }
+
+        $definition = self::DEFINITIONS[$key];
+        $existing   = SystemSetting::query()->where('key', $key)->first();
+
+        if ($history->previous_value === null) {
+            if ($existing) {
+                $this->recordHistory($key, $existing->value, null, $actor, 'restored');
+                $existing->delete();
+                Cache::forget(self::CACHE_KEY);
+            }
+
+            return null;
+        }
+
+        $newValue = $this->castValue($definition['type'], $history->previous_value);
+
+        $restored = SystemSetting::query()->updateOrCreate(
+            ['key' => $key],
+            [
+                'group'     => $definition['group'],
+                'label'     => $definition['label'],
+                'type'      => $definition['type'],
+                'value'     => $newValue,
+                'is_public' => $definition['public'],
+            ],
+        );
+
+        $this->recordHistory($key, $existing?->value, $history->previous_value, $actor, 'restored');
+        Cache::forget(self::CACHE_KEY);
+
+        return $restored;
+    }
+
     public function featureEnabled(string $key, bool $fallback = true): bool
     {
         return $this->boolean("feature_flags.{$key}", $fallback);
@@ -433,24 +644,7 @@ class SystemSettingService
     {
         $areas = $this->listFromText($this->string('maintenance.maintenance_affected_areas'));
 
-        if ($areas === []) {
-            return true;
-        }
-
-        $path = '/'.trim($path, '/');
-
-        return collect($areas)->contains(function (string $area) use ($path): bool {
-            $area = '/'.trim($area, '/');
-
-            if ($area === '/') {
-                return true;
-            }
-
-            return str_starts_with($path, $area)
-                || str_starts_with($path, '/api'.$area)
-                || str_starts_with($path, '/api/public'.$area)
-                || str_starts_with($path, '/api/app'.$area);
-        });
+        return $this->pathAffectedByAreas($path, $areas);
     }
 
     private function canonicalKey(string $key): string
@@ -509,6 +703,45 @@ class SystemSettingService
             'changed_by_email'   => data_get($actor, 'email'),
             'changed_at'         => now(),
         ]);
+
+        app(AuditLogService::class)->record([
+            'entity_type'    => 'system_setting',
+            'entity_id'      => $key,
+            'entity_label'   => $key,
+            'action'         => 'system_setting.'.$action,
+            'previous_value' => $previousValue,
+            'new_value'      => $newValue,
+        ], $actor, request());
+    }
+
+    /**
+     * @param  array<string, mixed>  $definition
+     */
+    private function isSensitiveKey(string $key, array $definition): bool
+    {
+        return $definition['type'] === 'password'
+            || Str::contains($key, ['password', 'secret', 'token', 'api_key', 'private_key']);
+    }
+
+    private function isMaskedPlaceholder(string $key, mixed $value): bool
+    {
+        $definition = self::DEFINITIONS[$key] ?? null;
+
+        return is_string($value)
+            && $definition
+            && $this->isSensitiveKey($key, $definition)
+            && $value === self::MASK_VALUE;
+    }
+
+    private function safeValue(string $key, mixed $value, bool $maskSensitive): mixed
+    {
+        $definition = self::DEFINITIONS[$key] ?? null;
+
+        if (! $maskSensitive || ! $definition || ! $this->isSensitiveKey($key, $definition)) {
+            return $value;
+        }
+
+        return trim((string) $value) === '' ? '' : self::MASK_VALUE;
     }
 
     /**
@@ -624,6 +857,31 @@ class SystemSettingService
             ->filter()
             ->values()
             ->all();
+    }
+
+    /**
+     * @param  array<int, string>  $areas
+     */
+    private function pathAffectedByAreas(string $path, array $areas): bool
+    {
+        if ($areas === []) {
+            return true;
+        }
+
+        $path = '/'.trim($path, '/');
+
+        return collect($areas)->contains(function (string $area) use ($path): bool {
+            $area = '/'.trim($area, '/');
+
+            if ($area === '/') {
+                return true;
+            }
+
+            return str_starts_with($path, $area)
+                || str_starts_with($path, '/api'.$area)
+                || str_starts_with($path, '/api/public'.$area)
+                || str_starts_with($path, '/api/app'.$area);
+        });
     }
 
     private function groupLabel(string $group): string

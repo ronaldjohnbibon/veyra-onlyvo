@@ -21,15 +21,20 @@ import {
   CheckCircle2,
   CircleAlert,
   Clock,
+  Download,
   ExternalLink,
   History,
   IdCard,
   Info,
+  MailCheck,
   Rocket,
   Save,
   Search,
+  Send,
+  ShieldAlert,
   ShieldCheck,
   Upload,
+  Wrench,
   X,
 } from 'lucide-vue-next'
 import type { Component } from 'vue'
@@ -61,6 +66,9 @@ const formError = ref('')
 const saveNotice = ref('')
 const savedSnapshot = ref('')
 const activeSection = ref<TaskSectionKey>('profile')
+const operationNotice = ref('')
+const testEmailRecipient = ref('')
+const maintenancePreviewPath = ref('/dashboard')
 const imageUploadErrors = reactive<Record<string, string>>({})
 const imageUploading = reactive<Record<string, boolean>>({})
 const imagePreviewFailed = reactive<Record<string, boolean>>({})
@@ -141,33 +149,49 @@ const taskSections: TaskSection[] = [
 ]
 
 const fieldCopy: Record<string, string> = {
-  'general.application_name': 'The platform name shown in browser titles, dashboards, and public metadata.',
-  'general.application_description': 'A short platform summary used when public pages need fallback metadata.',
-  'general.logo': 'The main app logo. Use a clear PNG, SVG, or WebP that works on light backgrounds.',
+  'general.application_name':
+    'The platform name shown in browser titles, dashboards, and public metadata.',
+  'general.application_description':
+    'A short platform summary used when public pages need fallback metadata.',
+  'general.logo':
+    'The main app logo. Use a clear PNG, SVG, or WebP that works on light backgrounds.',
   'general.favicon': 'The browser tab icon. Square images or ICO files work best.',
   'general.support_email': 'The support inbox shown to tenants when they need platform help.',
   'general.support_phone': 'Optional support phone number shown in public or tenant-facing areas.',
   'general.company_address': 'Company address used in public compliance and support surfaces.',
-  'general.show_field_descriptions': 'Shows helpful field descriptions across the app for admins and tenants.',
-  'authentication.allow_tenant_registration': 'Lets new tenants create accounts from the registration page.',
-  'authentication.require_email_verification': 'Requires tenant users to confirm email before logging in.',
-  'security.session_lifetime_minutes': 'How long users can stay signed in before their session expires.',
-  'security.login_rate_limit_attempts': 'How many failed login attempts are allowed before rate limiting.',
+  'general.show_field_descriptions':
+    'Shows helpful field descriptions across the app for admins and tenants.',
+  'authentication.allow_tenant_registration':
+    'Lets new tenants create accounts from the registration page.',
+  'authentication.require_email_verification':
+    'Requires tenant users to confirm email before logging in.',
+  'security.session_lifetime_minutes':
+    'How long users can stay signed in before their session expires.',
+  'security.login_rate_limit_attempts':
+    'How many failed login attempts are allowed before rate limiting.',
   'security.login_rate_limit_window_minutes': 'Time window used to count failed login attempts.',
   'security.require_strong_passwords': 'Requires stronger passwords for account security.',
   'security.minimum_password_length': 'Minimum number of characters accepted for passwords.',
-  'security.allowed_admin_ips': 'Optional allow-list for admin access. Use IPs or CIDR ranges, separated by commas or lines.',
-  'tenant_defaults.default_tenant_timezone': 'Timezone assigned to new tenants until they change it.',
+  'security.allowed_admin_ips':
+    'Optional allow-list for admin access. Use IPs or CIDR ranges, separated by commas or lines.',
+  'tenant_defaults.default_tenant_timezone':
+    'Timezone assigned to new tenants until they change it.',
   'tenant_defaults.default_tenant_status': 'Initial status for newly created tenants.',
   'tenant_defaults.default_tenant_trial_days': 'Trial length assigned to new tenants.',
-  'tenant_defaults.default_tenant_template_type': 'Default website type slug used during tenant setup.',
-  'tenant_defaults.default_tenant_template_key': 'Default template key used with the selected website type.',
+  'tenant_defaults.default_tenant_template_type':
+    'Default website type slug used during tenant setup.',
+  'tenant_defaults.default_tenant_template_key':
+    'Default template key used with the selected website type.',
   'feature_flags.enable_templates_module': 'Shows or hides template builder features for tenants.',
   'feature_flags.enable_posts_module': 'Shows or hides tenant post management.',
-  'feature_flags.enable_analytics_module': 'Shows or hides analytics dashboards and capture features.',
-  'feature_flags.enable_design_requests_module': 'Shows or hides tenant/admin design request workflows.',
+  'feature_flags.enable_analytics_module':
+    'Shows or hides analytics dashboards and capture features.',
+  'feature_flags.enable_design_requests_module':
+    'Shows or hides tenant/admin design request workflows.',
   'feature_flags.enable_cta_forms': 'Allows CTA forms to collect public submissions.',
   'feature_flags.enable_tracking_logs': 'Shows or hides raw tracking log tooling.',
+  'feature_flags.controlled_rollout_percentage':
+    'Optional rollout guardrail for staged feature availability. Use 100 for full availability.',
   'email.mail_driver': 'The mail provider used to send platform email.',
   'email.smtp_host': 'SMTP server host name, when SMTP delivery is selected.',
   'email.smtp_port': 'SMTP server port. Common values are 587 or 465.',
@@ -176,15 +200,19 @@ const fieldCopy: Record<string, string> = {
   'email.sender_name': 'Name recipients see in the From field.',
   'email.sender_email': 'Email address recipients see in the From field.',
   'analytics.enable_visitor_tracking': 'Records public website visits for tenant analytics.',
-  'analytics.enable_cta_tracking': 'Records CTA views, clicks, and submissions for conversion analytics.',
+  'analytics.enable_cta_tracking':
+    'Records CTA views, clicks, and submissions for conversion analytics.',
   'storage.maximum_upload_size': 'Maximum upload size in KB for images and other tenant assets.',
   'storage.allowed_file_types': 'Comma-separated file extensions tenants may upload.',
-  'maintenance.maintenance_mode': 'Temporarily blocks affected platform areas while maintenance is active.',
+  'maintenance.maintenance_mode':
+    'Temporarily blocks affected platform areas while maintenance is active.',
   'maintenance.maintenance_message': 'Message shown to users while maintenance is active.',
   'maintenance.maintenance_start_time': 'Optional scheduled start time for maintenance messaging.',
   'maintenance.maintenance_end_time': 'Optional scheduled end time for maintenance messaging.',
-  'maintenance.allow_admin_bypass': 'Allows admins to continue using the platform during maintenance.',
-  'maintenance.maintenance_affected_areas': 'Paths affected by maintenance, one per line or separated by commas.',
+  'maintenance.allow_admin_bypass':
+    'Allows admins to continue using the platform during maintenance.',
+  'maintenance.maintenance_affected_areas':
+    'Paths affected by maintenance, one per line or separated by commas.',
   'seo.default_meta_title': 'Fallback title used for public platform pages and social previews.',
   'seo.default_meta_description': 'Fallback description used in search and sharing previews.',
   'seo.open_graph_image': 'Default image shown when public pages are shared.',
@@ -370,7 +398,8 @@ const hasUnsavedChanges = computed(() => {
 
 const saveState = computed(() => {
   if (settingStore.loading) return { label: 'Saving...', tone: 'info', icon: Clock }
-  if (formError.value) return { label: 'Review highlighted fields', tone: 'error', icon: CircleAlert }
+  if (formError.value)
+    return { label: 'Review highlighted fields', tone: 'error', icon: CircleAlert }
   if (hasUnsavedChanges.value) return { label: 'Unsaved changes', tone: 'warning', icon: Clock }
   if (saveNotice.value) return { label: saveNotice.value, tone: 'success', icon: CheckCircle2 }
 
@@ -392,6 +421,54 @@ const ctaTracking = computed(() => booleanForKey('analytics.enable_cta_tracking'
 const featureFlags = computed(() => {
   return currentValueFlags('feature_flags').filter((flag) => flag.enabled)
 })
+const disabledFeatureFlags = computed(() => {
+  return currentValueFlags('feature_flags').filter((flag) => !flag.enabled)
+})
+const criticalWarnings = computed(() => {
+  const warnings: { title: string; message: string; tone: 'warning' | 'danger' | 'info' }[] = []
+
+  if (maintenanceMode.value) {
+    warnings.push({
+      title: 'Maintenance mode is enabled',
+      message: 'Run a dry-run preview before saving to confirm which paths will be blocked.',
+      tone: 'warning',
+    })
+  }
+
+  if (maintenanceMode.value && !booleanForKey('maintenance.allow_admin_bypass')) {
+    warnings.push({
+      title: 'Admin bypass is disabled',
+      message: 'Admins may be blocked from affected areas during an active maintenance window.',
+      tone: 'danger',
+    })
+  }
+
+  if (!stringForKey('security.allowed_admin_ips').trim()) {
+    warnings.push({
+      title: 'No admin IP allow-list',
+      message: 'Admin access is not restricted by source IP.',
+      tone: 'warning',
+    })
+  }
+
+  if (disabledFeatureFlags.value.length) {
+    warnings.push({
+      title: 'Tenant modules disabled',
+      message: `${disabledFeatureFlags.value.length} module controls are currently off.`,
+      tone: 'info',
+    })
+  }
+
+  if (!visitorTracking.value || !ctaTracking.value) {
+    warnings.push({
+      title: 'Analytics capture is partial',
+      message: 'Visitor and CTA tracking must both be enabled for complete funnel reporting.',
+      tone: 'info',
+    })
+  }
+
+  return warnings
+})
 
 const currentValueFlags = (group: string): { key: string; label: string; enabled: boolean }[] => {
   return (settingStore.groups.find((item) => item.key === group)?.settings ?? [])
@@ -407,7 +484,9 @@ const appNamePreview = computed(() => stringForKey('general.application_name') |
 const appDescriptionPreview = computed(() => {
   return stringForKey('general.application_description') || 'Onlyvo tenant platform'
 })
-const seoTitlePreview = computed(() => stringForKey('seo.default_meta_title') || appNamePreview.value)
+const seoTitlePreview = computed(
+  () => stringForKey('seo.default_meta_title') || appNamePreview.value
+)
 const seoDescriptionPreview = computed(() => {
   return stringForKey('seo.default_meta_description') || appDescriptionPreview.value
 })
@@ -420,6 +499,59 @@ const uploadLimitPreview = computed(() => {
 
   return `${size} KB`
 })
+const rolloutPreview = computed(() => {
+  return `${Number(valueForKey('feature_flags.controlled_rollout_percentage') || 0)}%`
+})
+
+const downloadBlob = (blob: Blob, filename: string): void => {
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+
+  link.href = url
+  link.download = filename
+  link.click()
+  URL.revokeObjectURL(url)
+}
+
+const exportSettings = async (): Promise<void> => {
+  operationNotice.value = ''
+  downloadBlob(await settingStore.exportSettings(), 'system-settings-export.json')
+  await settingStore.loadHistory()
+  operationNotice.value = 'Settings export downloaded'
+}
+
+const backupSettings = async (): Promise<void> => {
+  operationNotice.value = ''
+  downloadBlob(await settingStore.backupSettings(), 'system-settings-backup.json')
+  await settingStore.loadHistory()
+  operationNotice.value = 'Settings backup downloaded'
+}
+
+const testSmtp = async (): Promise<void> => {
+  operationNotice.value = ''
+  const result = await settingStore.testSmtp()
+  operationNotice.value = result.message
+}
+
+const sendTestEmail = async (): Promise<void> => {
+  operationNotice.value = ''
+  await settingStore.testEmail(testEmailRecipient.value)
+  operationNotice.value = `Test email sent to ${testEmailRecipient.value}`
+}
+
+const previewMaintenance = async (): Promise<void> => {
+  operationNotice.value = ''
+  await settingStore.previewMaintenance(payloadForSave(), maintenancePreviewPath.value || '/')
+  operationNotice.value = 'Maintenance dry-run completed'
+}
+
+const restoreHistoryRecord = async (record: { id: string }): Promise<void> => {
+  operationNotice.value = ''
+  await settingStore.restoreHistory(record.id)
+  hydrateForm()
+  syncSavedSnapshot()
+  operationNotice.value = 'Previous setting version restored'
+}
 
 const saveSettings = async (): Promise<void> => {
   try {
@@ -484,12 +616,33 @@ onMounted(async () => {
                   'border-emerald-200 bg-emerald-50 text-emerald-800': saveState.tone === 'success',
                   'border-amber-300 bg-amber-50 text-amber-800': saveState.tone === 'warning',
                   'border-sky-200 bg-sky-50 text-sky-800': saveState.tone === 'info',
-                  'border-destructive/40 bg-destructive/10 text-destructive': saveState.tone === 'error',
+                  'border-destructive/40 bg-destructive/10 text-destructive':
+                    saveState.tone === 'error',
                 }"
               >
                 <component :is="saveState.icon" class="size-3.5" />
                 {{ saveState.label }}
               </span>
+              <Button
+                variant="navigate"
+                size="sm"
+                type="button"
+                :disabled="settingStore.operationLoading"
+                @click="exportSettings"
+              >
+                <Download class="size-4" />
+                Export
+              </Button>
+              <Button
+                variant="outline_default"
+                size="sm"
+                type="button"
+                :disabled="settingStore.operationLoading"
+                @click="backupSettings"
+              >
+                <Download class="size-4" />
+                Backup
+              </Button>
               <Button variant="update" size="sm" type="submit" :disabled="settingStore.loading">
                 <Save class="size-4" />
                 {{ settingStore.loading ? 'Saving...' : 'Save Changes' }}
@@ -503,6 +656,12 @@ onMounted(async () => {
           class="rounded border border-destructive/40 bg-destructive/10 p-3 text-sm font-medium text-destructive"
         >
           {{ formError }}
+        </div>
+        <div
+          v-if="operationNotice"
+          class="rounded border border-sky-200 bg-sky-50 p-3 text-sm font-medium text-sky-800"
+        >
+          {{ operationNotice }}
         </div>
 
         <div class="grid gap-4 xl:grid-cols-[18rem_minmax(0,1fr)_24rem]">
@@ -533,10 +692,7 @@ onMounted(async () => {
               </button>
             </div>
 
-            <div
-              v-if="activeSection !== 'history'"
-              class="mt-3 rounded border bg-muted/30 p-3"
-            >
+            <div v-if="activeSection !== 'history'" class="mt-3 rounded border bg-muted/30 p-3">
               <p class="text-xs font-medium text-muted-foreground">Section progress</p>
               <p class="mt-1 text-sm font-semibold">
                 {{ completionCount }} of {{ currentSettings.length }} settings filled
@@ -556,7 +712,9 @@ onMounted(async () => {
             <div class="border-b px-4 py-4">
               <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                 <div class="flex gap-3">
-                  <div class="flex size-10 shrink-0 items-center justify-center rounded border bg-primary/5 text-primary">
+                  <div
+                    class="flex size-10 shrink-0 items-center justify-center rounded border bg-primary/5 text-primary"
+                  >
                     <component :is="activeTaskSection.icon" class="size-5" />
                   </div>
                   <div>
@@ -575,6 +733,153 @@ onMounted(async () => {
                 <div class="flex gap-2 text-sm">
                   <Info class="mt-0.5 size-4 shrink-0 text-primary" />
                   <span>{{ activeTaskSection.task }}</span>
+                </div>
+              </div>
+
+              <div
+                v-if="activeSection === 'notifications'"
+                class="mt-4 rounded border bg-background p-4"
+              >
+                <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                  <div>
+                    <h4 class="flex items-center gap-2 text-sm font-semibold">
+                      <MailCheck class="size-4 text-primary" />
+                      Email Delivery Tests
+                    </h4>
+                    <p class="mt-1 text-sm text-muted-foreground">
+                      Validate the configured mail transport before relying on password resets or
+                      tenant notifications.
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="navigate"
+                    size="sm"
+                    :disabled="settingStore.operationLoading"
+                    @click="testSmtp"
+                  >
+                    <Wrench class="size-4" />
+                    SMTP Test
+                  </Button>
+                </div>
+
+                <div class="mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
+                  <Input
+                    v-field-help="
+                      'Send a test message to this email address using the current mail settings.'
+                    "
+                    v-model="testEmailRecipient"
+                    type="email"
+                    placeholder="admin@example.com"
+                  />
+                  <Button
+                    type="button"
+                    variant="publish"
+                    :disabled="settingStore.operationLoading || !testEmailRecipient"
+                    @click="sendTestEmail"
+                  >
+                    <Send class="size-4" />
+                    Send Test
+                  </Button>
+                </div>
+
+                <div
+                  v-if="settingStore.smtpTestResult || settingStore.emailTestResult"
+                  class="mt-4 grid gap-3 md:grid-cols-2"
+                >
+                  <div v-if="settingStore.smtpTestResult" class="rounded border p-3 text-sm">
+                    <div class="flex items-center justify-between gap-3">
+                      <span class="font-medium">SMTP status</span>
+                      <Badge
+                        :variant="
+                          settingStore.smtpTestResult.status === 'ok'
+                            ? 'success'
+                            : settingStore.smtpTestResult.status === 'skipped'
+                              ? 'outline'
+                              : 'destructive'
+                        "
+                      >
+                        {{ settingStore.smtpTestResult.status }}
+                      </Badge>
+                    </div>
+                    <p class="mt-2 text-muted-foreground">
+                      {{ settingStore.smtpTestResult.message }}
+                    </p>
+                  </div>
+                  <div v-if="settingStore.emailTestResult" class="rounded border p-3 text-sm">
+                    <div class="flex items-center justify-between gap-3">
+                      <span class="font-medium">Email delivery</span>
+                      <Badge variant="success">{{ settingStore.emailTestResult.status }}</Badge>
+                    </div>
+                    <p class="mt-2 text-muted-foreground">
+                      {{ settingStore.emailTestResult.message }}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div v-if="activeSection === 'launch'" class="mt-4 rounded border bg-background p-4">
+                <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                  <div>
+                    <h4 class="flex items-center gap-2 text-sm font-semibold">
+                      <ShieldAlert class="size-4 text-amber-600" />
+                      Maintenance Mode Dry-Run
+                    </h4>
+                    <p class="mt-1 text-sm text-muted-foreground">
+                      Preview maintenance impact with the unsaved form values before applying them.
+                    </p>
+                  </div>
+                  <Badge :variant="maintenanceMode ? 'warning' : 'outline'">
+                    {{ maintenanceMode ? 'Maintenance on' : 'Maintenance off' }}
+                  </Badge>
+                </div>
+
+                <div class="mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
+                  <Input
+                    v-field-help="
+                      'Preview whether this path would be blocked by maintenance settings.'
+                    "
+                    v-model="maintenancePreviewPath"
+                    placeholder="/dashboard"
+                  />
+                  <Button
+                    type="button"
+                    variant="restore"
+                    :disabled="settingStore.operationLoading"
+                    @click="previewMaintenance"
+                  >
+                    <Wrench class="size-4" />
+                    Dry Run
+                  </Button>
+                </div>
+
+                <div
+                  v-if="settingStore.maintenancePreviewResult"
+                  class="mt-4 rounded border p-3 text-sm"
+                >
+                  <div class="flex flex-wrap items-center gap-2">
+                    <Badge
+                      :variant="
+                        settingStore.maintenancePreviewResult.result === 'blocked'
+                          ? 'warning'
+                          : 'success'
+                      "
+                    >
+                      {{ settingStore.maintenancePreviewResult.result }}
+                    </Badge>
+                    <span class="font-medium">{{
+                      settingStore.maintenancePreviewResult.path
+                    }}</span>
+                  </div>
+                  <p class="mt-2 text-muted-foreground">
+                    Affected areas: {{ settingStore.maintenancePreviewResult.affected_summary }}
+                  </p>
+                  <p class="mt-1 text-muted-foreground">
+                    Admin bypass:
+                    {{
+                      settingStore.maintenancePreviewResult.admin_bypass ? 'allowed' : 'disabled'
+                    }}
+                  </p>
                 </div>
               </div>
             </div>
@@ -600,12 +905,17 @@ onMounted(async () => {
                             v-if="setting.type === 'boolean'"
                             :for="fieldId(setting)"
                             class="flex cursor-pointer items-start justify-between gap-4 rounded border p-4 transition hover:bg-muted/40"
-                            :class="hasFieldError(setting) ? 'border-destructive/60 bg-destructive/5' : 'bg-muted/10'"
+                            :class="
+                              hasFieldError(setting)
+                                ? 'border-destructive/60 bg-destructive/5'
+                                : 'bg-muted/10'
+                            "
                           >
                             <span class="min-w-0">
                               <span class="flex flex-wrap items-center gap-2">
                                 <span class="text-sm font-semibold">{{ setting.label }}</span>
                                 <Badge v-if="setting.is_public" variant="outline">Public</Badge>
+                                <Badge v-if="setting.is_sensitive" variant="neutral">Masked</Badge>
                               </span>
                               <span class="mt-1 block text-sm text-muted-foreground">
                                 {{ settingDescription(setting) }}
@@ -626,13 +936,20 @@ onMounted(async () => {
                           <Field
                             v-else-if="setting.type === 'text'"
                             class="rounded border p-4"
-                            :class="hasFieldError(setting) ? 'border-destructive/60 bg-destructive/5' : 'bg-muted/10'"
+                            :class="
+                              hasFieldError(setting)
+                                ? 'border-destructive/60 bg-destructive/5'
+                                : 'bg-muted/10'
+                            "
                           >
                             <div class="flex flex-wrap items-center gap-2">
                               <FieldLabel :for="fieldId(setting)">{{ setting.label }}</FieldLabel>
                               <Badge v-if="setting.is_public" variant="outline">Public</Badge>
+                              <Badge v-if="setting.is_sensitive" variant="neutral">Masked</Badge>
                             </div>
-                            <p class="text-sm text-muted-foreground">{{ settingDescription(setting) }}</p>
+                            <p class="text-sm text-muted-foreground">
+                              {{ settingDescription(setting) }}
+                            </p>
 
                             <Textarea
                               v-field-help="settingHelp(setting)"
@@ -650,13 +967,20 @@ onMounted(async () => {
                           <Field
                             v-else-if="setting.type === 'image'"
                             class="rounded border p-4"
-                            :class="hasFieldError(setting) || imageUploadErrors[setting.key] ? 'border-destructive/60 bg-destructive/5' : 'bg-muted/10'"
+                            :class="
+                              hasFieldError(setting) || imageUploadErrors[setting.key]
+                                ? 'border-destructive/60 bg-destructive/5'
+                                : 'bg-muted/10'
+                            "
                           >
                             <div class="flex flex-wrap items-center gap-2">
                               <FieldLabel :for="fieldId(setting)">{{ setting.label }}</FieldLabel>
                               <Badge v-if="setting.is_public" variant="outline">Public</Badge>
+                              <Badge v-if="setting.is_sensitive" variant="neutral">Masked</Badge>
                             </div>
-                            <p class="text-sm text-muted-foreground">{{ settingDescription(setting) }}</p>
+                            <p class="text-sm text-muted-foreground">
+                              {{ settingDescription(setting) }}
+                            </p>
                             <div
                               class="mt-2 grid gap-4 rounded border bg-background p-3 md:grid-cols-[18rem_minmax(0,1fr)]"
                             >
@@ -679,7 +1003,9 @@ onMounted(async () => {
                                   v-field-help="settingHelp(setting)"
                                   :model-value="stringValue(setting)"
                                   placeholder="/storage/system-settings/logo.png"
-                                  @update:model-value="setSettingValue(setting, String($event ?? ''))"
+                                  @update:model-value="
+                                    setSettingValue(setting, String($event ?? ''))
+                                  "
                                 />
 
                                 <div class="flex flex-wrap items-center gap-2">
@@ -730,11 +1056,16 @@ onMounted(async () => {
                           <Field v-else>
                             <div
                               class="rounded border p-4"
-                              :class="hasFieldError(setting) ? 'border-destructive/60 bg-destructive/5' : 'bg-muted/10'"
+                              :class="
+                                hasFieldError(setting)
+                                  ? 'border-destructive/60 bg-destructive/5'
+                                  : 'bg-muted/10'
+                              "
                             >
                               <div class="mb-2 flex flex-wrap items-center gap-2">
                                 <FieldLabel :for="fieldId(setting)">{{ setting.label }}</FieldLabel>
                                 <Badge v-if="setting.is_public" variant="outline">Public</Badge>
+                                <Badge v-if="setting.is_sensitive" variant="neutral">Masked</Badge>
                               </div>
                               <p class="mb-3 text-sm text-muted-foreground">
                                 {{ settingDescription(setting) }}
@@ -805,6 +1136,7 @@ onMounted(async () => {
                   :params="settingStore.historyParams"
                   :loading="settingStore.loading"
                   @load="settingStore.loadHistory"
+                  @restore="restoreHistoryRecord"
                 />
               </section>
             </FieldSet>
@@ -907,6 +1239,12 @@ onMounted(async () => {
                   </Badge>
                 </div>
                 <div class="flex items-center justify-between gap-3">
+                  <span class="text-muted-foreground">Rollout</span>
+                  <Badge :variant="rolloutPreview === '100%' ? 'success' : 'warning'">
+                    {{ rolloutPreview }}
+                  </Badge>
+                </div>
+                <div class="flex items-center justify-between gap-3">
                   <span class="text-muted-foreground">Policies</span>
                   <Badge
                     :variant="
@@ -936,6 +1274,35 @@ onMounted(async () => {
                 Open privacy policy
                 <ExternalLink class="size-3.5" />
               </a>
+            </section>
+
+            <section class="rounded border bg-background p-4">
+              <div class="flex items-center gap-2">
+                <ShieldAlert class="size-4 text-amber-600" />
+                <h3 class="text-sm font-semibold">Safety Warnings</h3>
+              </div>
+              <div class="mt-3 space-y-2">
+                <div
+                  v-for="warning in criticalWarnings"
+                  :key="warning.title"
+                  class="rounded border p-3 text-sm"
+                  :class="{
+                    'border-destructive/40 bg-destructive/10 text-destructive':
+                      warning.tone === 'danger',
+                    'border-amber-300 bg-amber-50 text-amber-900': warning.tone === 'warning',
+                    'border-sky-200 bg-sky-50 text-sky-900': warning.tone === 'info',
+                  }"
+                >
+                  <p class="font-medium">{{ warning.title }}</p>
+                  <p class="mt-1 text-xs opacity-80">{{ warning.message }}</p>
+                </div>
+                <div
+                  v-if="!criticalWarnings.length"
+                  class="rounded border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800"
+                >
+                  No active governance warnings.
+                </div>
+              </div>
             </section>
           </aside>
         </div>

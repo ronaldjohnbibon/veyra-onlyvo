@@ -2,6 +2,7 @@
 
 namespace App\Admin\Templates\Http\Controllers;
 
+use App\Admin\AuditLogs\Services\AuditLogService;
 use App\Admin\Templates\Http\Requests\TemplateCatalogItemRequest;
 use App\Admin\Templates\Http\Resources\TemplateCatalogItemResource;
 use App\Admin\Templates\Models\TemplateCatalogItem;
@@ -18,6 +19,7 @@ class AdminTemplateCatalogController extends Controller
 {
     public function __construct(
         private readonly TemplateCatalogMaintenanceService $service,
+        private readonly AuditLogService $auditLogs,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -218,7 +220,10 @@ class AdminTemplateCatalogController extends Controller
             return $this->error('Template catalog item not found.', 404);
         }
 
+        $previous = $item->attributesToArray();
+
         $item->delete();
+        $this->auditLogs->recordModel('template.deleted', $item, Auth::user(), request(), $previous, null, 'template');
 
         return $this->success(null, 'Template catalog item deleted.');
     }

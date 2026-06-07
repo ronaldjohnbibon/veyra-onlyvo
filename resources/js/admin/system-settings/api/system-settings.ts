@@ -1,8 +1,11 @@
 import http from '@/shared/api/http'
 import type {
   SystemSettingGroup,
+  SystemSettingEmailTestResult,
   SystemSettingHistoryParams,
   SystemSettingHistoryPayload,
+  SystemSettingMaintenancePreview,
+  SystemSettingSmtpTestResult,
   SystemSettingsPayload,
   SystemSettingsValues,
 } from '@/admin/system-settings/types'
@@ -25,6 +28,18 @@ interface SystemSettingImageUploadResponse {
     url: string
     path: string
   }
+}
+
+interface SystemSettingSmtpTestResponse {
+  data: SystemSettingSmtpTestResult
+}
+
+interface SystemSettingEmailTestResponse {
+  data: SystemSettingEmailTestResult
+}
+
+interface SystemSettingMaintenancePreviewResponse {
+  data: SystemSettingMaintenancePreview
 }
 
 export const adminSystemSettingService = {
@@ -56,6 +71,51 @@ export const adminSystemSettingService = {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
+      })
+      .then((response) => response.data)
+  },
+
+  testSmtp() {
+    return http
+      .post<SystemSettingSmtpTestResponse>('admin/system-settings/test-smtp')
+      .then((response) => response.data)
+  },
+
+  testEmail(recipient: string) {
+    return http
+      .post<SystemSettingEmailTestResponse>('admin/system-settings/test-email', { recipient })
+      .then((response) => response.data)
+  },
+
+  maintenancePreview(settings: SystemSettingsPayload, path = '/') {
+    return http
+      .post<SystemSettingMaintenancePreviewResponse>('admin/system-settings/maintenance-preview', {
+        settings,
+        path,
+      })
+      .then((response) => response.data)
+  },
+
+  restoreHistory(id: string) {
+    return http
+      .post<SystemSettingsResponse>(`admin/system-settings/history/${id}/restore`)
+      .then((response) => response.data)
+  },
+
+  exportSettings() {
+    return http
+      .get<Blob>('admin/system-settings/export', {
+        responseType: 'blob',
+        headers: { 'X-Silent-Request': 'true' },
+      })
+      .then((response) => response.data)
+  },
+
+  backupSettings() {
+    return http
+      .get<Blob>('admin/system-settings/backup', {
+        responseType: 'blob',
+        headers: { 'X-Silent-Request': 'true' },
       })
       .then((response) => response.data)
   },

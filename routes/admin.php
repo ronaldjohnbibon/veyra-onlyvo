@@ -1,8 +1,11 @@
 <?php
 
+use App\Admin\AuditLogs\Http\Controllers\AdminAuditLogController;
 use App\Admin\Auth\Http\Controllers\AuthController;
 use App\Admin\Dashboard\Http\Controllers\AdminDashboardController;
 use App\Admin\DesignRequests\Http\Controllers\AdminDesignRequestController;
+use App\Admin\Leads\Http\Controllers\AdminLeadController;
+use App\Admin\Operations\Http\Controllers\AdminOperationsController;
 use App\Admin\Sidebar\Http\Controllers\AdminSidebarController;
 use App\Admin\SystemSettings\Http\Controllers\AdminSystemSettingController;
 use App\Admin\Templates\Http\Controllers\AdminTemplateCatalogController;
@@ -19,6 +22,10 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
         Route::post('logout', [AuthController::class, 'logout']);
 
         Route::get('dashboard', [AdminDashboardController::class, 'index'])->name('dashboard.index');
+        Route::get('audit-logs/export', [AdminAuditLogController::class, 'export'])->name('audit-logs.export');
+        Route::get('audit-logs/{auditLog}', [AdminAuditLogController::class, 'show'])->name('audit-logs.show');
+        Route::get('audit-logs', [AdminAuditLogController::class, 'index'])->name('audit-logs.index');
+        Route::get('operations', [AdminOperationsController::class, 'index'])->name('operations.index');
 
         Route::post('admin-users/{adminUser}/deactivate', [AdminUserController::class, 'deactivate'])->name('admin-users.deactivate');
         Route::post('admin-users/{adminUser}/reactivate', [AdminUserController::class, 'reactivate'])->name('admin-users.reactivate');
@@ -38,8 +45,18 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
         Route::post('design-requests/{designRequest}/link-completed-work', [AdminDesignRequestController::class, 'linkCompletedWork'])->name('design-requests.link-completed-work');
         Route::post('design-requests/{designRequest}/notify', [AdminDesignRequestController::class, 'notifyTenant'])->name('design-requests.notify');
 
+        Route::get('leads/export', [AdminLeadController::class, 'export'])->name('leads.export');
+        Route::get('leads', [AdminLeadController::class, 'index'])->name('leads.index');
+        Route::put('leads/{lead}/status', [AdminLeadController::class, 'updateStatus'])->name('leads.status.update');
+
         Route::apiResource('sidebars', AdminSidebarController::class);
         Route::get('system-settings/history', [AdminSystemSettingController::class, 'history'])->name('system-settings.history');
+        Route::post('system-settings/history/{history}/restore', [AdminSystemSettingController::class, 'restoreHistory'])->name('system-settings.history.restore');
+        Route::get('system-settings/export', [AdminSystemSettingController::class, 'export'])->name('system-settings.export');
+        Route::get('system-settings/backup', [AdminSystemSettingController::class, 'backup'])->name('system-settings.backup');
+        Route::post('system-settings/test-smtp', [AdminSystemSettingController::class, 'testSmtp'])->name('system-settings.test-smtp');
+        Route::post('system-settings/test-email', [AdminSystemSettingController::class, 'testEmail'])->name('system-settings.test-email');
+        Route::post('system-settings/maintenance-preview', [AdminSystemSettingController::class, 'maintenancePreview'])->name('system-settings.maintenance-preview');
         Route::put('system-settings', [AdminSystemSettingController::class, 'updateBulk'])->name('system-settings.update-bulk');
         Route::post('system-settings/images', [AdminSystemSettingController::class, 'uploadImage'])->name('system-settings.images.store');
         Route::apiResource('system-settings', AdminSystemSettingController::class)

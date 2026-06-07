@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import BaseTable from '@/shared/components/BaseTable.vue'
 import { Badge } from '@/shared/components/ui/badge'
+import { Button } from '@/shared/components/ui/button'
 import { NativeSelect } from '@/shared/components/ui/native-select'
 import type {
   SystemSettingHistoryParams,
   SystemSettingHistoryRecord,
   SystemSettingValue,
 } from '@/admin/system-settings/types'
+import { RotateCcw } from 'lucide-vue-next'
 
 type SortDirection = 'asc' | 'desc' | ''
 
@@ -20,6 +22,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   load: [params: Partial<SystemSettingHistoryParams>]
+  restore: [record: SystemSettingHistoryRecord]
 }>()
 
 const columns = [
@@ -29,6 +32,7 @@ const columns = [
   { key: 'new_value', label: 'New' },
   { key: 'changed_by', label: 'Changed By', sortable: true, sortKey: 'changed_by' },
   { key: 'changed_at', label: 'Changed', sortable: true },
+  { key: 'actions', label: '', headerClass: 'w-[105px]', cellClass: 'text-right' },
 ] as const
 
 const page = (): number => props.params.page ?? 1
@@ -115,7 +119,15 @@ const updateAction = (event: Event): void => {
       >
         <option value="">All actions</option>
         <option
-          v-for="action in actionOptions ?? ['created', 'updated', 'deleted']"
+          v-for="action in actionOptions ?? [
+            'created',
+            'updated',
+            'deleted',
+            'restored',
+            'tested',
+            'exported',
+            'backed_up',
+          ]"
           :key="action"
           :value="action"
         >
@@ -152,6 +164,20 @@ const updateAction = (event: Event): void => {
 
     <template #cell-changed_at="{ row }">
       <span class="text-sm">{{ formatChangedAt(row.changed_at) }}</span>
+    </template>
+
+    <template #cell-actions="{ row }">
+      <Button
+        v-if="row.can_restore"
+        v-field-help="'Restore this setting to its previous value.'"
+        size="xs"
+        variant="restore"
+        type="button"
+        @click.stop="emit('restore', row)"
+      >
+        <RotateCcw class="size-3" />
+        Restore
+      </Button>
     </template>
   </BaseTable>
 </template>

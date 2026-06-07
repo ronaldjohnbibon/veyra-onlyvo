@@ -89,6 +89,7 @@ class SystemSettingBulkRequest extends FormRequest
             'tenant_defaults.default_tenant_trial_days' => ['required', 'integer', 'min:0', 'max:365'],
             'tenant_defaults.default_tenant_template_type',
             'tenant_defaults.default_tenant_template_key' => ['nullable', 'string', 'max:100', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/'],
+            'feature_flags.controlled_rollout_percentage' => ['required', 'integer', 'min:0', 'max:100'],
             'email.smtp_port'                             => ['nullable', 'integer', 'min:1', 'max:65535'],
             'email.sender_name'                           => ['required', 'string', 'max:150'],
             'email.sender_email'                          => ['required', 'email', 'max:255'],

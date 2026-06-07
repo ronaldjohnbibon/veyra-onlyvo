@@ -5,12 +5,15 @@ import { useAdminAuthStore } from '@/admin/auth/auth-store'
 import accountRoutes from '@/tenant/account/routes'
 import authRoutes from '@/tenant/auth/routes'
 import adminAuthRoutes from '@/admin/auth/routes'
+import adminAuditLogRoutes from '@/admin/audit-logs/routes'
 import adminDashboardRoutes from '@/admin/dashboard/routes'
 import analyticsRoutes from '@/tenant/dashboard/routes'
 import adminTemplateRoutes from '@/admin/templates/routes'
 import adminTenantRoutes from '@/admin/tenants/routes'
 import adminUserRoutes from '@/admin/users/routes'
 import adminDesignRequestRoutes from '@/admin/design-requests/routes'
+import adminLeadRoutes from '@/admin/leads/routes'
+import adminOperationsRoutes from '@/admin/operations/routes'
 import sidebarRoutes from '@/tenant/sidebar/routes'
 import tenantSystemSettingRoutes from '@/tenant/system-settings/routes'
 import adminSidebarRoutes from '@/admin/sidebar/routes'
@@ -27,10 +30,13 @@ const routes: RouteRecordRaw[] = [
   ...authRoutes,
   ...accountRoutes,
   ...adminAuthRoutes,
+  ...adminAuditLogRoutes,
   ...adminDashboardRoutes,
   ...adminTenantRoutes,
   ...adminUserRoutes,
+  ...adminOperationsRoutes,
   ...adminDesignRequestRoutes,
+  ...adminLeadRoutes,
   ...adminTemplateRoutes,
   ...adminSidebarRoutes,
   ...adminSystemSettingRoutes,

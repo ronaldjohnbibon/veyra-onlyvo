@@ -2,6 +2,7 @@
 
 namespace App\Admin\Templates\Services;
 
+use App\Admin\AuditLogs\Services\AuditLogService;
 use App\Admin\Templates\Models\Template;
 use App\Admin\Templates\Models\TemplateCatalogItem;
 use App\Admin\Templates\Models\TemplateCatalogItemVersion;
@@ -22,6 +23,7 @@ class TemplateCatalogMaintenanceService
             $item = TemplateCatalogItem::query()->create($this->catalogPayload($data));
 
             $this->recordVersion($item, 'created', $data['changelog'] ?? 'Initial catalog version.', $actor);
+            app(AuditLogService::class)->recordModel('template.created', $item, $actor, request(), null, $this->catalogPayload($item->toArray()), 'template');
 
             return $item->fresh('websiteType');
         });
@@ -33,9 +35,13 @@ class TemplateCatalogMaintenanceService
     public function update(TemplateCatalogItem $item, array $data, ?Authenticatable $actor = null): TemplateCatalogItem
     {
         return DB::transaction(function () use ($item, $data, $actor): TemplateCatalogItem {
-            $item->update($this->catalogPayload($data));
+            $previous = $this->catalogPayload($item->toArray());
 
-            $this->recordVersion($item->fresh(), 'updated', $data['changelog'] ?? 'Catalog item updated.', $actor);
+            $item->update($this->catalogPayload($data));
+            $updated = $item->fresh();
+
+            $this->recordVersion($updated, 'updated', $data['changelog'] ?? 'Catalog item updated.', $actor);
+            app(AuditLogService::class)->recordModel('template.updated', $updated, $actor, request(), $previous, $this->catalogPayload($updated->toArray()), 'template');
 
             return $item->fresh('websiteType');
         });
@@ -62,6 +68,7 @@ class TemplateCatalogMaintenanceService
             ]);
 
             $this->recordVersion($clone, 'cloned', $overrides['changelog'] ?? 'Cloned from '.$item->name.'.', $actor);
+            app(AuditLogService::class)->recordModel('template.cloned', $clone, $actor, request(), $this->catalogPayload($item->toArray()), $this->catalogPayload($clone->toArray()), 'template');
 
             return $clone->fresh('websiteType');
         });
@@ -83,12 +90,22 @@ class TemplateCatalogMaintenanceService
     public function importSchema(TemplateCatalogItem $item, array $data, ?Authenticatable $actor = null): TemplateCatalogItem
     {
         return DB::transaction(function () use ($item, $data, $actor): TemplateCatalogItem {
+            $previous = [
+                'field_schema'    => $item->field_schema    ?? [],
+                'default_content' => $item->default_content ?? [],
+            ];
+
             $item->update([
                 'field_schema'    => $data['field_schema']    ?? [],
                 'default_content' => $data['default_content'] ?? [],
             ]);
+            $updated = $item->fresh();
 
-            $this->recordVersion($item->fresh(), 'imported', $data['changelog'] ?? 'Schema and default content imported.', $actor);
+            $this->recordVersion($updated, 'imported', $data['changelog'] ?? 'Schema and default content imported.', $actor);
+            app(AuditLogService::class)->recordModel('template.schema_imported', $updated, $actor, request(), $previous, [
+                'field_schema'    => $updated->field_schema    ?? [],
+                'default_content' => $updated->default_content ?? [],
+            ], 'template');
 
             return $item->fresh('websiteType');
         });
@@ -99,9 +116,15 @@ class TemplateCatalogMaintenanceService
         abort_unless($version->template_catalog_item_id === $item->id, 404);
 
         return DB::transaction(function () use ($item, $version, $actor): TemplateCatalogItem {
-            $item->update($this->catalogPayload($version->snapshot));
+            $previous = $this->catalogPayload($item->toArray());
 
-            $this->recordVersion($item->fresh(), 'rolled_back', 'Rolled back to version '.$version->version.'.', $actor);
+            $item->update($this->catalogPayload($version->snapshot));
+            $updated = $item->fresh();
+
+            $this->recordVersion($updated, 'rolled_back', 'Rolled back to version '.$version->version.'.', $actor);
+            app(AuditLogService::class)->recordModel('template.rolled_back', $updated, $actor, request(), $previous, $this->catalogPayload($updated->toArray()), 'template', null, [
+                'version' => $version->version,
+            ]);
 
             return $item->fresh('websiteType');
         });
@@ -259,8 +282,12 @@ class TemplateCatalogMaintenanceService
     private function setActive(TemplateCatalogItem $item, bool $active, string $action, string $changelog, ?Authenticatable $actor): TemplateCatalogItem
     {
         return DB::transaction(function () use ($item, $active, $action, $changelog, $actor): TemplateCatalogItem {
+            $previous = ['is_active' => (bool) $item->is_active];
             $item->update(['is_active' => $active]);
-            $this->recordVersion($item->fresh(), $action, $changelog, $actor);
+            $updated = $item->fresh();
+
+            $this->recordVersion($updated, $action, $changelog, $actor);
+            app(AuditLogService::class)->recordModel('template.'.$action, $updated, $actor, request(), $previous, ['is_active' => (bool) $updated->is_active], 'template');
 
             return $item->fresh('websiteType');
         });

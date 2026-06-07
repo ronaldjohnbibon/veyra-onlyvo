@@ -45,6 +45,8 @@ class AdminSidebarSeeder extends Seeder
                             'items'       => [
                                 ['title' => 'Tenants', 'url' => 'tenants', 'is_active' => true],
                                 ['title' => 'Admin Users', 'url' => 'admin-users', 'is_active' => true],
+                                ['title' => 'Operations', 'url' => 'operations', 'icon' => 'Wrench', 'is_active' => true],
+                                ['title' => 'Audit Logs', 'url' => 'audit-logs', 'icon' => 'ShieldCheck', 'is_active' => true],
                             ],
                         ],
                         [
@@ -65,6 +67,16 @@ class AdminSidebarSeeder extends Seeder
                             'is_active'   => true,
                             'items'       => [
                                 ['title' => 'Design Requests', 'url' => 'design-requests', 'is_active' => true],
+                            ],
+                        ],
+                        [
+                            'title'       => 'Insights',
+                            'url'         => '#',
+                            'icon'        => 'BarChart3',
+                            'description' => '',
+                            'is_active'   => true,
+                            'items'       => [
+                                ['title' => 'Leads / Submissions', 'url' => 'leads', 'is_active' => true],
                             ],
                         ],
                         [

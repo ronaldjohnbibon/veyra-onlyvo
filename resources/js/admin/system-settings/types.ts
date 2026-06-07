@@ -19,6 +19,8 @@ export interface SystemSettingItem {
   type: SystemSettingType
   value: SystemSettingValue
   is_public: boolean
+  is_sensitive?: boolean
+  is_masked?: boolean
   description: string | null
   options: Record<string, string> | null
 }
@@ -35,6 +37,7 @@ export interface SystemSettingHistoryRecord {
   action: 'created' | 'updated' | 'deleted'
   previous_value: SystemSettingValue
   new_value: SystemSettingValue
+  can_restore: boolean
   changed_by: {
     id: number | string | null
     name: string | null
@@ -73,4 +76,36 @@ export interface SystemSettingsValues {
 
 export interface SystemSettingsPayload {
   [group: string]: Record<string, SystemSettingValue>
+}
+
+export interface SystemSettingSmtpTestResult {
+  status: 'ok' | 'failed' | 'skipped'
+  message: string
+  driver?: string
+  host?: string
+  port?: number
+  code?: number
+  latency_ms?: number
+}
+
+export interface SystemSettingEmailTestResult {
+  status: 'sent'
+  recipient: string
+  driver: string
+  message: string
+}
+
+export interface SystemSettingMaintenancePreview {
+  dry_run: boolean
+  enabled: boolean
+  active_now: boolean
+  path: string
+  path_affected: boolean
+  admin_bypass: boolean
+  message: string
+  starts_at: string
+  ends_at: string
+  affected_areas: string[]
+  affected_summary: string
+  result: 'blocked' | 'allowed'
 }

@@ -5,6 +5,7 @@ namespace App\Admin\Sidebar\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class SidebarRequest extends FormRequest
 {
@@ -65,6 +66,15 @@ class SidebarRequest extends FormRequest
         ];
     }
 
+    public function after(): array
+    {
+        return [
+            function (Validator $validator): void {
+                $this->validateNavigationUrls($validator);
+            },
+        ];
+    }
+
     public function prepareForValidation(): void
     {
         $tenantId = Auth::user()?->tenant_id;
@@ -86,5 +96,48 @@ class SidebarRequest extends FormRequest
     private function isAdminRoute(): bool
     {
         return str_starts_with((string) $this->route()?->getName(), 'admin.');
+    }
+
+    private function validateNavigationUrls(Validator $validator): void
+    {
+        $groups = $this->input('data.main_nav', []);
+
+        if (! is_array($groups)) {
+            return;
+        }
+
+        foreach ($groups as $groupIndex => $group) {
+            if (! is_array($group)) {
+                continue;
+            }
+
+            $this->validateUrlValue($validator, "data.main_nav.{$groupIndex}.url", $group['url'] ?? null);
+
+            foreach (($group['items'] ?? []) as $itemIndex => $item) {
+                if (! is_array($item)) {
+                    continue;
+                }
+
+                $this->validateUrlValue(
+                    $validator,
+                    "data.main_nav.{$groupIndex}.items.{$itemIndex}.url",
+                    $item['url'] ?? null,
+                );
+            }
+        }
+    }
+
+    private function validateUrlValue(Validator $validator, string $key, mixed $value): void
+    {
+        $url = trim((string) $value);
+
+        if ($url === '#'
+            || preg_match('/^(https?:|mailto:|tel:)/i', $url)
+            || preg_match('/^\/?[a-z0-9][a-z0-9\-\/]*$/i', $url)
+        ) {
+            return;
+        }
+
+        $validator->errors()->add($key, 'Navigation URLs must be #, an internal path, or a valid http, mailto, or tel URL.');
     }
 }

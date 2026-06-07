@@ -19,7 +19,7 @@ class SystemSettingHistoryIndexRequest extends FormRequest
     {
         return [
             'setting_key' => ['nullable', 'string', 'max:150'],
-            'action'      => ['nullable', 'string', Rule::in(['created', 'updated', 'deleted'])],
+            'action'      => ['nullable', 'string', Rule::in(['created', 'updated', 'deleted', 'restored', 'tested', 'exported', 'backed_up'])],
             'search'      => ['nullable', 'string', 'max:255'],
             'sort'        => ['nullable', 'string', Rule::in(['setting_key', 'action', 'changed_by', 'changed_at'])],
             'direction'   => ['nullable', 'string', Rule::in(['asc', 'desc'])],
