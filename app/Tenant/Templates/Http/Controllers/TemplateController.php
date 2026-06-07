@@ -130,7 +130,7 @@ class TemplateController extends Controller
             return $this->error('Template not found.', 404);
         }
 
-        $record->delete();
+        $this->service->delete($record);
 
         return $this->success(null, 'Template deleted.');
     }

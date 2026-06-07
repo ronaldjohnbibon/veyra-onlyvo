@@ -84,6 +84,14 @@ class TemplateCatalogMaintenanceService
         return $this->setActive($item, false, 'unpublished', 'Template unpublished from tenant catalog.', $actor);
     }
 
+    public function delete(TemplateCatalogItem $item, ?Authenticatable $actor = null): void
+    {
+        $previous = $item->attributesToArray();
+
+        $item->delete();
+        app(AuditLogService::class)->recordModel('template.deleted', $item, $actor, request(), $previous, null, 'template');
+    }
+
     /**
      * @param  array<string, mixed>  $data
      */

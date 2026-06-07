@@ -115,11 +115,11 @@ const toFilter = computed({
 const hasActiveFilters = computed(() =>
   Boolean(
     statusFilter.value ||
-      templateFilter.value ||
-      ctaTypeFilter.value ||
-      fromFilter.value ||
-      toFilter.value ||
-      search.value
+    templateFilter.value ||
+    ctaTypeFilter.value ||
+    fromFilter.value ||
+    toFilter.value ||
+    search.value
   )
 )
 const emptyTitle = computed(() => {
@@ -318,7 +318,11 @@ onMounted(() => {
             class="h-9 min-w-44"
           >
             <option value="">All CTA types</option>
-            <option v-for="type in leadStore.filters.cta_types" :key="type.value" :value="type.value">
+            <option
+              v-for="type in leadStore.filters.cta_types"
+              :key="type.value"
+              :value="type.value"
+            >
               {{ type.label }}
             </option>
           </NativeSelect>
@@ -337,7 +341,13 @@ onMounted(() => {
             class="h-9 min-w-36 sm:max-w-40"
           />
 
-          <Button type="button" size="sm" variant="cancel" :disabled="leadStore.loading" @click="leadStore.reset">
+          <Button
+            type="button"
+            size="sm"
+            variant="cancel"
+            :disabled="leadStore.loading"
+            @click="leadStore.reset"
+          >
             <RotateCcw class="size-4" />
             Reset
           </Button>
@@ -347,7 +357,14 @@ onMounted(() => {
           <div class="min-w-0">
             <div class="font-medium text-foreground">{{ row.summary }}</div>
             <div class="mt-1 text-xs text-muted-foreground">
-              {{ formatDisplayDate(row.created_at, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) }}
+              {{
+                formatDisplayDate(row.created_at, {
+                  month: 'short',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })
+              }}
             </div>
           </div>
         </template>

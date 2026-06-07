@@ -10,7 +10,6 @@ import { formatDisplayDate } from '@/shared/utils/date'
 import { useAdminOperationsStore } from '@/admin/operations/operations-store'
 import type {
   PlatformEvent,
-  PlatformFailedJob,
   PlatformHealthSection,
   PlatformHealthStatus,
 } from '@/admin/operations/types'

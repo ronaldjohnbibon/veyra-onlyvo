@@ -9,7 +9,8 @@ const routes: RouteRecordRaw[] = [
       requiresAuth: true,
       layout: 'tenant',
       title: 'System Settings',
-      description: 'Manage launch, SEO, branding, notifications, compliance, and analytics settings',
+      description:
+        'Manage launch, SEO, branding, notifications, compliance, and analytics settings',
     },
   },
 ]

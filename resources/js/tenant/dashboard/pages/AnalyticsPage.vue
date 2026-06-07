@@ -22,8 +22,6 @@ import type {
   AnalyticsTotalRow,
 } from '@/shared/types/analytics'
 import {
-  BarChart3,
-  CalendarDays,
   Download,
   Eye,
   Lightbulb,
@@ -42,7 +40,6 @@ const customTo = ref('')
 const savedRanges = ref<{ label: string; from: string; to: string }[]>([])
 
 const dashboard = computed(() => analyticsStore.dashboard)
-const summary = computed(() => dashboard.value?.summary)
 const rangeSummary = computed(() => dashboard.value?.range_summary)
 const comparison = computed(() => dashboard.value?.comparison)
 

@@ -241,9 +241,7 @@ watch(selectedTemplateId, (templateId) => {
 
           <template #cell-title="{ row }">
             <div class="font-medium">{{ row.title }}</div>
-            <div class="line-clamp-1 text-xs text-muted-foreground">
-              /{{ row.slug }}
-            </div>
+            <div class="line-clamp-1 text-xs text-muted-foreground">/{{ row.slug }}</div>
             <div class="mt-1 line-clamp-1 text-xs text-muted-foreground">
               {{ row.excerpt || 'No excerpt yet' }}
             </div>

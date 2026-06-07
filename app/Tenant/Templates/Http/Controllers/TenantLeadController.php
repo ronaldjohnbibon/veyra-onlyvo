@@ -7,7 +7,6 @@ use App\Tenant\SystemSettings\Services\SystemSettingService;
 use App\Tenant\Templates\Http\Requests\TemplateCtaSubmissionIndexRequest;
 use App\Tenant\Templates\Http\Requests\TemplateCtaSubmissionStatusRequest;
 use App\Tenant\Templates\Http\Resources\TemplateCtaSubmissionResource;
-use App\Tenant\Templates\Models\TemplateCtaSubmission;
 use App\Tenant\Templates\Services\TemplateCtaSubmissionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
@@ -54,7 +53,7 @@ class TenantLeadController extends Controller
             return $response;
         }
 
-        $record = $this->lead($lead);
+        $record = $this->service->findForTenant($this->tenantId(), $lead);
 
         if (! $record) {
             return $this->error('Lead not found.', 404);
@@ -69,15 +68,13 @@ class TenantLeadController extends Controller
             return $response;
         }
 
-        $record = $this->lead($lead);
+        $record = $this->service->findForTenant($this->tenantId(), $lead);
 
         if (! $record) {
             return $this->error('Lead not found.', 404);
         }
 
-        $record->update(['status' => $request->validated('status')]);
-
-        return $this->success(new TemplateCtaSubmissionResource($record->fresh('template')), 'Lead updated.');
+        return $this->success(new TemplateCtaSubmissionResource($this->service->updateStatus($record, $request->validated('status'))), 'Lead updated.');
     }
 
     public function export(TemplateCtaSubmissionIndexRequest $request): StreamedResponse|JsonResponse
@@ -105,15 +102,6 @@ class TenantLeadController extends Controller
         }, 'tenant-leads.csv', [
             'Content-Type' => 'text/csv; charset=UTF-8',
         ]);
-    }
-
-    private function lead(string $id): ?TemplateCtaSubmission
-    {
-        return TemplateCtaSubmission::query()
-            ->with('template')
-            ->whereKey($id)
-            ->whereHas('template', fn ($query) => $query->where('tenant_id', $this->tenantId()))
-            ->first();
     }
 
     private function tenantId(): string

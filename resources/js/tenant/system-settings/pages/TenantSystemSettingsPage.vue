@@ -118,39 +118,56 @@ const sectionMeta: Record<
 }
 
 const fieldCopy: Record<string, string> = {
-  'profile.business_name': 'Shown as your public business name and used as a fallback in page titles.',
+  'profile.business_name':
+    'Shown as your public business name and used as a fallback in page titles.',
   'profile.description': 'A plain-language summary visitors and search engines can understand.',
-  'profile.logo': 'Used in templates that support a logo. A transparent PNG or SVG usually works best.',
+  'profile.logo':
+    'Used in templates that support a logo. A transparent PNG or SVG usually works best.',
   'profile.favicon': 'The small icon shown in browser tabs. Square images work best.',
   'profile.timezone': 'Used for reports, analytics windows, and date-based activity.',
-  'profile.contact_email': 'The public email visitors can use if templates display contact details.',
+  'profile.contact_email':
+    'The public email visitors can use if templates display contact details.',
   'profile.contact_phone': 'Optional public phone number for templates that show phone contact.',
   'profile.contact_address': 'Optional public address for templates that show location details.',
-  'website.site_status': 'Draft keeps the public site unavailable; Live makes published content reachable.',
-  'website.homepage_slug': 'Leave blank to use the default published template, or enter a custom slug.',
+  'website.site_status':
+    'Draft keeps the public site unavailable; Live makes published content reachable.',
+  'website.homepage_slug':
+    'Leave blank to use the default published template, or enter a custom slug.',
   'website.primary_cta_label': 'The default button text templates can use for primary actions.',
   'website.primary_cta_url': 'Where the default call-to-action button should send visitors.',
-  'website.contact_form_enabled': 'Turn this on when visitors should be able to submit contact forms.',
+  'website.contact_form_enabled':
+    'Turn this on when visitors should be able to submit contact forms.',
   'website.footer_text': 'Small footer or copyright text shown on public pages where supported.',
-  'seo.default_meta_title': 'Keep this specific and readable; it can appear in browser tabs and search results.',
+  'seo.default_meta_title':
+    'Keep this specific and readable; it can appear in browser tabs and search results.',
   'seo.default_meta_description': 'A short summary for search previews and social cards.',
-  'seo.open_graph_image': 'The image used when pages are shared and no page-specific image is available.',
-  'seo.allow_search_engine_indexing': 'Turn off while preparing the site, then turn on when ready to be found.',
-  'seo.canonical_domain': 'Your preferred public domain, such as example.com or https://example.com.',
+  'seo.open_graph_image':
+    'The image used when pages are shared and no page-specific image is available.',
+  'seo.allow_search_engine_indexing':
+    'Turn off while preparing the site, then turn on when ready to be found.',
+  'seo.canonical_domain':
+    'Your preferred public domain, such as example.com or https://example.com.',
   'branding.primary_color': 'Main brand color used for important actions and accents.',
   'branding.accent_color': 'Secondary brand color used for highlights and supporting accents.',
   'branding.font_family': 'Default type style templates can use for public pages.',
   'branding.button_radius': 'Default corner shape for buttons in templates that support it.',
-  'branding.fallback_image': 'Used when a template needs an image but no content-specific image exists.',
-  'analytics.enable_visitor_tracking': 'Records visits so the dashboard can show traffic and growth signals.',
-  'analytics.enable_cta_tracking': 'Records CTA views, clicks, and submissions for conversion insights.',
+  'branding.fallback_image':
+    'Used when a template needs an image but no content-specific image exists.',
+  'analytics.enable_visitor_tracking':
+    'Records visits so the dashboard can show traffic and growth signals.',
+  'analytics.enable_cta_tracking':
+    'Records CTA views, clicks, and submissions for conversion insights.',
   'analytics.retention_days': 'How long tenant analytics records should be kept.',
   'notifications.cta_submission_email': 'Inbox for new form submission and lead alerts.',
-  'notifications.design_request_email': 'Inbox for design request updates and collaboration alerts.',
-  'notifications.reply_to_email': 'Address used when recipients reply to tenant notification emails.',
-  'notifications.weekly_analytics_summary': 'Send a weekly performance summary when scheduled email jobs are enabled.',
+  'notifications.design_request_email':
+    'Inbox for design request updates and collaboration alerts.',
+  'notifications.reply_to_email':
+    'Address used when recipients reply to tenant notification emails.',
+  'notifications.weekly_analytics_summary':
+    'Send a weekly performance summary when scheduled email jobs are enabled.',
   'compliance.privacy_policy_url': 'Link to the privacy policy visitors should be able to access.',
-  'compliance.terms_of_service_url': 'Link to terms or service rules visitors should be able to access.',
+  'compliance.terms_of_service_url':
+    'Link to terms or service rules visitors should be able to access.',
   'compliance.cookie_notice_enabled': 'Shows cookie messaging where public templates support it.',
   'compliance.cookie_notice_text': 'Short, readable notice shown when cookie messaging is enabled.',
 }
@@ -273,7 +290,8 @@ const hasUnsavedChanges = computed(() => {
 
 const saveState = computed(() => {
   if (settingStore.loading) return { label: 'Saving...', tone: 'info', icon: Clock }
-  if (formError.value) return { label: 'Review highlighted fields', tone: 'error', icon: CircleAlert }
+  if (formError.value)
+    return { label: 'Review highlighted fields', tone: 'error', icon: CircleAlert }
   if (hasUnsavedChanges.value) return { label: 'Unsaved changes', tone: 'warning', icon: Clock }
   if (saveNotice.value) return { label: saveNotice.value, tone: 'success', icon: CheckCircle2 }
 
@@ -298,7 +316,11 @@ const sectionCompletion = computed(() => {
 })
 
 const titlePreview = computed(() => {
-  return stringForKey('seo.default_meta_title') || stringForKey('profile.business_name') || 'Your site title'
+  return (
+    stringForKey('seo.default_meta_title') ||
+    stringForKey('profile.business_name') ||
+    'Your site title'
+  )
 })
 
 const descriptionPreview = computed(() => {
@@ -310,7 +332,9 @@ const descriptionPreview = computed(() => {
 })
 
 const publicDomainPreview = computed(() => {
-  return stringForKey('seo.canonical_domain') || stringForKey('website.homepage_slug') || 'your-site'
+  return (
+    stringForKey('seo.canonical_domain') || stringForKey('website.homepage_slug') || 'your-site'
+  )
 })
 
 const primaryColor = computed(() => stringForKey('branding.primary_color') || '#2563eb')
@@ -425,7 +449,7 @@ onMounted(async () => {
                     : 'border-muted bg-muted/50 text-muted-foreground'
                 "
               >
-                  Tracking {{ visitorTracking ? 'On' : 'Off' }}
+                Tracking {{ visitorTracking ? 'On' : 'Off' }}
               </span>
               <span
                 class="inline-flex items-center gap-1.5 rounded border px-2.5 py-1 text-xs font-medium"
@@ -433,7 +457,8 @@ onMounted(async () => {
                   'border-emerald-200 bg-emerald-50 text-emerald-800': saveState.tone === 'success',
                   'border-amber-300 bg-amber-50 text-amber-800': saveState.tone === 'warning',
                   'border-sky-200 bg-sky-50 text-sky-800': saveState.tone === 'info',
-                  'border-destructive/40 bg-destructive/10 text-destructive': saveState.tone === 'error',
+                  'border-destructive/40 bg-destructive/10 text-destructive':
+                    saveState.tone === 'error',
                 }"
               >
                 <component :is="saveState.icon" class="size-3.5" />
@@ -447,7 +472,10 @@ onMounted(async () => {
           </div>
         </div>
 
-        <div v-if="formError" class="rounded border border-destructive/40 bg-destructive/10 p-3 text-sm font-medium text-destructive">
+        <div
+          v-if="formError"
+          class="rounded border border-destructive/40 bg-destructive/10 p-3 text-sm font-medium text-destructive"
+        >
           {{ formError }}
         </div>
 
@@ -479,7 +507,10 @@ onMounted(async () => {
               </button>
             </div>
 
-            <div v-if="currentGroup && sectionCompletion" class="mt-3 rounded border bg-muted/30 p-3">
+            <div
+              v-if="currentGroup && sectionCompletion"
+              class="mt-3 rounded border bg-muted/30 p-3"
+            >
               <p class="text-xs font-medium text-muted-foreground">Section progress</p>
               <p class="mt-1 text-sm font-semibold">
                 {{ sectionCompletion.completed }} of {{ sectionCompletion.total }} settings filled
@@ -487,7 +518,9 @@ onMounted(async () => {
               <div class="mt-3 h-2 rounded bg-muted">
                 <div
                   class="h-2 rounded bg-primary"
-                  :style="{ width: `${Math.round((sectionCompletion.completed / Math.max(sectionCompletion.total, 1)) * 100)}%` }"
+                  :style="{
+                    width: `${Math.round((sectionCompletion.completed / Math.max(sectionCompletion.total, 1)) * 100)}%`,
+                  }"
                 />
               </div>
             </div>
@@ -497,7 +530,9 @@ onMounted(async () => {
             <div class="border-b px-4 py-4">
               <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                 <div class="flex gap-3">
-                  <div class="flex size-10 shrink-0 items-center justify-center rounded border bg-primary/5 text-primary">
+                  <div
+                    class="flex size-10 shrink-0 items-center justify-center rounded border bg-primary/5 text-primary"
+                  >
                     <component
                       :is="sections.find((section) => section.key === activeSection)?.icon"
                       class="size-5"
@@ -532,7 +567,11 @@ onMounted(async () => {
                         v-if="setting.type === 'boolean'"
                         :for="fieldId(setting)"
                         class="flex cursor-pointer items-start justify-between gap-4 rounded border p-4 transition hover:bg-muted/40"
-                        :class="hasFieldError(setting) ? 'border-destructive/60 bg-destructive/5' : 'bg-muted/10'"
+                        :class="
+                          hasFieldError(setting)
+                            ? 'border-destructive/60 bg-destructive/5'
+                            : 'bg-muted/10'
+                        "
                       >
                         <span class="min-w-0">
                           <span class="flex flex-wrap items-center gap-2">
@@ -558,13 +597,19 @@ onMounted(async () => {
                       <Field
                         v-else-if="setting.type === 'text'"
                         class="rounded border p-4"
-                        :class="hasFieldError(setting) ? 'border-destructive/60 bg-destructive/5' : 'bg-muted/10'"
+                        :class="
+                          hasFieldError(setting)
+                            ? 'border-destructive/60 bg-destructive/5'
+                            : 'bg-muted/10'
+                        "
                       >
                         <div class="flex flex-wrap items-center gap-2">
                           <FieldLabel :for="fieldId(setting)">{{ setting.label }}</FieldLabel>
                           <Badge v-if="setting.is_public" variant="outline">Public</Badge>
                         </div>
-                        <p class="text-sm text-muted-foreground">{{ settingDescription(setting) }}</p>
+                        <p class="text-sm text-muted-foreground">
+                          {{ settingDescription(setting) }}
+                        </p>
 
                         <Textarea
                           v-field-help="settingHelp(setting)"
@@ -582,13 +627,19 @@ onMounted(async () => {
                       <Field
                         v-else-if="setting.type === 'image'"
                         class="rounded border p-4"
-                        :class="hasFieldError(setting) || imageUploadErrors[setting.key] ? 'border-destructive/60 bg-destructive/5' : 'bg-muted/10'"
+                        :class="
+                          hasFieldError(setting) || imageUploadErrors[setting.key]
+                            ? 'border-destructive/60 bg-destructive/5'
+                            : 'bg-muted/10'
+                        "
                       >
                         <div class="flex flex-wrap items-center gap-2">
                           <FieldLabel :for="fieldId(setting)">{{ setting.label }}</FieldLabel>
                           <Badge v-if="setting.is_public" variant="outline">Public</Badge>
                         </div>
-                        <p class="text-sm text-muted-foreground">{{ settingDescription(setting) }}</p>
+                        <p class="text-sm text-muted-foreground">
+                          {{ settingDescription(setting) }}
+                        </p>
                         <div
                           class="mt-2 grid gap-4 rounded border bg-background p-3 md:grid-cols-[18rem_minmax(0,1fr)]"
                         >
@@ -661,7 +712,14 @@ onMounted(async () => {
                       </Field>
 
                       <Field v-else>
-                        <div class="rounded border p-4" :class="hasFieldError(setting) ? 'border-destructive/60 bg-destructive/5' : 'bg-muted/10'">
+                        <div
+                          class="rounded border p-4"
+                          :class="
+                            hasFieldError(setting)
+                              ? 'border-destructive/60 bg-destructive/5'
+                              : 'bg-muted/10'
+                          "
+                        >
                           <div class="mb-2 flex flex-wrap items-center gap-2">
                             <FieldLabel :for="fieldId(setting)">{{ setting.label }}</FieldLabel>
                             <Badge v-if="setting.is_public" variant="outline">Public</Badge>
@@ -755,7 +813,9 @@ onMounted(async () => {
             <section class="rounded border bg-background">
               <div class="border-b px-4 py-3">
                 <h3 class="text-base font-semibold">Live Preview</h3>
-                <p class="mt-1 text-sm text-muted-foreground">A quick view of how key settings read to visitors.</p>
+                <p class="mt-1 text-sm text-muted-foreground">
+                  A quick view of how key settings read to visitors.
+                </p>
               </div>
 
               <div class="space-y-4 p-4">
@@ -771,7 +831,9 @@ onMounted(async () => {
                       v-else
                       class="flex size-10 items-center justify-center rounded border bg-muted text-sm font-semibold"
                     >
-                      {{ (stringForKey('profile.business_name') || 'Site').slice(0, 1).toUpperCase() }}
+                      {{
+                        (stringForKey('profile.business_name') || 'Site').slice(0, 1).toUpperCase()
+                      }}
                     </div>
                     <div class="min-w-0">
                       <p class="truncate text-sm font-semibold">
@@ -784,7 +846,10 @@ onMounted(async () => {
                   </div>
 
                   <p class="mt-3 line-clamp-3 text-sm text-muted-foreground">
-                    {{ stringForKey('profile.description') || 'Add a short business description for public pages.' }}
+                    {{
+                      stringForKey('profile.description') ||
+                      'Add a short business description for public pages.'
+                    }}
                   </p>
                 </div>
 
@@ -792,15 +857,24 @@ onMounted(async () => {
                   <p class="text-xs font-medium text-muted-foreground">Search preview</p>
                   <p class="mt-2 line-clamp-1 text-sm text-blue-700">{{ titlePreview }}</p>
                   <p class="line-clamp-1 text-xs text-emerald-700">{{ publicDomainPreview }}</p>
-                  <p class="mt-1 line-clamp-3 text-sm text-muted-foreground">{{ descriptionPreview }}</p>
+                  <p class="mt-1 line-clamp-3 text-sm text-muted-foreground">
+                    {{ descriptionPreview }}
+                  </p>
                 </div>
 
                 <div class="rounded border p-4">
                   <p class="text-xs font-medium text-muted-foreground">Brand sample</p>
                   <div class="mt-3 flex items-center gap-3">
-                    <div class="size-10 rounded border" :style="{ backgroundColor: primaryColor }" />
+                    <div
+                      class="size-10 rounded border"
+                      :style="{ backgroundColor: primaryColor }"
+                    />
                     <div class="size-10 rounded border" :style="{ backgroundColor: accentColor }" />
-                    <Button type="button" size="sm" :style="{ backgroundColor: primaryColor, color: '#ffffff' }">
+                    <Button
+                      type="button"
+                      size="sm"
+                      :style="{ backgroundColor: primaryColor, color: '#ffffff' }"
+                    >
                       {{ stringForKey('website.primary_cta_label') || 'Primary CTA' }}
                     </Button>
                   </div>
@@ -816,7 +890,9 @@ onMounted(async () => {
                   <div class="rounded border p-3">
                     <p class="text-xs text-muted-foreground">Indexing</p>
                     <p class="mt-1 text-sm font-semibold">
-                      {{ booleanForKey('seo.allow_search_engine_indexing') ? 'Allowed' : 'Blocked' }}
+                      {{
+                        booleanForKey('seo.allow_search_engine_indexing') ? 'Allowed' : 'Blocked'
+                      }}
                     </p>
                   </div>
                 </div>

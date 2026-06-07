@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('admin')->name('admin.')->group(function (): void {
     Route::post('login', [AuthController::class, 'login']);
 
-    Route::middleware(['api.auth', 'admin.ip'])->group(function (): void {
+    Route::middleware(['api.auth', 'token.name:admin_token', 'admin.ip'])->group(function (): void {
         Route::get('me', [AuthController::class, 'me']);
         Route::post('logout', [AuthController::class, 'logout']);
 

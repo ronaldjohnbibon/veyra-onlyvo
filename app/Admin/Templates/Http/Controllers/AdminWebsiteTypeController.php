@@ -5,6 +5,7 @@ namespace App\Admin\Templates\Http\Controllers;
 use App\Admin\Templates\Http\Requests\WebsiteTypeRequest;
 use App\Admin\Templates\Http\Resources\WebsiteTypeResource;
 use App\Admin\Templates\Models\WebsiteType;
+use App\Admin\Templates\Services\WebsiteTypeService;
 use App\Http\Controllers\Controller;
 use App\Shared\Enums\UserType;
 use Illuminate\Http\JsonResponse;
@@ -13,25 +14,15 @@ use Illuminate\Support\Facades\Auth;
 
 class AdminWebsiteTypeController extends Controller
 {
+    public function __construct(
+        private readonly WebsiteTypeService $service,
+    ) {}
+
     public function index(Request $request): JsonResponse
     {
         $this->authorizeAdmin();
 
-        $types = WebsiteType::query()
-            ->when($request->input('search'), function ($query, string $search): void {
-                $query->where(function ($query) use ($search): void {
-                    $query->where('name', 'like', '%'.$search.'%')
-                        ->orWhere('slug', 'like', '%'.$search.'%');
-                });
-            })
-            ->withCount(['templates', 'catalogItems as available_templates_count'])
-            ->orderBy('name')
-            ->paginate(
-                (int) $request->input('pageSize', 100),
-                ['*'],
-                'page',
-                (int) $request->input('page', 1),
-            );
+        $types = $this->service->paginate($request->only(['search', 'pageSize', 'page']));
 
         return $this->success(WebsiteTypeResource::collection($types), 'Website types retrieved.');
     }
@@ -40,7 +31,7 @@ class AdminWebsiteTypeController extends Controller
     {
         $this->authorizeAdmin();
 
-        $type = WebsiteType::query()->create($request->validated());
+        $type = $this->service->create($request->validated());
 
         return $this->success(new WebsiteTypeResource($type), 'Website type created.', 201);
     }
@@ -55,27 +46,22 @@ class AdminWebsiteTypeController extends Controller
             return $this->error('Website type not found.', 404);
         }
 
-        $type->update($request->validated());
-
-        return $this->success(new WebsiteTypeResource($type->fresh()), 'Website type updated.');
+        return $this->success(new WebsiteTypeResource($this->service->update($type, $request->validated())), 'Website type updated.');
     }
 
     public function destroy(string $websiteType): JsonResponse
     {
         $this->authorizeAdmin();
 
-        $type = WebsiteType::query()->withCount(['templates', 'catalogItems'])->find($websiteType);
+        $type = WebsiteType::query()->find($websiteType);
 
         if (! $type) {
             return $this->error('Website type not found.', 404);
         }
 
-        // Prevent deleting types that still power tenant sites or catalog entries.
-        if ($type->templates_count || $type->catalog_items_count) {
+        if (! $this->service->delete($type)) {
             return $this->error('Website type is still in use.', 422);
         }
-
-        $type->delete();
 
         return $this->success(null, 'Website type deleted.');
     }

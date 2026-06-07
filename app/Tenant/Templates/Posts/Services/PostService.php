@@ -48,6 +48,11 @@ class PostService
         return $post->fresh();
     }
 
+    public function delete(Post $post): void
+    {
+        $post->delete();
+    }
+
     /**
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>

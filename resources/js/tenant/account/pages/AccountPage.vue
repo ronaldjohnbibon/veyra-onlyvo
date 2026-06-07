@@ -26,7 +26,9 @@ const route = useRoute()
 
 const workspace = computed(() => accountStore.account?.workspace ?? null)
 const user = computed(() => accountStore.account?.user ?? null)
-const ownerMember = computed(() => workspace.value?.members.find((member) => member.is_owner) ?? null)
+const ownerMember = computed(
+  () => workspace.value?.members.find((member) => member.is_owner) ?? null
+)
 const isInitialLoading = computed(() => accountStore.loading && !accountStore.account)
 const isTeamManagement = computed(() => route.name === 'tenant.team-management')
 const pageTitle = computed(() => (isTeamManagement.value ? 'Team Management' : 'Account/Profile'))
@@ -38,9 +40,9 @@ const pageDescription = computed(() =>
 const profileComplete = computed(() => {
   return Boolean(
     accountStore.profileForm.name &&
-      accountStore.profileForm.email &&
-      accountStore.profileForm.first_name &&
-      accountStore.profileForm.last_name
+    accountStore.profileForm.email &&
+    accountStore.profileForm.first_name &&
+    accountStore.profileForm.last_name
   )
 })
 
@@ -71,11 +73,7 @@ onMounted(accountStore.show)
 
       <div v-if="isInitialLoading" class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_24rem]">
         <main class="space-y-4">
-          <section
-            v-for="section in 3"
-            :key="section"
-            class="rounded border bg-background p-4"
-          >
+          <section v-for="section in 3" :key="section" class="rounded border bg-background p-4">
             <div class="flex items-start gap-3">
               <Skeleton class="size-10 shrink-0" />
               <div class="w-full space-y-3">
@@ -106,9 +104,13 @@ onMounted(accountStore.show)
       <div v-else class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_24rem]">
         <main class="space-y-4">
           <section class="rounded border bg-background">
-            <div class="flex flex-col gap-3 border-b p-4 md:flex-row md:items-start md:justify-between">
+            <div
+              class="flex flex-col gap-3 border-b p-4 md:flex-row md:items-start md:justify-between"
+            >
               <div class="flex gap-3">
-                <div class="flex size-10 shrink-0 items-center justify-center rounded border bg-primary/5 text-primary">
+                <div
+                  class="flex size-10 shrink-0 items-center justify-center rounded border bg-primary/5 text-primary"
+                >
                   <User class="size-5" />
                 </div>
                 <div>
@@ -143,7 +145,9 @@ onMounted(accountStore.show)
                   v-field-help="'Used to personalize workspace activity and support interactions.'"
                   autocomplete="given-name"
                 />
-                <FieldError v-if="fieldError('first_name')">{{ fieldError('first_name') }}</FieldError>
+                <FieldError v-if="fieldError('first_name')">{{
+                  fieldError('first_name')
+                }}</FieldError>
               </Field>
 
               <Field>
@@ -154,7 +158,9 @@ onMounted(accountStore.show)
                   v-field-help="'Used with your first name for a complete account profile.'"
                   autocomplete="family-name"
                 />
-                <FieldError v-if="fieldError('last_name')">{{ fieldError('last_name') }}</FieldError>
+                <FieldError v-if="fieldError('last_name')">{{
+                  fieldError('last_name')
+                }}</FieldError>
               </Field>
 
               <Field>
@@ -191,7 +197,9 @@ onMounted(accountStore.show)
 
           <section class="rounded border bg-background">
             <div class="flex gap-3 border-b p-4">
-              <div class="flex size-10 shrink-0 items-center justify-center rounded border bg-primary/5 text-primary">
+              <div
+                class="flex size-10 shrink-0 items-center justify-center rounded border bg-primary/5 text-primary"
+              >
                 <KeyRound class="size-5" />
               </div>
               <div>
@@ -254,7 +262,9 @@ onMounted(accountStore.show)
 
           <section class="rounded border bg-background">
             <div class="flex gap-3 border-b p-4">
-              <div class="flex size-10 shrink-0 items-center justify-center rounded border bg-primary/5 text-primary">
+              <div
+                class="flex size-10 shrink-0 items-center justify-center rounded border bg-primary/5 text-primary"
+              >
                 <Users class="size-5" />
               </div>
               <div>
@@ -266,7 +276,10 @@ onMounted(accountStore.show)
             </div>
 
             <div class="p-4">
-              <div v-if="!workspace?.members.length" class="rounded border bg-muted/30 p-5 text-sm text-muted-foreground">
+              <div
+                v-if="!workspace?.members.length"
+                class="rounded border bg-muted/30 p-5 text-sm text-muted-foreground"
+              >
                 No workspace members were found.
               </div>
 
@@ -288,7 +301,11 @@ onMounted(accountStore.show)
                     <p class="mt-1 truncate text-sm text-muted-foreground">{{ member.email }}</p>
                   </div>
                   <p class="text-xs text-muted-foreground">
-                    {{ member.permissions.length ? member.permissions.join(', ') : 'No custom permissions' }}
+                    {{
+                      member.permissions.length
+                        ? member.permissions.join(', ')
+                        : 'No custom permissions'
+                    }}
                   </p>
                 </div>
               </div>
@@ -303,7 +320,9 @@ onMounted(accountStore.show)
             </CardHeader>
             <CardContent class="space-y-4">
               <div class="flex items-center gap-3">
-                <div class="flex size-10 items-center justify-center rounded border bg-primary/5 text-primary">
+                <div
+                  class="flex size-10 items-center justify-center rounded border bg-primary/5 text-primary"
+                >
                   <Building2 class="size-5" />
                 </div>
                 <div class="min-w-0">
@@ -341,7 +360,11 @@ onMounted(accountStore.show)
                   Your access
                 </p>
                 <p class="mt-2 text-sm text-muted-foreground">
-                  {{ workspace?.current_user_owner ? 'You are the workspace owner.' : 'You are a workspace member.' }}
+                  {{
+                    workspace?.current_user_owner
+                      ? 'You are the workspace owner.'
+                      : 'You are a workspace member.'
+                  }}
                 </p>
               </div>
             </CardContent>

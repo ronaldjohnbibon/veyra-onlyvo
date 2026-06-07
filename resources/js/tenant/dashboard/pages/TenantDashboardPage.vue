@@ -168,11 +168,16 @@ onMounted(() => {
                             {{ dashboard.default_template.business_name }}
                           </p>
                           <p class="mt-1 text-sm text-muted-foreground">
-                            {{ dashboard.default_template.website_type_name || dashboard.default_template.name }}
+                            {{
+                              dashboard.default_template.website_type_name ||
+                              dashboard.default_template.name
+                            }}
                           </p>
                         </div>
                         <div class="flex shrink-0 flex-wrap justify-end gap-2">
-                          <Badge :variant="getStatusBadgeVariant(dashboard.default_template.status)">
+                          <Badge
+                            :variant="getStatusBadgeVariant(dashboard.default_template.status)"
+                          >
                             {{ getStatusLabel(dashboard.default_template.status) }}
                           </Badge>
                           <Badge v-if="dashboard.default_template.is_default" variant="outline">
@@ -181,7 +186,8 @@ onMounted(() => {
                         </div>
                       </div>
                       <p class="mt-3 truncate text-xs text-muted-foreground">
-                        Updated {{ formatDisplayDate(dashboard.default_template.updated_at) || 'recently' }}
+                        Updated
+                        {{ formatDisplayDate(dashboard.default_template.updated_at) || 'recently' }}
                       </p>
                     </div>
 
@@ -290,7 +296,12 @@ onMounted(() => {
                           size="sm"
                           class="h-8 w-8 p-0"
                         >
-                          <a :href="post.public_url" target="_blank" rel="noreferrer" aria-label="Open post">
+                          <a
+                            :href="post.public_url"
+                            target="_blank"
+                            rel="noreferrer"
+                            aria-label="Open post"
+                          >
                             <ExternalLink class="size-4" />
                           </a>
                         </Button>
@@ -436,7 +447,8 @@ onMounted(() => {
                     Posts
                   </span>
                   <span class="font-medium">
-                    {{ dashboard.metrics.published_posts }} live - {{ dashboard.metrics.draft_posts }} draft
+                    {{ dashboard.metrics.published_posts }} live -
+                    {{ dashboard.metrics.draft_posts }} draft
                   </span>
                 </div>
               </CardContent>

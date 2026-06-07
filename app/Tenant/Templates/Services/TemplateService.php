@@ -78,6 +78,11 @@ class TemplateService
         });
     }
 
+    public function delete(Template $template): void
+    {
+        $template->delete();
+    }
+
     /**
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>

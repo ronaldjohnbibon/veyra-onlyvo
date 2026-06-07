@@ -1,7 +1,7 @@
 <?php
 
-use App\Tenant\Auth\Http\Controllers\AuthController;
 use App\Tenant\Account\Http\Controllers\AccountController;
+use App\Tenant\Auth\Http\Controllers\AuthController;
 use App\Tenant\Dashboard\Http\Controllers\AnalyticsController;
 use App\Tenant\Dashboard\Http\Controllers\PublicCtaTrackingController;
 use App\Tenant\Dashboard\Http\Controllers\PublicVisitorTrackingController;
@@ -10,9 +10,9 @@ use App\Tenant\DesignRequests\Http\Controllers\DesignRequestController;
 use App\Tenant\Sidebar\Http\Controllers\TenantSidebarController;
 use App\Tenant\SystemSettings\Http\Controllers\TenantSystemSettingController;
 use App\Tenant\Templates\Http\Controllers\PublicTemplateController;
-use App\Tenant\Templates\Http\Controllers\TenantLeadController;
 use App\Tenant\Templates\Http\Controllers\TemplateController;
 use App\Tenant\Templates\Http\Controllers\TemplateCtaSubmissionController;
+use App\Tenant\Templates\Http\Controllers\TenantLeadController;
 use App\Tenant\Templates\Posts\Http\Controllers\PostController;
 use App\Tenant\Templates\Posts\Http\Controllers\PublicPostController;
 use App\Tenant\TrackingLogs\Http\Controllers\TrackingLogController;
@@ -26,7 +26,7 @@ Route::prefix('app')->name('app.')->group(function (): void {
         Route::post('forgot-password', [AuthController::class, 'forgotPassword']);
         Route::post('reset-password', [AuthController::class, 'resetPassword']);
 
-        Route::middleware('api.auth')->group(function (): void {
+        Route::middleware(['api.auth', 'token.name:tenant_token'])->group(function (): void {
             Route::get('me', [AuthController::class, 'me']);
             Route::post('logout', [AuthController::class, 'logout']);
             Route::get('account', [AccountController::class, 'show'])->name('account.show');

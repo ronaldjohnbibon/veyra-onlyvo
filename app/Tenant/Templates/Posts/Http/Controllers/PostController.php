@@ -151,7 +151,7 @@ class PostController extends Controller
             return $this->error('Post not found.', 404);
         }
 
-        $postRecord->delete();
+        $this->service->delete($postRecord);
 
         return $this->success(null, 'Post deleted.');
     }

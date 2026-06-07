@@ -136,7 +136,9 @@ const canSave = computed(
 const sidebarDataError = computed(() => {
   return Object.entries(sidebarStore.errors).find(([field]) => field.startsWith('data'))?.[1]?.[0]
 })
-const isInitialLoading = computed(() => sidebarStore.loading && !sidebar.value && !groups.value.length)
+const isInitialLoading = computed(
+  () => sidebarStore.loading && !sidebar.value && !groups.value.length
+)
 
 const iconFor = (icon?: string) => {
   return icon && icon in iconMap ? iconMap[icon as IconName] : iconMap.Circle

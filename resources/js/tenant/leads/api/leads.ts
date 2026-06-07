@@ -1,5 +1,11 @@
 import http from '@/shared/api/http'
-import type { LeadMeta, LeadPagination, LeadParams, LeadRecord, LeadStatus } from '@/tenant/leads/types'
+import type {
+  LeadMeta,
+  LeadPagination,
+  LeadParams,
+  LeadRecord,
+  LeadStatus,
+} from '@/tenant/leads/types'
 
 interface LeadsResponse {
   data: LeadRecord[]

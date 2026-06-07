@@ -84,7 +84,7 @@ class AdminSidebarController extends Controller
         return $this->success(new SidebarResource($updated), 'Sidebar updated.');
     }
 
-    public function destroy(string $sidebar): JsonResponse
+    public function destroy(Request $request, string $sidebar): JsonResponse
     {
         $this->authorizeAdmin();
 
@@ -96,7 +96,7 @@ class AdminSidebarController extends Controller
 
         $previous = $record->attributesToArray();
 
-        $record->delete();
+        $this->service->delete($record);
         $this->auditLogs->recordModel('sidebar.deleted', $record, Auth::user(), $request, $previous, null, 'sidebar');
 
         return $this->success(null, 'Sidebar deleted.');

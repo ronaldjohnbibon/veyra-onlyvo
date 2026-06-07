@@ -426,7 +426,12 @@ watch(
       </form>
 
       <DialogFooter class="flex-col gap-2 sm:flex-row sm:justify-between">
-        <Button variant="update" type="button" :disabled="postStore.loading" @click="savePost('draft')">
+        <Button
+          variant="update"
+          type="button"
+          :disabled="postStore.loading"
+          @click="savePost('draft')"
+        >
           <Save class="size-4" />
           Save Draft
         </Button>

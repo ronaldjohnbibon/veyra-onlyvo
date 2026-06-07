@@ -62,10 +62,26 @@ class TemplateCtaSubmissionService
             ->pluck('total', 'status');
 
         return [
-            'new'       => (int) ($counts['new']       ?? 0),
+            'new'       => (int) ($counts['new'] ?? 0),
             'contacted' => (int) ($counts['contacted'] ?? 0),
-            'archived'  => (int) ($counts['archived']  ?? 0),
+            'archived'  => (int) ($counts['archived'] ?? 0),
         ];
+    }
+
+    public function findForTenant(string $tenantId, string $id): ?TemplateCtaSubmission
+    {
+        return TemplateCtaSubmission::query()
+            ->with('template')
+            ->whereKey($id)
+            ->whereHas('template', fn ($query) => $query->where('tenant_id', $tenantId))
+            ->first();
+    }
+
+    public function updateStatus(TemplateCtaSubmission $submission, string $status): TemplateCtaSubmission
+    {
+        $submission->update(['status' => $status]);
+
+        return $submission->fresh('template');
     }
 
     /**

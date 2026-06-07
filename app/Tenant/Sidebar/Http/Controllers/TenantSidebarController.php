@@ -84,7 +84,7 @@ class TenantSidebarController extends Controller
             return $this->error('Sidebar not found.', 404);
         }
 
-        $record->delete();
+        $this->service->delete($record);
 
         return $this->success(null, 'Sidebar deleted.');
     }

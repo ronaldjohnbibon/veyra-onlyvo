@@ -648,7 +648,10 @@ onMounted(() => {
                     <p class="mt-1 text-xs text-muted-foreground">
                       {{ actorLabel(event) }}
                     </p>
-                    <p v-if="event.message" class="mt-2 whitespace-pre-line text-sm text-muted-foreground">
+                    <p
+                      v-if="event.message"
+                      class="mt-2 whitespace-pre-line text-sm text-muted-foreground"
+                    >
                       {{ event.message }}
                     </p>
                   </div>
