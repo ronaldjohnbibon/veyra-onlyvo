@@ -86,7 +86,7 @@ class AdminSidebarSeeder extends Seeder
                             'description' => '',
                             'is_active'   => true,
                             'items'       => [
-                                ['title' => 'Navigation Builder', 'url' => 'sidebar', 'is_active' => true],
+                                ['title' => 'Navigation Builder', 'url' => 'navigation-builder', 'is_active' => true],
                                 ['title' => 'System Settings', 'url' => 'system-settings', 'is_active' => true],
                             ],
                         ],

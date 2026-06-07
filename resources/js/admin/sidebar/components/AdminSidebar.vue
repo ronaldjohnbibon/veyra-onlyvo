@@ -24,6 +24,15 @@ const sidebarStore = useAdminSidebarStore()
 const authStore = useAdminAuthStore()
 
 const data = computed<SidebarRecord | null>(() => sidebarStore.sidebars[0] ?? null)
+const visibleNav = computed(() => {
+  return (data.value?.data.main_nav ?? [])
+    .filter((item) => item.is_active !== false)
+    .map((item) => ({
+      ...item,
+      items: item.items?.filter((child) => child.is_active !== false),
+    }))
+    .filter((item) => item.url !== '#' || item.items?.length)
+})
 
 const currentUser = computed(() => {
   if (!authStore.user) return null
@@ -49,7 +58,7 @@ onMounted(() => {
         <TeamSwitcher :teams="data.data.teams" />
       </SidebarHeader>
       <SidebarContent>
-        <NavMain :items="data.data.main_nav" />
+        <NavMain :items="visibleNav" />
       </SidebarContent>
 
       <SidebarFooter v-if="currentUser">
