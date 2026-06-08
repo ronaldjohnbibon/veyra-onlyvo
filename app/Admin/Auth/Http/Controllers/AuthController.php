@@ -26,6 +26,12 @@ class AuthController extends Controller
     public function login(LoginRequest $request): JsonResponse
     {
         if (! $this->settings->adminIpAllowed($request->ip())) {
+            $this->auditLogs->permission('admin.login.blocked', [
+                'entity_type'  => 'admin_session',
+                'entity_label' => (string) $request->input('email'),
+                'metadata'     => ['reason' => 'ip_not_allowed'],
+            ], null, $request);
+
             return $this->error(__('auth.unauthorized'), 403);
         }
 
@@ -33,6 +39,12 @@ class AuthController extends Controller
         $maxAttempts  = $this->settings->integer('security.login_rate_limit_attempts', 5);
 
         if (RateLimiter::tooManyAttempts($rateLimitKey, $maxAttempts)) {
+            $this->auditLogs->permission('admin.login.rate_limited', [
+                'entity_type'  => 'admin_session',
+                'entity_label' => (string) $request->input('email'),
+                'metadata'     => ['max_attempts' => $maxAttempts],
+            ], null, $request);
+
             return $this->error('Too many login attempts. Please try again later.', 429);
         }
 
@@ -40,20 +52,32 @@ class AuthController extends Controller
 
         if (! $user) {
             RateLimiter::hit($rateLimitKey, $this->settings->integer('security.login_rate_limit_window_minutes', 1) * 60);
+            $this->auditLogs->auth('admin.login.failed', [
+                'severity'     => 'warning',
+                'entity_type'  => 'admin_session',
+                'entity_label' => (string) $request->input('email'),
+                'metadata'     => ['reason' => 'invalid_credentials'],
+            ], null, $request);
 
             return $this->error(__('auth.invalid'), 401);
         }
 
         if ($user->user_type !== UserType::ADMIN || ! $user->is_active) {
+            $this->auditLogs->permission('admin.login.blocked', [
+                'entity_type'  => 'admin_session',
+                'entity_id'    => $user->id,
+                'entity_label' => $user->email,
+                'metadata'     => ['reason' => 'inactive_or_non_admin'],
+            ], $user, $request);
+
             return $this->error(__('auth.unauthorized'), 403);
         }
 
         RateLimiter::clear($rateLimitKey);
-        $this->auditLogs->record([
+        $this->auditLogs->auth('admin.login', [
             'entity_type'  => 'admin_session',
             'entity_id'    => $user->id,
             'entity_label' => $user->email,
-            'action'       => 'admin.login',
         ], $user, $request);
 
         return $this->loginResponse($user);
@@ -62,6 +86,11 @@ class AuthController extends Controller
     public function me(Request $request): JsonResponse
     {
         if (! $this->settings->adminIpAllowed($request->ip())) {
+            $this->auditLogs->permission('admin.logout.blocked', [
+                'entity_type' => 'admin_session',
+                'metadata'    => ['reason' => 'ip_not_allowed'],
+            ], Auth::user(), $request);
+
             return $this->error(__('auth.unauthorized'), 403);
         }
 
@@ -85,11 +114,10 @@ class AuthController extends Controller
         $user = Auth::user();
 
         if ($user) {
-            $this->auditLogs->record([
+            $this->auditLogs->auth('admin.logout', [
                 'entity_type'  => 'admin_session',
                 'entity_id'    => $user->getAuthIdentifier(),
                 'entity_label' => data_get($user, 'email'),
-                'action'       => 'admin.logout',
             ], $user, $request);
         }
 

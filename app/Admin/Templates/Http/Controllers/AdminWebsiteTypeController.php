@@ -2,6 +2,7 @@
 
 namespace App\Admin\Templates\Http\Controllers;
 
+use App\Admin\AuditLogs\Services\AuditLogService;
 use App\Admin\Templates\Http\Requests\WebsiteTypeRequest;
 use App\Admin\Templates\Http\Resources\WebsiteTypeResource;
 use App\Admin\Templates\Models\WebsiteType;
@@ -16,6 +17,7 @@ class AdminWebsiteTypeController extends Controller
 {
     public function __construct(
         private readonly WebsiteTypeService $service,
+        private readonly AuditLogService $auditLogs,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -32,6 +34,7 @@ class AdminWebsiteTypeController extends Controller
         $this->authorizeAdmin();
 
         $type = $this->service->create($request->validated());
+        $this->auditLogs->recordModel('website_type.created', $type, Auth::user(), $request, null, $type->attributesToArray(), 'website_type');
 
         return $this->success(new WebsiteTypeResource($type), 'Website type created.', 201);
     }
@@ -46,7 +49,11 @@ class AdminWebsiteTypeController extends Controller
             return $this->error('Website type not found.', 404);
         }
 
-        return $this->success(new WebsiteTypeResource($this->service->update($type, $request->validated())), 'Website type updated.');
+        $previous = $type->attributesToArray();
+        $updated  = $this->service->update($type, $request->validated());
+        $this->auditLogs->recordModel('website_type.updated', $updated, Auth::user(), $request, $previous, $updated->attributesToArray(), 'website_type');
+
+        return $this->success(new WebsiteTypeResource($updated), 'Website type updated.');
     }
 
     public function destroy(string $websiteType): JsonResponse
@@ -59,9 +66,13 @@ class AdminWebsiteTypeController extends Controller
             return $this->error('Website type not found.', 404);
         }
 
+        $previous = $type->attributesToArray();
+
         if (! $this->service->delete($type)) {
             return $this->error('Website type is still in use.', 422);
         }
+
+        $this->auditLogs->recordModel('website_type.deleted', $type, Auth::user(), request(), $previous, null, 'website_type');
 
         return $this->success(null, 'Website type deleted.');
     }

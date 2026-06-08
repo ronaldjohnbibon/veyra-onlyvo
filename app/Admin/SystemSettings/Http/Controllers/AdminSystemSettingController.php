@@ -2,6 +2,7 @@
 
 namespace App\Admin\SystemSettings\Http\Controllers;
 
+use App\Admin\AuditLogs\Services\AuditLogService;
 use App\Admin\SystemSettings\Http\Requests\SystemSettingBulkRequest;
 use App\Admin\SystemSettings\Http\Requests\SystemSettingEmailTestRequest;
 use App\Admin\SystemSettings\Http\Requests\SystemSettingHistoryIndexRequest;
@@ -24,6 +25,7 @@ class AdminSystemSettingController extends Controller
 {
     public function __construct(
         private readonly SystemSettingService $service,
+        private readonly AuditLogService $auditLogs,
     ) {}
 
     public function index(): JsonResponse
@@ -187,6 +189,17 @@ class AdminSystemSettingController extends Controller
         abort_unless($image, 422);
 
         $path = $image->storePublicly('system-settings', 'public');
+        $this->auditLogs->fileUpload('system_setting.image_uploaded', [
+            'entity_type'  => 'system_setting',
+            'entity_id'    => (string) $request->validated('key'),
+            'entity_label' => (string) $request->validated('key'),
+            'metadata'     => [
+                'path'          => $path,
+                'original_name' => $image->getClientOriginalName(),
+                'size'          => $image->getSize(),
+                'mime_type'     => $image->getMimeType(),
+            ],
+        ], Auth::user(), $request);
 
         return $this->success([
             'key'  => $request->validated('key'),

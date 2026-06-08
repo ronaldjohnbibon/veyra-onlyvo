@@ -11,10 +11,23 @@ export interface AuditLogEntity {
   label: string | null
 }
 
+export type AuditLogCategory =
+  | 'activity'
+  | 'auth'
+  | 'audit'
+  | 'error'
+  | 'notification'
+  | 'system'
+  | 'file_upload'
+  | 'permission'
+  | 'transaction'
+
+export type AuditLogSeverity = 'info' | 'warning' | 'error' | 'critical'
+
 export interface AuditLogRecord {
   id: string
-  scope: 'admin'
-  tenant_id: string | null
+  scope: 'tenant'
+  tenant_id: string
   category: AuditLogCategory
   severity: AuditLogSeverity
   actor: AuditLogActor
@@ -44,28 +57,14 @@ export interface AuditLogParams {
   pageSize?: number
   search?: string
   category?: AuditLogCategory | ''
+  action?: string
   severity?: AuditLogSeverity | ''
   actor?: string
   entity_type?: string
   entity_id?: string
-  tenant_id?: string
-  action?: string
   ip_address?: string
   date_from?: string
   date_to?: string
   sort?: 'occurred_at' | 'category' | 'severity' | 'actor' | 'entity' | 'action' | 'ip_address'
   direction?: 'asc' | 'desc'
 }
-
-export type AuditLogCategory =
-  | 'activity'
-  | 'auth'
-  | 'audit'
-  | 'error'
-  | 'notification'
-  | 'system'
-  | 'file_upload'
-  | 'permission'
-  | 'transaction'
-
-export type AuditLogSeverity = 'info' | 'warning' | 'error' | 'critical'

@@ -207,7 +207,7 @@ const updatePageSize = (event: Event): void => {
         <slot name="filters" />
       </div>
 
-      <div class="flex flex-wrap items-center gap-2">
+      <div v-if="withPageSize || withCreate" class="flex flex-wrap items-center gap-2">
         <NativeSelect
           v-field-help="'Choose how many rows to show.'"
           v-if="withPageSize"

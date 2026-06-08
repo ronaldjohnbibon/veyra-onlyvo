@@ -3,6 +3,7 @@
 namespace App\Tenant\SystemSettings\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Tenant\AuditLogs\Services\TenantLogService;
 use App\Tenant\SystemSettings\Http\Requests\TenantSystemSettingBulkRequest;
 use App\Tenant\SystemSettings\Http\Requests\TenantSystemSettingHistoryIndexRequest;
 use App\Tenant\SystemSettings\Http\Requests\TenantSystemSettingImageUploadRequest;
@@ -16,6 +17,7 @@ class TenantSystemSettingController extends Controller
 {
     public function __construct(
         private readonly TenantSystemSettingService $service,
+        private readonly TenantLogService $logs,
     ) {}
 
     public function index(): JsonResponse
@@ -39,6 +41,13 @@ class TenantSystemSettingController extends Controller
     {
         $tenant  = $this->service->upsertGrouped($this->tenant(), $request->validated('settings'), Auth::user());
         $history = $this->historyPayload($tenant);
+        $this->logs->system('tenant_system_settings.updated', [
+            'tenant_id'    => $tenant->id,
+            'entity_type'  => 'tenant_system_setting',
+            'entity_id'    => $tenant->id,
+            'entity_label' => $tenant->name,
+            'new_value'    => $request->validated('settings'),
+        ], Auth::user(), $request);
 
         return $this->success([
             'groups'  => $this->service->groups($tenant),
@@ -55,6 +64,18 @@ class TenantSystemSettingController extends Controller
         abort_unless($image, 422);
 
         $path = $image->storePublicly("tenant-system-settings/{$tenant->id}", 'public');
+        $this->logs->fileUpload('tenant_system_setting.image_uploaded', [
+            'tenant_id'    => $tenant->id,
+            'entity_type'  => 'tenant_system_setting',
+            'entity_id'    => (string) $request->validated('key'),
+            'entity_label' => (string) $request->validated('key'),
+            'metadata'     => [
+                'path'          => $path,
+                'original_name' => $image->getClientOriginalName(),
+                'size'          => $image->getSize(),
+                'mime_type'     => $image->getMimeType(),
+            ],
+        ], Auth::user(), $request);
 
         return $this->success([
             'key'  => $request->validated('key'),

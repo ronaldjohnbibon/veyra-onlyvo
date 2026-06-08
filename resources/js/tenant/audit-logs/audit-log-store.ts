@@ -1,9 +1,9 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { adminAuditLogService } from '@/admin/audit-logs/api/audit-logs'
-import type { AuditLogParams, AuditLogRecord } from '@/admin/audit-logs/types'
+import { tenantAuditLogService } from '@/tenant/audit-logs/api/audit-logs'
+import type { AuditLogParams, AuditLogRecord } from '@/tenant/audit-logs/types'
 
-export const useAdminAuditLogStore = defineStore('admin-audit-logs', () => {
+export const useTenantAuditLogStore = defineStore('tenant-audit-logs', () => {
   const logs = ref<AuditLogRecord[]>([])
   const selected = ref<AuditLogRecord | null>(null)
   const loading = ref(false)
@@ -17,7 +17,6 @@ export const useAdminAuditLogStore = defineStore('admin-audit-logs', () => {
     severity: '',
     actor: '',
     entity_type: '',
-    tenant_id: '',
     action: '',
     ip_address: '',
     date_from: '',
@@ -31,7 +30,7 @@ export const useAdminAuditLogStore = defineStore('admin-audit-logs', () => {
       loading.value = true
       params.value = { ...params.value, ...newParams }
 
-      const response = await adminAuditLogService.index(params.value)
+      const response = await tenantAuditLogService.index(params.value)
       logs.value = response.data ?? []
       total.value = response.pagination?.total ?? logs.value.length
     } finally {
@@ -42,7 +41,7 @@ export const useAdminAuditLogStore = defineStore('admin-audit-logs', () => {
   const show = async (id: string): Promise<void> => {
     try {
       loading.value = true
-      selected.value = (await adminAuditLogService.show(id)).data
+      selected.value = (await tenantAuditLogService.show(id)).data
     } finally {
       loading.value = false
     }
@@ -51,7 +50,7 @@ export const useAdminAuditLogStore = defineStore('admin-audit-logs', () => {
   const exportLogs = async (): Promise<Blob> => {
     try {
       exporting.value = true
-      return await adminAuditLogService.export(params.value)
+      return await tenantAuditLogService.export(params.value)
     } finally {
       exporting.value = false
     }

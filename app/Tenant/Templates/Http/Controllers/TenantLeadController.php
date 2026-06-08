@@ -3,6 +3,7 @@
 namespace App\Tenant\Templates\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Tenant\AuditLogs\Services\TenantLogService;
 use App\Tenant\SystemSettings\Services\SystemSettingService;
 use App\Tenant\Templates\Http\Requests\TemplateCtaSubmissionIndexRequest;
 use App\Tenant\Templates\Http\Requests\TemplateCtaSubmissionStatusRequest;
@@ -18,6 +19,7 @@ class TenantLeadController extends Controller
     public function __construct(
         private readonly TemplateCtaSubmissionService $service,
         private readonly SystemSettingService $settings,
+        private readonly TenantLogService $logs,
     ) {}
 
     public function index(TemplateCtaSubmissionIndexRequest $request): JsonResponse
@@ -74,7 +76,11 @@ class TenantLeadController extends Controller
             return $this->error('Lead not found.', 404);
         }
 
-        return $this->success(new TemplateCtaSubmissionResource($this->service->updateStatus($record, $request->validated('status'))), 'Lead updated.');
+        $previous = $record->attributesToArray();
+        $updated  = $this->service->updateStatus($record, $request->validated('status'));
+        $this->logs->recordModel('lead.status_updated', $updated, Auth::user(), $request, $previous, $updated->attributesToArray(), 'lead');
+
+        return $this->success(new TemplateCtaSubmissionResource($updated), 'Lead updated.');
     }
 
     public function export(TemplateCtaSubmissionIndexRequest $request): StreamedResponse|JsonResponse

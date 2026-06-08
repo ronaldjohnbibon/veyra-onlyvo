@@ -2,6 +2,7 @@
 
 namespace App\Admin\Users\Http\Controllers;
 
+use App\Admin\AuditLogs\Services\AuditLogService;
 use App\Admin\Users\Http\Requests\AdminUserRequest;
 use App\Admin\Users\Http\Resources\AdminUserResource;
 use App\Admin\Users\Models\User;
@@ -16,6 +17,7 @@ class AdminUserController extends Controller
 {
     public function __construct(
         private readonly AdminUserService $service,
+        private readonly AuditLogService $auditLogs,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -54,6 +56,7 @@ class AdminUserController extends Controller
         $this->authorizeAdmin();
 
         $user = $this->service->create($request->validated())->load('tokens')->loadCount('tokens');
+        $this->auditLogs->recordModel('admin_user.created', $user, Auth::user(), $request, null, $user->attributesToArray(), 'admin_user');
 
         return $this->success(new AdminUserResource($user), 'Admin user created.', 201);
     }
@@ -81,7 +84,9 @@ class AdminUserController extends Controller
             return $this->error('Admin user not found.', 404);
         }
 
-        $updated = $this->service->update($user, $request->validated())->load('tokens')->loadCount('tokens');
+        $previous = $user->attributesToArray();
+        $updated  = $this->service->update($user, $request->validated())->load('tokens')->loadCount('tokens');
+        $this->auditLogs->recordModel('admin_user.updated', $updated, Auth::user(), $request, $previous, $updated->attributesToArray(), 'admin_user');
 
         return $this->success(new AdminUserResource($updated), 'Admin user updated.');
     }
@@ -100,7 +105,9 @@ class AdminUserController extends Controller
             return $this->error('You cannot deactivate your own admin user.', 422);
         }
 
-        $updated = $this->service->deactivate($user)->load('tokens')->loadCount('tokens');
+        $previous = $user->attributesToArray();
+        $updated  = $this->service->deactivate($user)->load('tokens')->loadCount('tokens');
+        $this->auditLogs->recordModel('admin_user.deactivated', $updated, Auth::user(), request(), $previous, $updated->attributesToArray(), 'admin_user');
 
         return $this->success(new AdminUserResource($updated), 'Admin user deactivated.');
     }
@@ -115,7 +122,9 @@ class AdminUserController extends Controller
             return $this->error('Admin user not found.', 404);
         }
 
-        $updated = $this->service->reactivate($user)->load('tokens')->loadCount('tokens');
+        $previous = $user->attributesToArray();
+        $updated  = $this->service->reactivate($user)->load('tokens')->loadCount('tokens');
+        $this->auditLogs->recordModel('admin_user.reactivated', $updated, Auth::user(), request(), $previous, $updated->attributesToArray(), 'admin_user');
 
         return $this->success(new AdminUserResource($updated), 'Admin user reactivated.');
     }
@@ -130,7 +139,15 @@ class AdminUserController extends Controller
             return $this->error('Admin user not found.', 404);
         }
 
-        return $this->success($this->service->createPasswordReset($user), 'Password reset token generated.');
+        $payload = $this->service->createPasswordReset($user);
+        $this->auditLogs->auth('admin_user.password_reset_generated', [
+            'entity_type'  => 'admin_user',
+            'entity_id'    => $user->id,
+            'entity_label' => $user->email,
+            'metadata'     => ['expires_at' => $payload['expires_at'] ?? null],
+        ], Auth::user(), request());
+
+        return $this->success($payload, 'Password reset token generated.');
     }
 
     private function adminUser(string $id): ?User

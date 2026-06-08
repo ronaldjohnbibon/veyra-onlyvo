@@ -3,6 +3,7 @@
 namespace App\Tenant\Templates\Posts\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Tenant\AuditLogs\Services\TenantLogService;
 use App\Tenant\SystemSettings\Services\SystemSettingService;
 use App\Tenant\Templates\Models\Template;
 use App\Tenant\Templates\Posts\Http\Requests\PostFeaturedImageRequest;
@@ -19,6 +20,7 @@ class PostController extends Controller
     public function __construct(
         private readonly PostService $service,
         private readonly SystemSettingService $settings,
+        private readonly TenantLogService $logs,
     ) {}
 
     public function index(Request $request, string $template): JsonResponse
@@ -73,6 +75,7 @@ class PostController extends Controller
         }
 
         $post = $this->service->create($templateRecord, $request->validated());
+        $this->logs->recordModel('post.created', $post, Auth::user(), $request, null, $post->attributesToArray(), 'post');
 
         return $this->success(new PostResource($post), 'Post saved.', 201);
     }
@@ -97,6 +100,18 @@ class PostController extends Controller
             "posts/{$this->tenantId()}/{$templateRecord->id}/featured-images",
             'public',
         );
+        $this->logs->fileUpload('post.featured_image_uploaded', [
+            'tenant_id'    => $this->tenantId(),
+            'entity_type'  => 'template',
+            'entity_id'    => $templateRecord->id,
+            'entity_label' => $templateRecord->name,
+            'metadata'     => [
+                'path'          => $path,
+                'original_name' => $image->getClientOriginalName(),
+                'size'          => $image->getSize(),
+                'mime_type'     => $image->getMimeType(),
+            ],
+        ], Auth::user(), $request);
 
         return $this->success([
             'url'  => '/storage/'.$path,
@@ -133,7 +148,9 @@ class PostController extends Controller
             return $this->error('Post not found.', 404);
         }
 
-        $updated = $this->service->update($templateRecord, $postRecord, $request->validated());
+        $previous = $postRecord->attributesToArray();
+        $updated  = $this->service->update($templateRecord, $postRecord, $request->validated());
+        $this->logs->recordModel('post.updated', $updated, Auth::user(), $request, $previous, $updated->attributesToArray(), 'post');
 
         return $this->success(new PostResource($updated), 'Post saved.');
     }
@@ -151,7 +168,9 @@ class PostController extends Controller
             return $this->error('Post not found.', 404);
         }
 
+        $previous = $postRecord->attributesToArray();
         $this->service->delete($postRecord);
+        $this->logs->recordModel('post.deleted', $postRecord, Auth::user(), request(), $previous, null, 'post');
 
         return $this->success(null, 'Post deleted.');
     }
@@ -169,7 +188,11 @@ class PostController extends Controller
             return $this->error('Post not found.', 404);
         }
 
-        return $this->success(new PostResource($this->service->publish($postRecord)), 'Post published.');
+        $previous = $postRecord->attributesToArray();
+        $updated  = $this->service->publish($postRecord);
+        $this->logs->recordModel('post.published', $updated, Auth::user(), request(), $previous, $updated->attributesToArray(), 'post');
+
+        return $this->success(new PostResource($updated), 'Post published.');
     }
 
     public function unpublish(string $template, string $post): JsonResponse
@@ -185,7 +208,11 @@ class PostController extends Controller
             return $this->error('Post not found.', 404);
         }
 
-        return $this->success(new PostResource($this->service->unpublish($postRecord)), 'Post unpublished.');
+        $previous = $postRecord->attributesToArray();
+        $updated  = $this->service->unpublish($postRecord);
+        $this->logs->recordModel('post.unpublished', $updated, Auth::user(), request(), $previous, $updated->attributesToArray(), 'post');
+
+        return $this->success(new PostResource($updated), 'Post unpublished.');
     }
 
     private function tenantTemplate(string $template): ?Template

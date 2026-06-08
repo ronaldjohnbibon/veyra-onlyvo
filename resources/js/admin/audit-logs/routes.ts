@@ -2,8 +2,8 @@ import type { RouteRecordRaw } from 'vue-router'
 
 const routes: RouteRecordRaw[] = [
   {
-    path: '/admin/audit-logs',
-    name: 'admin.audit-logs.index',
+    path: '/admin/logs',
+    name: 'admin.logs.index',
     component: () => import('@/admin/audit-logs/pages/AdminAuditLogsPage.vue'),
     meta: {
       requiresAdminAuth: true,
@@ -11,6 +11,10 @@ const routes: RouteRecordRaw[] = [
       title: 'Audit Logs',
       description: 'Review centralized platform audit activity',
     },
+  },
+  {
+    path: '/admin/audit-logs',
+    redirect: { name: 'admin.logs.index' },
   },
 ]
 

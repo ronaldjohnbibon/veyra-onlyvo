@@ -3,6 +3,7 @@
 namespace App\Tenant\Sidebar\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Tenant\AuditLogs\Services\TenantLogService;
 use App\Tenant\Sidebar\Http\Requests\SidebarRequest;
 use App\Tenant\Sidebar\Http\Resources\SidebarResource;
 use App\Tenant\Sidebar\Models\Sidebar;
@@ -15,6 +16,7 @@ class TenantSidebarController extends Controller
 {
     public function __construct(
         private readonly SidebarService $service,
+        private readonly TenantLogService $logs,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -39,6 +41,7 @@ class TenantSidebarController extends Controller
             'is_admin'  => false,
             'tenant_id' => $this->tenantId(),
         ]));
+        $this->logs->recordModel('sidebar.created', $sidebar, Auth::user(), $request, null, $sidebar->attributesToArray(), 'sidebar');
 
         return $this->success(new SidebarResource($sidebar), 'Sidebar created.', 201);
     }
@@ -66,10 +69,12 @@ class TenantSidebarController extends Controller
             return $this->error('Sidebar not found.', 404);
         }
 
-        $updated = $this->service->update($record, array_merge($request->validated(), [
+        $previous = $record->attributesToArray();
+        $updated  = $this->service->update($record, array_merge($request->validated(), [
             'is_admin'  => false,
             'tenant_id' => $this->tenantId(),
         ]));
+        $this->logs->recordModel('sidebar.updated', $updated, Auth::user(), $request, $previous, $updated->attributesToArray(), 'sidebar');
 
         return $this->success(new SidebarResource($updated), 'Sidebar updated.');
     }
@@ -84,7 +89,9 @@ class TenantSidebarController extends Controller
             return $this->error('Sidebar not found.', 404);
         }
 
+        $previous = $record->attributesToArray();
         $this->service->delete($record);
+        $this->logs->recordModel('sidebar.deleted', $record, Auth::user(), request(), $previous, null, 'sidebar');
 
         return $this->success(null, 'Sidebar deleted.');
     }

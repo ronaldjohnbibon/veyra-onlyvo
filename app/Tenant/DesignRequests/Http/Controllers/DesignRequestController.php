@@ -3,6 +3,7 @@
 namespace App\Tenant\DesignRequests\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Tenant\AuditLogs\Services\TenantLogService;
 use App\Tenant\DesignRequests\Http\Requests\DesignRequestActionRequest;
 use App\Tenant\DesignRequests\Http\Requests\DesignRequestCommentRequest;
 use App\Tenant\DesignRequests\Http\Requests\DesignRequestRequest;
@@ -22,6 +23,7 @@ class DesignRequestController extends Controller
         private readonly DesignRequestService $service,
         private readonly SystemSettingService $settings,
         private readonly TenantNotificationService $notifications,
+        private readonly TenantLogService $logs,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -69,9 +71,18 @@ class DesignRequestController extends Controller
 
         $designRequest = $this->service->create($user, $request->validated());
         $tenant        = Tenant::query()->find($user->tenant_id);
+        $this->logs->recordModel('design_request.created', $designRequest, $user, $request, null, $designRequest->attributesToArray(), 'design_request', null, [
+            'files_count' => $designRequest->files()->count(),
+        ]);
 
         if ($tenant) {
             $this->notifications->sendDesignRequest($designRequest, $tenant);
+            $this->logs->notification('design_request.notification_sent', [
+                'tenant_id'    => $tenant->id,
+                'entity_type'  => 'design_request',
+                'entity_id'    => $designRequest->id,
+                'entity_label' => $designRequest->title,
+            ], $user, $request);
         }
 
         return $this->success(new DesignRequestResource($designRequest->load('events')), 'Design request submitted.', 201);
@@ -113,8 +124,16 @@ class DesignRequestController extends Controller
             return $this->error('Design request not found.', 404);
         }
 
+        $updated = $this->service->comment($record, $user, $request->validated('message'));
+        $this->logs->activity('design_request.comment_added', [
+            'tenant_id'    => $record->tenant_id,
+            'entity_type'  => 'design_request',
+            'entity_id'    => $record->id,
+            'entity_label' => $record->title,
+        ], $user, $request);
+
         return $this->success(
-            new DesignRequestResource($this->service->comment($record, $user, $request->validated('message'))),
+            new DesignRequestResource($updated),
             'Comment added.',
         );
     }
@@ -139,8 +158,12 @@ class DesignRequestController extends Controller
 
         $data = $request->validated();
 
+        $previous = $record->attributesToArray();
+        $updated  = $this->service->tenantAction($record, $user, (string) $data['action'], $data['message'] ?? null);
+        $this->logs->recordModel('design_request.'.$data['action'], $updated, $user, $request, $previous, $updated->attributesToArray(), 'design_request');
+
         return $this->success(
-            new DesignRequestResource($this->service->tenantAction($record, $user, (string) $data['action'], $data['message'] ?? null)),
+            new DesignRequestResource($updated),
             'Request updated.',
         );
     }

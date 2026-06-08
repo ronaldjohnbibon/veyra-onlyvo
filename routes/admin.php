@@ -22,8 +22,11 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
         Route::post('logout', [AuthController::class, 'logout']);
 
         Route::get('dashboard', [AdminDashboardController::class, 'index'])->name('dashboard.index');
+        Route::get('logs/export', [AdminAuditLogController::class, 'export'])->name('logs.export');
+        Route::get('logs/{log}', [AdminAuditLogController::class, 'show'])->name('logs.show');
+        Route::get('logs', [AdminAuditLogController::class, 'index'])->name('logs.index');
         Route::get('audit-logs/export', [AdminAuditLogController::class, 'export'])->name('audit-logs.export');
-        Route::get('audit-logs/{auditLog}', [AdminAuditLogController::class, 'show'])->name('audit-logs.show');
+        Route::get('audit-logs/{log}', [AdminAuditLogController::class, 'show'])->name('audit-logs.show');
         Route::get('audit-logs', [AdminAuditLogController::class, 'index'])->name('audit-logs.index');
         Route::get('operations', [AdminOperationsController::class, 'index'])->name('operations.index');
 

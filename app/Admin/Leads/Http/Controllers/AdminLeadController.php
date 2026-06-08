@@ -2,6 +2,7 @@
 
 namespace App\Admin\Leads\Http\Controllers;
 
+use App\Admin\AuditLogs\Services\AuditLogService;
 use App\Admin\Leads\Http\Requests\AdminLeadIndexRequest;
 use App\Admin\Leads\Http\Requests\AdminLeadStatusRequest;
 use App\Admin\Leads\Http\Resources\AdminLeadResource;
@@ -17,6 +18,7 @@ class AdminLeadController extends Controller
 {
     public function __construct(
         private readonly AdminLeadService $service,
+        private readonly AuditLogService $auditLogs,
     ) {}
 
     public function index(AdminLeadIndexRequest $request): JsonResponse
@@ -49,7 +51,13 @@ class AdminLeadController extends Controller
             return $this->error('Lead not found.', 404);
         }
 
-        return $this->success(new AdminLeadResource($this->service->setStatus($record, $request->validated('status'))), 'Lead updated.');
+        $previous = $record->attributesToArray();
+        $updated  = $this->service->setStatus($record, $request->validated('status'));
+        $this->auditLogs->recordModel('lead.status_updated', $updated, Auth::user(), $request, $previous, $updated->attributesToArray(), 'lead', null, [
+            'tenant_id' => data_get($updated, 'template.tenant_id'),
+        ]);
+
+        return $this->success(new AdminLeadResource($updated), 'Lead updated.');
     }
 
     public function export(AdminLeadIndexRequest $request): StreamedResponse

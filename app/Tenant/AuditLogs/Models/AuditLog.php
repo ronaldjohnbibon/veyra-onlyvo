@@ -1,14 +1,20 @@
 <?php
 
-namespace App\Admin\AuditLogs\Models;
+namespace App\Tenant\AuditLogs\Models;
 
+use App\Tenant\Tenants\Models\Tenant;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Sprout\Attributes\TenantRelation;
+use Sprout\Database\Eloquent\Concerns\BelongsToTenant;
 
 class AuditLog extends Model
 {
-    use HasFactory, HasUuids;
+    use BelongsToTenant, HasFactory, HasUuids;
+
+    protected $table = 'tenant_audit_logs';
 
     protected $fillable = [
         'scope',
@@ -37,4 +43,10 @@ class AuditLog extends Model
         'metadata'       => 'array',
         'occurred_at'    => 'datetime',
     ];
+
+    #[TenantRelation]
+    public function tenant(): BelongsTo
+    {
+        return $this->belongsTo(Tenant::class);
+    }
 }

@@ -1,6 +1,7 @@
 <?php
 
 use App\Tenant\Account\Http\Controllers\AccountController;
+use App\Tenant\AuditLogs\Http\Controllers\TenantAuditLogController;
 use App\Tenant\Auth\Http\Controllers\AuthController;
 use App\Tenant\Dashboard\Http\Controllers\AnalyticsController;
 use App\Tenant\Dashboard\Http\Controllers\PublicCtaTrackingController;
@@ -36,6 +37,10 @@ Route::prefix('app')->name('app.')->group(function (): void {
             Route::get('dashboard', [TenantDashboardController::class, 'index'])->name('dashboard.index');
             Route::get('analytics/export', [AnalyticsController::class, 'export'])->name('analytics.export');
             Route::get('analytics', [AnalyticsController::class, 'index'])->name('analytics.index');
+
+            Route::get('logs/export', [TenantAuditLogController::class, 'export'])->name('logs.export');
+            Route::get('logs/{log}', [TenantAuditLogController::class, 'show'])->name('logs.show');
+            Route::get('logs', [TenantAuditLogController::class, 'index'])->name('logs.index');
 
             Route::get('leads/export', [TenantLeadController::class, 'export'])->name('leads.export');
             Route::get('leads', [TenantLeadController::class, 'index'])->name('leads.index');

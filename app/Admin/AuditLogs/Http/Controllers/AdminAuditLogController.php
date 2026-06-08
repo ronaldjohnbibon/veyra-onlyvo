@@ -27,11 +27,13 @@ class AdminAuditLogController extends Controller
         return $this->success(AuditLogResource::collection($logs), 'Audit logs retrieved.');
     }
 
-    public function show(string $auditLog): JsonResponse
+    public function show(string $log): JsonResponse
     {
         $this->authorizeAdmin();
 
-        $log = AuditLog::query()->find($auditLog);
+        $log = AuditLog::query()
+            ->where('scope', 'admin')
+            ->find($log);
 
         if (! $log) {
             return $this->error('Audit log not found.', 404);
@@ -47,19 +49,23 @@ class AdminAuditLogController extends Controller
         $rows = $this->service->export($request->validated());
         $csv  = fopen('php://temp', 'r+');
 
-        fputcsv($csv, ['Timestamp', 'Actor', 'IP Address', 'Entity Type', 'Entity ID', 'Entity Label', 'Action', 'Previous Value', 'New Value']);
+        fputcsv($csv, ['Timestamp', 'Scope', 'Tenant ID', 'Category', 'Severity', 'Action', 'Actor', 'Entity Type', 'Entity ID', 'Entity Label', 'IP Address', 'User Agent', 'Summary']);
 
         foreach ($rows as $row) {
             fputcsv($csv, [
                 $row['occurred_at'],
+                $row['scope'],
+                $row['tenant_id'],
+                $row['category'],
+                $row['severity'],
+                $row['action'],
                 $row['actor'],
-                $row['ip_address'],
                 $row['entity_type'],
                 $row['entity_id'],
                 $row['entity_label'],
-                $row['action'],
-                $row['previous_value'],
-                $row['new_value'],
+                $row['ip_address'],
+                $row['user_agent'],
+                $row['summary'],
             ]);
         }
 

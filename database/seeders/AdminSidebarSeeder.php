@@ -46,7 +46,7 @@ class AdminSidebarSeeder extends Seeder
                                 ['title' => 'Tenants', 'url' => 'tenants', 'is_active' => true],
                                 ['title' => 'Admin Users', 'url' => 'admin-users', 'is_active' => true],
                                 ['title' => 'Operations', 'url' => 'operations', 'icon' => 'Wrench', 'is_active' => true],
-                                ['title' => 'Audit Logs', 'url' => 'audit-logs', 'icon' => 'ShieldCheck', 'is_active' => true],
+                                ['title' => 'Audit Logs', 'url' => 'logs', 'icon' => 'ShieldCheck', 'is_active' => true],
                             ],
                         ],
                         [

@@ -3,6 +3,7 @@
 namespace App\Tenant\Templates\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Tenant\AuditLogs\Services\TenantLogService;
 use App\Tenant\SystemSettings\Services\SystemSettingService;
 use App\Tenant\Templates\Http\Requests\TemplateRequest;
 use App\Tenant\Templates\Http\Resources\TemplateResource;
@@ -21,6 +22,7 @@ class TemplateController extends Controller
         private readonly TemplateService $service,
         private readonly TemplateCatalogService $catalog,
         private readonly SystemSettingService $settings,
+        private readonly TenantLogService $logs,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -55,6 +57,7 @@ class TemplateController extends Controller
         $template = $this->service->create(array_merge($request->validated(), [
             'tenant_id' => $this->tenantId(),
         ]));
+        $this->logs->recordModel('template.created', $template, Auth::user(), $request, null, $template->attributesToArray(), 'template');
 
         return $this->success(new TemplateResource($template), 'Template saved.', 201);
     }
@@ -90,9 +93,11 @@ class TemplateController extends Controller
             return $this->error('Template not found.', 404);
         }
 
-        $updated = $this->service->update($record, array_merge($request->validated(), [
+        $previous = $record->attributesToArray();
+        $updated  = $this->service->update($record, array_merge($request->validated(), [
             'tenant_id' => $this->tenantId(),
         ]));
+        $this->logs->recordModel('template.updated', $updated, Auth::user(), $request, $previous, $updated->attributesToArray(), 'template');
 
         return $this->success(new TemplateResource($updated), 'Template saved.');
     }
@@ -111,7 +116,9 @@ class TemplateController extends Controller
             return $this->error('Template not found.', 404);
         }
 
-        $updated = $this->service->resetToDefault($record);
+        $previous = $record->attributesToArray();
+        $updated  = $this->service->resetToDefault($record);
+        $this->logs->recordModel('template.reset_default', $updated, Auth::user(), request(), $previous, $updated->attributesToArray(), 'template');
 
         return $this->success(new TemplateResource($updated), 'Template restored to default design.');
     }
@@ -130,7 +137,9 @@ class TemplateController extends Controller
             return $this->error('Template not found.', 404);
         }
 
+        $previous = $record->attributesToArray();
         $this->service->delete($record);
+        $this->logs->recordModel('template.deleted', $record, Auth::user(), request(), $previous, null, 'template');
 
         return $this->success(null, 'Template deleted.');
     }

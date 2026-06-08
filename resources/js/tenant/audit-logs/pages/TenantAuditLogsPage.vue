@@ -12,14 +12,14 @@ import {
 import { Input } from '@/shared/components/ui/input'
 import { NativeSelect } from '@/shared/components/ui/native-select'
 import { formatDisplayDate } from '@/shared/utils/date'
-import { useAdminAuditLogStore } from '@/admin/audit-logs/audit-log-store'
-import type { AuditLogParams, AuditLogRecord } from '@/admin/audit-logs/types'
+import { useTenantAuditLogStore } from '@/tenant/audit-logs/audit-log-store'
+import type { AuditLogParams, AuditLogRecord } from '@/tenant/audit-logs/types'
 import { Download, FileClock, Search } from 'lucide-vue-next'
 import { computed, onMounted, ref } from 'vue'
 
 type SortDirection = 'asc' | 'desc' | ''
 
-const auditStore = useAdminAuditLogStore()
+const auditStore = useTenantAuditLogStore()
 const detailsOpen = ref(false)
 
 const columns = [
@@ -51,10 +51,6 @@ const updateSeverity = (value?: unknown): void => {
   updateFilters({ severity: String(value ?? '') as AuditLogParams['severity'] })
 }
 
-const updatePageSize = (value?: unknown): void => {
-  auditStore.index({ pageSize: Number(value || 15), page: 1 })
-}
-
 const updateSort = (key: string, direction: SortDirection): void => {
   auditStore.index({
     sort: direction ? (key as AuditLogParams['sort']) : 'occurred_at',
@@ -78,11 +74,13 @@ const entityLabel = (log: AuditLogRecord): string => {
 const actionVariant = (
   action: string
 ): 'success' | 'warning' | 'destructive' | 'info' | 'neutral' | 'outline' => {
-  if (action.includes('deleted') || action.includes('deactivated')) return 'destructive'
+  if (action.includes('deleted') || action.includes('deactivated') || action.includes('failed')) {
+    return 'destructive'
+  }
   if (action.includes('created') || action.includes('published') || action.includes('login')) {
     return 'success'
   }
-  if (action.includes('restored') || action.includes('rolled_back')) return 'warning'
+  if (action.includes('restored') || action.includes('reset')) return 'warning'
   if (action.includes('updated') || action.includes('changed')) return 'info'
 
   return 'outline'
@@ -128,7 +126,7 @@ const downloadBlob = (blob: Blob, filename: string): void => {
 }
 
 const exportLogs = async (): Promise<void> => {
-  downloadBlob(await auditStore.exportLogs(), 'admin-logs.csv')
+  downloadBlob(await auditStore.exportLogs(), 'tenant-audit-logs.csv')
 }
 
 onMounted(() => {
@@ -143,8 +141,8 @@ onMounted(() => {
         <div>
           <h2 class="module-container-title">Audit Logs</h2>
           <p class="module-container-description">
-            Search and review platform actions across tenants, templates, design requests, settings,
-            navigation, and admin sessions.
+            Review workspace authentication, settings, content, navigation, request, file, and
+            notification events.
           </p>
         </div>
         <Button variant="navigate" size="sm" :disabled="auditStore.exporting" @click="exportLogs">
@@ -154,7 +152,6 @@ onMounted(() => {
       </div>
 
       <BaseTable
-        class="w-full min-w-0"
         :columns="columns"
         :data="auditStore.logs"
         :page="page"
@@ -164,134 +161,88 @@ onMounted(() => {
         :loading="auditStore.loading"
         :sort-key="sortKey"
         :sort-direction="sortDirection"
+        with-search
         with-details
+        with-page-size
         empty-title="No audit logs found"
-        empty-text="Tracked administrative actions will appear here after the audit table is migrated."
+        empty-text="Workspace activity and audit events will appear here after the audit table is migrated."
         search-placeholder="Search actor, entity, action, or IP..."
         @details="openDetails"
         @update:page="auditStore.index({ page: $event })"
+        @update:page-size="auditStore.index({ pageSize: $event, page: 1 })"
+        @update:search="auditStore.index({ search: $event, page: 1 })"
         @update:sort="updateSort"
       >
         <template #filters>
-          <div
-            class="grid w-full min-w-0 gap-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 [&_[data-slot=native-select-wrapper]]:w-full"
+          <NativeSelect
+            :model-value="auditStore.params.category ?? ''"
+            class="h-9 min-w-40"
+            @update:model-value="updateCategory"
           >
-            <Input
-              :model-value="search"
-              class="h-9 w-full min-w-0 sm:col-span-2"
-              type="search"
-              placeholder="Search actor, entity, action, or IP..."
-              @update:model-value="updateFilters({ search: String($event ?? '') })"
-            />
+            <option value="">All categories</option>
+            <option value="activity">Activity</option>
+            <option value="auth">Auth</option>
+            <option value="audit">Audit</option>
+            <option value="error">Error</option>
+            <option value="notification">Notification</option>
+            <option value="system">System</option>
+            <option value="file_upload">File upload</option>
+            <option value="permission">Permission</option>
+            <option value="transaction">Transaction</option>
+          </NativeSelect>
 
-            <NativeSelect
-              :model-value="auditStore.params.category ?? ''"
-              class="h-9 w-full min-w-0"
-              @update:model-value="updateCategory"
-            >
-              <option value="">All categories</option>
-              <option value="activity">Activity</option>
-              <option value="auth">Auth</option>
-              <option value="audit">Audit</option>
-              <option value="error">Error</option>
-              <option value="notification">Notification</option>
-              <option value="system">System</option>
-              <option value="file_upload">File upload</option>
-              <option value="permission">Permission</option>
-              <option value="transaction">Transaction</option>
-            </NativeSelect>
+          <NativeSelect
+            :model-value="auditStore.params.severity ?? ''"
+            class="h-9 min-w-36"
+            @update:model-value="updateSeverity"
+          >
+            <option value="">All severities</option>
+            <option value="info">Info</option>
+            <option value="warning">Warning</option>
+            <option value="error">Error</option>
+            <option value="critical">Critical</option>
+          </NativeSelect>
 
-            <NativeSelect
-              :model-value="auditStore.params.severity ?? ''"
-              class="h-9 w-full min-w-0"
-              @update:model-value="updateSeverity"
-            >
-              <option value="">All severities</option>
-              <option value="info">Info</option>
-              <option value="warning">Warning</option>
-              <option value="error">Error</option>
-              <option value="critical">Critical</option>
-            </NativeSelect>
+          <NativeSelect
+            :model-value="auditStore.params.entity_type ?? ''"
+            class="h-9 min-w-44"
+            @update:model-value="updateFilters({ entity_type: String($event ?? '') })"
+          >
+            <option value="">All entities</option>
+            <option value="tenant_user">Users</option>
+            <option value="template">Templates</option>
+            <option value="post">Posts</option>
+            <option value="lead">Leads</option>
+            <option value="design_request">Design requests</option>
+            <option value="tenant_system_setting">System settings</option>
+            <option value="sidebar">Sidebars</option>
+            <option value="tenant_session">Sessions</option>
+          </NativeSelect>
 
-            <NativeSelect
-              :model-value="auditStore.params.entity_type ?? ''"
-              class="h-9 w-full min-w-0"
-              @update:model-value="updateFilters({ entity_type: String($event ?? '') })"
-            >
-              <option value="">All entities</option>
-              <option value="tenant">Tenants</option>
-              <option value="template">Templates</option>
-              <option value="design_request">Design requests</option>
-              <option value="system_setting">System settings</option>
-              <option value="sidebar">Sidebars</option>
-              <option value="admin_session">Admin sessions</option>
-              <option value="admin_user">Admin users</option>
-              <option value="website_type">Website types</option>
-            </NativeSelect>
-
-            <NativeSelect
-              :model-value="auditStore.params.action ?? ''"
-              class="h-9 w-full min-w-0"
-              @update:model-value="updateFilters({ action: String($event ?? '') })"
-            >
-              <option value="">All actions</option>
-              <option value="tenant.created">Tenant created</option>
-              <option value="tenant.updated">Tenant updated</option>
-              <option value="tenant.deleted">Tenant deleted</option>
-              <option value="tenant.status_changed">Tenant status changed</option>
-              <option value="template.updated">Template updated</option>
-              <option value="template.published">Template published</option>
-              <option value="design_request.updated">Design request updated</option>
-              <option value="system_setting.updated">System setting updated</option>
-              <option value="sidebar.updated">Sidebar updated</option>
-              <option value="admin.login">Admin login</option>
-              <option value="admin.logout">Admin logout</option>
-            </NativeSelect>
-
-            <Input
-              :model-value="auditStore.params.tenant_id ?? ''"
-              class="h-9 w-full min-w-0"
-              placeholder="Tenant ID"
-              @update:model-value="updateFilters({ tenant_id: String($event ?? '') })"
-            />
-            <Input
-              :model-value="auditStore.params.actor ?? ''"
-              class="h-9 w-full min-w-0"
-              placeholder="Actor"
-              @update:model-value="updateFilters({ actor: String($event ?? '') })"
-            />
-            <Input
-              :model-value="auditStore.params.ip_address ?? ''"
-              class="h-9 w-full min-w-0"
-              placeholder="IP address"
-              @update:model-value="updateFilters({ ip_address: String($event ?? '') })"
-            />
-            <div class="grid min-w-0 grid-cols-2 gap-2">
-              <Input
-                :model-value="auditStore.params.date_from ?? ''"
-                class="h-9 w-full min-w-0"
-                type="date"
-                @update:model-value="updateFilters({ date_from: String($event ?? '') })"
-              />
-              <Input
-                :model-value="auditStore.params.date_to ?? ''"
-                class="h-9 w-full min-w-0"
-                type="date"
-                @update:model-value="updateFilters({ date_to: String($event ?? '') })"
-              />
-            </div>
-
-            <NativeSelect
-              :model-value="String(pageSize)"
-              class="h-9 w-full min-w-0"
-              @update:model-value="updatePageSize"
-            >
-              <option value="10">10 rows</option>
-              <option value="15">15 rows</option>
-              <option value="25">25 rows</option>
-              <option value="50">50 rows</option>
-            </NativeSelect>
-          </div>
+          <Input
+            :model-value="auditStore.params.actor ?? ''"
+            class="h-9 min-w-44 sm:max-w-52"
+            placeholder="Actor"
+            @update:model-value="updateFilters({ actor: String($event ?? '') })"
+          />
+          <Input
+            :model-value="auditStore.params.ip_address ?? ''"
+            class="h-9 min-w-36 sm:max-w-44"
+            placeholder="IP address"
+            @update:model-value="updateFilters({ ip_address: String($event ?? '') })"
+          />
+          <Input
+            :model-value="auditStore.params.date_from ?? ''"
+            class="h-9 min-w-36 sm:max-w-40"
+            type="date"
+            @update:model-value="updateFilters({ date_from: String($event ?? '') })"
+          />
+          <Input
+            :model-value="auditStore.params.date_to ?? ''"
+            class="h-9 min-w-36 sm:max-w-40"
+            type="date"
+            @update:model-value="updateFilters({ date_to: String($event ?? '') })"
+          />
         </template>
 
         <template #empty-icon>
@@ -304,13 +255,6 @@ onMounted(() => {
           </span>
         </template>
 
-        <template #cell-actor="{ row }">
-          <div>
-            <p class="text-sm font-medium">{{ actorLabel(row) }}</p>
-            <p class="text-xs text-muted-foreground">{{ row.actor.email || row.actor.type }}</p>
-          </div>
-        </template>
-
         <template #cell-category="{ row }">
           <Badge variant="neutral">{{ labelFor(row.category) }}</Badge>
         </template>
@@ -319,15 +263,22 @@ onMounted(() => {
           <Badge :variant="severityVariant(row.severity)">{{ labelFor(row.severity) }}</Badge>
         </template>
 
+        <template #cell-action="{ row }">
+          <Badge :variant="actionVariant(row.action)">{{ labelFor(row.action) }}</Badge>
+        </template>
+
+        <template #cell-actor="{ row }">
+          <div>
+            <p class="text-sm font-medium">{{ actorLabel(row) }}</p>
+            <p class="text-xs text-muted-foreground">{{ row.actor.email || row.actor.type }}</p>
+          </div>
+        </template>
+
         <template #cell-entity="{ row }">
           <div>
             <p class="max-w-64 truncate text-sm font-medium">{{ entityLabel(row) }}</p>
             <p class="text-xs text-muted-foreground">{{ labelFor(row.entity.type) }}</p>
           </div>
-        </template>
-
-        <template #cell-action="{ row }">
-          <Badge :variant="actionVariant(row.action)">{{ labelFor(row.action) }}</Badge>
         </template>
 
         <template #cell-ip_address="{ row }">
@@ -347,7 +298,7 @@ onMounted(() => {
           <DialogHeader>
             <DialogTitle>Audit Log Detail</DialogTitle>
             <DialogDescription>
-              Actor, entity, timestamp, IP address, and recorded before/after values.
+              Actor, entity, timestamp, request context, and recorded before/after values.
             </DialogDescription>
           </DialogHeader>
 

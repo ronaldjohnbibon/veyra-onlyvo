@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Admin\AuditLogs\Http\Requests;
+namespace App\Tenant\AuditLogs\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -20,12 +20,11 @@ class AuditLogIndexRequest extends FormRequest
         return [
             'search'      => ['nullable', 'string', 'max:255'],
             'category'    => ['nullable', 'string', Rule::in(['activity', 'auth', 'audit', 'error', 'notification', 'system', 'file_upload', 'permission', 'transaction'])],
+            'action'      => ['nullable', 'string', 'max:120'],
             'severity'    => ['nullable', 'string', Rule::in(['info', 'warning', 'error', 'critical'])],
             'actor'       => ['nullable', 'string', 'max:255'],
             'entity_type' => ['nullable', 'string', 'max:80'],
             'entity_id'   => ['nullable', 'string', 'max:255'],
-            'tenant_id'   => ['nullable', 'string', 'max:255'],
-            'action'      => ['nullable', 'string', 'max:120'],
             'ip_address'  => ['nullable', 'string', 'max:45'],
             'date_from'   => ['nullable', 'date'],
             'date_to'     => ['nullable', 'date'],

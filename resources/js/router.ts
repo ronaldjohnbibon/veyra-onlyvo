@@ -3,6 +3,7 @@ import type { RouteRecordRaw } from 'vue-router'
 import { useAuthStore } from '@/tenant/auth/auth-store'
 import { useAdminAuthStore } from '@/admin/auth/auth-store'
 import accountRoutes from '@/tenant/account/routes'
+import auditLogRoutes from '@/tenant/audit-logs/routes'
 import authRoutes from '@/tenant/auth/routes'
 import adminAuthRoutes from '@/admin/auth/routes'
 import adminAuditLogRoutes from '@/admin/audit-logs/routes'
@@ -29,6 +30,7 @@ const routes: RouteRecordRaw[] = [
   ...marketingRoutes,
   ...authRoutes,
   ...accountRoutes,
+  ...auditLogRoutes,
   ...adminAuthRoutes,
   ...adminAuditLogRoutes,
   ...adminDashboardRoutes,

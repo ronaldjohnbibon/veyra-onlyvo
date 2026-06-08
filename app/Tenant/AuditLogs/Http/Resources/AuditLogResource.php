@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Admin\AuditLogs\Http\Resources;
+namespace App\Tenant\AuditLogs\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -24,12 +24,12 @@ class AuditLogResource extends JsonResource
                 'name'  => $this->actor_name,
                 'email' => $this->actor_email,
             ],
-            'ip_address' => $this->ip_address,
-            'entity'     => [
+            'entity' => [
                 'type'  => $this->entity_type,
                 'id'    => $this->entity_id,
                 'label' => $this->entity_label,
             ],
+            'ip_address'     => $this->ip_address,
             'user_agent'     => $this->user_agent,
             'action'         => $this->action,
             'summary'        => str($this->action)->headline()->toString().' on '.($this->entity_label ?: $this->entity_id ?: $this->entity_type),

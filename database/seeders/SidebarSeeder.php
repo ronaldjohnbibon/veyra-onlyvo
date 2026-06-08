@@ -85,6 +85,7 @@ class SidebarSeeder extends Seeder
                             'is_active'   => true,
                             'items'       => [
                                 ['title' => 'System Settings', 'url' => 'system-settings', 'is_active' => true],
+                                ['title' => 'Audit Logs', 'url' => 'logs', 'icon' => 'ShieldCheck', 'is_active' => true],
                                 ['title' => 'Account/Profile', 'url' => 'account', 'is_active' => true],
                                 ['title' => 'Team Management', 'url' => 'team-management', 'is_active' => true],
                             ],
