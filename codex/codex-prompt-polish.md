@@ -9,4 +9,4 @@ Requirements:
 
 Prompt:
 
-Read codex.md, I want you to check the whole app if it still follows what's on codex.md. If not, update what's not following the codex.md
+I want you to apply the same UI/implementation of tenant navigation-builder to admin navigation-builder.
