@@ -155,7 +155,7 @@ class AdminDesignRequestController extends Controller
 
         $this->service->review($record, $request->validated(), Auth::id());
 
-        return $this->success(new DesignRequestResource($record->fresh(['files', 'events', 'tenant', 'requester'])), 'Design request updated.');
+        return $this->success(new DesignRequestResource($record->fresh(['files', 'events', 'tenant', 'requester', 'assignee', 'linkedTemplate'])), 'Design request updated.');
     }
 
     public function comment(AdminDesignRequestCommentRequest $request, string $designRequest): JsonResponse

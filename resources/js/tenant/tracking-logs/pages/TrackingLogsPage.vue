@@ -32,6 +32,7 @@ import {
   UserRound,
 } from 'lucide-vue-next'
 import { computed, onMounted, ref } from 'vue'
+import { useRoute } from 'vue-router'
 
 type SortDirection = 'asc' | 'desc' | ''
 type TrackingLogSort = NonNullable<TrackingLogParams['sort']>
@@ -51,7 +52,15 @@ interface SavedFilter {
 }
 
 const trackingLogStore = useTrackingLogStore()
+const route = useRoute()
 const sortableColumns = ['created_at', 'event_type', 'event_name', 'tenant', 'template'] as const
+const eventTypeValues = [
+  'website_visit',
+  'cta_view',
+  'cta_click',
+  'form_submission',
+  'conversion',
+] as const
 const selectedLog = ref<TrackingLogRecord | null>(null)
 const detailsOpen = ref(false)
 const columnsOpen = ref(false)
@@ -314,6 +323,38 @@ const updateSort = (key: string, direction: SortDirection): void => {
   })
 }
 
+const queryString = (value: unknown): string => {
+  if (Array.isArray(value)) return String(value[0] ?? '')
+
+  return typeof value === 'string' ? value : ''
+}
+
+const initialParamsFromQuery = (): Partial<TrackingLogParams> => {
+  const params: Partial<TrackingLogParams> = {}
+  const eventType = queryString(route.query.event_type)
+
+  if (eventTypeValues.includes(eventType as (typeof eventTypeValues)[number])) {
+    params.event_type = eventType as TrackingLogEventType
+  }
+
+  const templateId = queryString(route.query.template_id)
+  if (templateId) params.template_id = templateId
+
+  const conversionStatus = queryString(route.query.conversion_status)
+  if (conversionStatus) params.conversion_status = conversionStatus
+
+  const from = queryString(route.query.from)
+  if (/^\d{4}-\d{2}-\d{2}$/.test(from)) params.from = from
+
+  const to = queryString(route.query.to)
+  if (/^\d{4}-\d{2}-\d{2}$/.test(to)) params.to = to
+
+  const search = queryString(route.query.search).slice(0, 255)
+  if (search) params.search = search
+
+  return params
+}
+
 const exportLogs = async (): Promise<void> => {
   await trackingLogStore.exportCsv()
 }
@@ -364,7 +405,7 @@ onMounted(() => {
     savedFilters.value = []
   }
 
-  trackingLogStore.index()
+  trackingLogStore.index(initialParamsFromQuery())
 })
 </script>
 

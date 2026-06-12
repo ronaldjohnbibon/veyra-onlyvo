@@ -20,6 +20,7 @@ import { getStatusBadgeVariant, getStatusLabel } from '@/shared/utils/status'
 import { useAdminDesignRequestStore } from '@/admin/design-requests/design-request-store'
 import type {
   DesignRequestEventRecord,
+  DesignRequestParams,
   DesignRequestPriority,
   DesignRequestRecord,
   DesignRequestStatus,
@@ -83,7 +84,7 @@ const sortDirection = computed(() => designRequestStore.params.direction ?? '')
 const statusFilter = computed({
   get: () => designRequestStore.params.status ?? '',
   set: (value: DesignRequestStatus | '') => {
-    designRequestStore.index({ status: value, page: 1 })
+    refreshRequests({ status: value, page: 1 })
   },
 })
 const priorityFilter = computed({
@@ -106,12 +107,17 @@ const formatDateTimeInput = (value?: string | null): string => {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return ''
 
-  return date.toISOString().slice(0, 16)
+  const pad = (part: number): string => String(part).padStart(2, '0')
+
+  return (
+    [date.getFullYear(), pad(date.getMonth() + 1), pad(date.getDate())].join('-') +
+    `T${pad(date.getHours())}:${pad(date.getMinutes())}`
+  )
 }
 
 const nullableInput = (value: string): string | null => value || null
 
-const refreshRequests = async (params = {}): Promise<void> => {
+const refreshRequests = async (params: Partial<DesignRequestParams> = {}): Promise<void> => {
   await Promise.all([designRequestStore.index(params), designRequestStore.board(params)])
 }
 

@@ -25,6 +25,10 @@ class AdminDesignRequestLinkRequest extends FormRequest
 
     public function prepareForValidation(): void
     {
+        if ($this->has('linked_template_id')) {
+            $this->merge(['linked_template_id' => trim((string) $this->input('linked_template_id')) ?: null]);
+        }
+
         if ($this->has('linked_site_url')) {
             $this->merge(['linked_site_url' => trim((string) $this->input('linked_site_url')) ?: null]);
         }

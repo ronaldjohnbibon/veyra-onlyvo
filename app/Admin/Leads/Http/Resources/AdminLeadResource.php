@@ -30,9 +30,9 @@ class AdminLeadResource extends JsonResource
             'status'           => $this->status,
             'links'            => [
                 'tenant'        => $tenant ? '/admin/tenants/'.$tenant->id : null,
-                'public_site'   => $tenant && $template?->slug ? $this->tenantUrl($request, $tenant->subdomain, '/'.$template->slug) : null,
-                'tracking_logs' => $tenant ? $this->tenantUrl($request, $tenant->subdomain, '/tracking-logs?source=submissions') : null,
-                'analytics'     => $tenant ? $this->tenantUrl($request, $tenant->subdomain, '/analytics') : null,
+                'public_site'   => $tenant?->subdomain && $template?->slug ? $this->tenantUrl($request, $tenant->subdomain, '/'.$template->slug) : null,
+                'tracking_logs' => $tenant?->subdomain ? $this->tenantUrl($request, $tenant->subdomain, '/tracking-logs?event_type=form_submission') : null,
+                'analytics'     => $tenant?->subdomain ? $this->tenantUrl($request, $tenant->subdomain, '/analytics') : null,
             ],
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
@@ -41,16 +41,18 @@ class AdminLeadResource extends JsonResource
 
     private function tenantUrl(Request $request, string $subdomain, string $path): string
     {
-        $host = $request->getHost();
+        $host  = $request->getHost();
+        $parts = explode('.', $host);
 
-        if (! str_starts_with($host, $subdomain.'.')) {
-            $host = $subdomain.'.'.$host;
+        if (count($parts) > 2 && in_array($parts[0], ['admin', 'www'], true)) {
+            array_shift($parts);
+            $host = implode('.', $parts);
         }
 
         $port        = $request->getPort();
         $portSegment = in_array($port, [80, 443], true) ? '' : ':'.$port;
 
-        return $request->getScheme().'://'.$host.$portSegment.$path;
+        return $request->getScheme().'://'.$subdomain.'.'.$host.$portSegment.$path;
     }
 
     private function summary(mixed $payload): string

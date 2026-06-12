@@ -4,10 +4,12 @@ namespace App\Admin\DesignRequests\Services;
 
 use App\Admin\AuditLogs\Services\AuditLogService;
 use App\Admin\DesignRequests\Models\DesignRequest;
+use App\Admin\Templates\Models\Template;
 use App\Admin\Users\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class DesignRequestService
 {
@@ -109,7 +111,7 @@ class DesignRequestService
         $this->recordEvent($request, 'admin', $this->actorName($adminId), $adminId, 'comment', null, null, $message);
         $this->audit('design_request.commented', $request, $adminId, null, ['message' => $message]);
 
-        return $request->fresh(['files', 'events', 'tenant', 'requester']);
+        return $request->fresh(['files', 'events', 'tenant', 'requester', 'assignee', 'linkedTemplate']);
     }
 
     /**
@@ -143,7 +145,7 @@ class DesignRequestService
 
         $this->audit('design_request.converted', $request->fresh(), $adminId, $previous, $request->fresh()?->only(['conversion_type', 'conversion_payload', 'converted_at', 'converted_by']));
 
-        return $request->fresh(['files', 'events', 'tenant', 'requester', 'assignee']);
+        return $request->fresh(['files', 'events', 'tenant', 'requester', 'assignee', 'linkedTemplate']);
     }
 
     /**
@@ -153,6 +155,18 @@ class DesignRequestService
     {
         $previous = $request->only(['linked_template_id', 'linked_site_url']);
 
+        if (
+            isset($data['linked_template_id'])
+            && ! Template::query()
+                ->whereKey($data['linked_template_id'])
+                ->where('tenant_id', $request->tenant_id)
+                ->exists()
+        ) {
+            throw ValidationException::withMessages([
+                'linked_template_id' => ['The linked template must belong to the request tenant.'],
+            ]);
+        }
+
         $request->update([
             'linked_template_id' => $data['linked_template_id'] ?? null,
             'linked_site_url'    => $data['linked_site_url']    ?? null,
@@ -161,7 +175,7 @@ class DesignRequestService
         $this->recordEvent($request, 'admin', $this->actorName($adminId), $adminId, 'linked_completed_work', null, null, $data['linked_site_url'] ?? null);
         $this->audit('design_request.linked_completed_work', $request->fresh(), $adminId, $previous, $request->fresh()?->only(['linked_template_id', 'linked_site_url']));
 
-        return $request->fresh(['files', 'events', 'tenant', 'requester', 'assignee']);
+        return $request->fresh(['files', 'events', 'tenant', 'requester', 'assignee', 'linkedTemplate']);
     }
 
     public function markNotification(DesignRequest $request, int|string|null $adminId): DesignRequest
@@ -176,7 +190,7 @@ class DesignRequestService
         $this->recordEvent($request, 'admin', $this->actorName($adminId), $adminId, 'notification_marked', null, null, 'Notification marked for tenant follow-up.');
         $this->audit('design_request.notification_marked', $request->fresh(), $adminId, $previous, $request->fresh()?->only(['notification_requested', 'notification_sent_at']));
 
-        return $request->fresh(['files', 'events', 'tenant', 'requester', 'assignee']);
+        return $request->fresh(['files', 'events', 'tenant', 'requester', 'assignee', 'linkedTemplate']);
     }
 
     /**
