@@ -88,16 +88,16 @@ class AdminTemplateCatalogController extends Controller
             return $this->error('Template catalog item not found.', 404);
         }
 
+        if ($request->has('key')) {
+            $request->merge(['key' => Str::slug((string) $request->input('key')) ?: null]);
+        }
+
         $payload = $request->validate([
             'name'        => ['nullable', 'string', 'max:150'],
             'key'         => ['nullable', 'string', 'max:80', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/'],
             'description' => ['nullable', 'string'],
             'changelog'   => ['nullable', 'string', 'max:1000'],
         ]);
-
-        if (array_key_exists('key', $payload)) {
-            $payload['key'] = Str::slug((string) $payload['key']);
-        }
 
         return $this->success(new TemplateCatalogItemResource($this->service->cloneItem($item, $payload, Auth::user())), 'Template cloned.', 201);
     }

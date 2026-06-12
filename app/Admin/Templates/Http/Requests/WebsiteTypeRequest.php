@@ -39,9 +39,12 @@ class WebsiteTypeRequest extends FormRequest
 
         $slugSource = (string) $this->input('slug', $this->input('name', 'website-type'));
 
-        $this->merge([
-            'slug'      => Str::slug($slugSource),
-            'is_active' => $this->boolean('is_active'),
-        ]);
+        $payload = ['slug' => Str::slug($slugSource)];
+
+        if ($this->has('is_active')) {
+            $payload['is_active'] = $this->boolean('is_active');
+        }
+
+        $this->merge($payload);
     }
 }

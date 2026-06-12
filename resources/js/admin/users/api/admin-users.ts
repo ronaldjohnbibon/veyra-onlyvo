@@ -57,4 +57,8 @@ export const adminUserService = {
       .post<AdminUserPasswordResetResponse>(`admin/admin-users/${id}/password-reset`)
       .then((response) => response.data)
   },
+
+  destroy(id: number | string) {
+    return http.delete(`admin/admin-users/${id}`).then((response) => response.data)
+  },
 }

@@ -47,8 +47,9 @@ class PlatformOperationsService
     {
         $connection = (string) config('queue.default');
         $jobsTable  = (string) config('queue.connections.database.table', 'jobs');
-        $pending    = $this->hasTable($jobsTable) ? (int) DB::table($jobsTable)->count() : 0;
-        $oldest     = $this->hasTable($jobsTable)
+        $hasJobs    = $this->hasTable($jobsTable);
+        $pending    = $hasJobs ? (int) DB::table($jobsTable)->count() : 0;
+        $oldest     = $hasJobs && $this->hasColumns($jobsTable, ['queue', 'attempts', 'created_at'])
             ? DB::table($jobsTable)->orderBy('created_at')->first(['queue', 'attempts', 'created_at'])
             : null;
         $failed = $this->failedJobCount();
@@ -98,7 +99,7 @@ class PlatformOperationsService
                 'sender_email'   => $sender,
                 'smtp_host'      => $driver === 'smtp' ? $host : null,
                 'last_tested_at' => $this->timestamp($lastTest?->changed_at),
-                'last_tested_by' => $lastTest?->changed_by_email ?: $lastTest?->changed_by_name,
+                'last_tested_by' => data_get($lastTest, 'changed_by_email') ?: data_get($lastTest, 'changed_by_name'),
             ],
         ];
     }
@@ -140,8 +141,8 @@ class PlatformOperationsService
         $moduleEnabled  = $this->settings->featureEnabled('enable_analytics_module');
         $visitorEnabled = $this->settings->boolean('analytics.enable_visitor_tracking', true);
         $ctaEnabled     = $this->settings->boolean('analytics.enable_cta_tracking', true);
-        $visits         = $this->recentCount('visitor_visits', 24);
-        $ctaEvents      = $this->recentCount('cta_events', 24);
+        $visits         = $this->recentCount('visitor_visits', 24, ['visited_at', 'created_at']);
+        $ctaEvents      = $this->recentCount('cta_events', 24, ['triggered_at', 'created_at']);
         $enabled        = $moduleEnabled && ($visitorEnabled || $ctaEnabled);
         $recent         = $visits + $ctaEvents;
 
@@ -159,8 +160,8 @@ class PlatformOperationsService
                 'cta_enabled'     => $ctaEnabled,
                 'visits_24h'      => $visits,
                 'cta_events_24h'  => $ctaEvents,
-                'visits_7d'       => $this->recentCount('visitor_visits', 24 * 7),
-                'cta_events_7d'   => $this->recentCount('cta_events', 24 * 7),
+                'visits_7d'       => $this->recentCount('visitor_visits', 24 * 7, ['visited_at', 'created_at']),
+                'cta_events_7d'   => $this->recentCount('cta_events', 24 * 7, ['triggered_at', 'created_at']),
             ],
         ];
     }
@@ -218,19 +219,25 @@ class PlatformOperationsService
      */
     private function failedJobs(): array
     {
-        if (! $this->hasTable('failed_jobs')) {
+        if (! $this->hasColumns('failed_jobs', ['id', 'connection', 'queue', 'payload', 'exception', 'failed_at'])) {
             return [];
+        }
+
+        $columns = ['id', 'connection', 'queue', 'payload', 'exception', 'failed_at'];
+
+        if ($this->hasColumn('failed_jobs', 'uuid')) {
+            $columns[] = 'uuid';
         }
 
         return DB::table('failed_jobs')
             ->orderByDesc('failed_at')
             ->limit(8)
-            ->get(['id', 'uuid', 'connection', 'queue', 'payload', 'exception', 'failed_at'])
+            ->get($columns)
             ->map(function (object $job): array {
                 $payload = json_decode((string) $job->payload, true);
 
                 return [
-                    'id'         => (string) ($job->uuid ?: $job->id),
+                    'id'         => (string) (data_get($job, 'uuid') ?: $job->id),
                     'connection' => (string) $job->connection,
                     'queue'      => (string) $job->queue,
                     'name'       => (string) data_get($payload, 'displayName', data_get($payload, 'job', 'Queued job')),
@@ -248,7 +255,7 @@ class PlatformOperationsService
     {
         $events = collect();
 
-        if ($this->hasTable('system_setting_histories')) {
+        if ($this->hasColumns('system_setting_histories', ['setting_key', 'action', 'changed_by_email', 'changed_at'])) {
             DB::table('system_setting_histories')
                 ->orderByDesc('changed_at')
                 ->limit(6)
@@ -262,7 +269,7 @@ class PlatformOperationsService
                 ]));
         }
 
-        if ($this->hasTable('design_request_events')) {
+        if ($this->hasColumns('design_request_events', ['event_type', 'message', 'actor_name', 'created_at'])) {
             DB::table('design_request_events')
                 ->orderByDesc('created_at')
                 ->limit(6)
@@ -276,7 +283,7 @@ class PlatformOperationsService
                 ]));
         }
 
-        if ($this->hasTable('failed_jobs')) {
+        if ($this->hasColumns('failed_jobs', ['connection', 'queue', 'failed_at'])) {
             DB::table('failed_jobs')
                 ->orderByDesc('failed_at')
                 ->limit(4)
@@ -335,28 +342,43 @@ class PlatformOperationsService
         return $this->hasTable('failed_jobs') ? (int) DB::table('failed_jobs')->count() : 0;
     }
 
-    private function recentCount(string $table, int $hours): int
+    /**
+     * @param  array<int, string>  $timestampColumns
+     */
+    private function recentCount(string $table, int $hours, array $timestampColumns): int
     {
-        if (! $this->hasTable($table)) {
+        $timestampColumn = $this->firstExistingColumn($table, $timestampColumns);
+
+        if (! $timestampColumn) {
             return 0;
         }
 
         return (int) DB::table($table)
-            ->where('created_at', '>=', Carbon::now()->subHours($hours))
+            ->where($timestampColumn, '>=', Carbon::now()->subHours($hours))
             ->count();
     }
 
     private function latestHistory(string $key, string $action): ?object
     {
-        if (! $this->hasTable('system_setting_histories')) {
+        if (! $this->hasColumns('system_setting_histories', ['setting_key', 'action', 'changed_at'])) {
             return null;
+        }
+
+        $columns = ['changed_at'];
+
+        if ($this->hasColumn('system_setting_histories', 'changed_by_email')) {
+            $columns[] = 'changed_by_email';
+        }
+
+        if ($this->hasColumn('system_setting_histories', 'changed_by_name')) {
+            $columns[] = 'changed_by_name';
         }
 
         return DB::table('system_setting_histories')
             ->where('setting_key', $key)
             ->where('action', $action)
             ->orderByDesc('changed_at')
-            ->first(['changed_by_email', 'changed_by_name', 'changed_at']);
+            ->first($columns);
     }
 
     /**
@@ -440,6 +462,51 @@ class PlatformOperationsService
         }
     }
 
+    private function hasColumn(string $table, string $column): bool
+    {
+        try {
+            return Schema::hasColumn($table, $column);
+        } catch (Throwable) {
+            return false;
+        }
+    }
+
+    /**
+     * @param  array<int, string>  $columns
+     */
+    private function hasColumns(string $table, array $columns): bool
+    {
+        if (! $this->hasTable($table)) {
+            return false;
+        }
+
+        foreach ($columns as $column) {
+            if (! $this->hasColumn($table, $column)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * @param  array<int, string>  $columns
+     */
+    private function firstExistingColumn(string $table, array $columns): ?string
+    {
+        if (! $this->hasTable($table)) {
+            return null;
+        }
+
+        foreach ($columns as $column) {
+            if ($this->hasColumn($table, $column)) {
+                return $column;
+            }
+        }
+
+        return null;
+    }
+
     private function timestamp(mixed $value): ?string
     {
         if (! $value) {
@@ -472,18 +539,22 @@ class PlatformOperationsService
             return 0;
         }
 
-        $size     = 0;
-        $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($path, \FilesystemIterator::SKIP_DOTS)
-        );
+        try {
+            $size     = 0;
+            $iterator = new \RecursiveIteratorIterator(
+                new \RecursiveDirectoryIterator($path, \FilesystemIterator::SKIP_DOTS)
+            );
 
-        foreach ($iterator as $file) {
-            if ($file->isFile()) {
-                $size += $file->getSize();
+            foreach ($iterator as $file) {
+                if ($file->isFile()) {
+                    $size += $file->getSize();
+                }
             }
-        }
 
-        return $size;
+            return $size;
+        } catch (Throwable) {
+            return 0;
+        }
     }
 
     private function formatBytes(int $bytes): string

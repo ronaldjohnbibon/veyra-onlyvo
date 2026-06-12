@@ -12,27 +12,30 @@ class AuditLogResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $action = $this->action ?: 'activity.recorded';
+        $entity = $this->entity_label ?: $this->entity_id ?: $this->entity_type ?: 'system';
+
         return [
             'id'        => $this->id,
-            'scope'     => $this->scope,
+            'scope'     => $this->scope ?: 'admin',
             'tenant_id' => $this->tenant_id,
-            'category'  => $this->category,
-            'severity'  => $this->severity,
+            'category'  => $this->category ?: 'audit',
+            'severity'  => $this->severity ?: 'info',
             'actor'     => [
-                'type'  => $this->actor_type,
+                'type'  => $this->actor_type ?: 'system',
                 'id'    => $this->actor_id,
                 'name'  => $this->actor_name,
                 'email' => $this->actor_email,
             ],
             'ip_address' => $this->ip_address,
             'entity'     => [
-                'type'  => $this->entity_type,
+                'type'  => $this->entity_type ?: 'system',
                 'id'    => $this->entity_id,
                 'label' => $this->entity_label,
             ],
             'user_agent'     => $this->user_agent,
-            'action'         => $this->action,
-            'summary'        => str($this->action)->headline()->toString().' on '.($this->entity_label ?: $this->entity_id ?: $this->entity_type),
+            'action'         => $action,
+            'summary'        => str($action)->headline()->toString().' on '.$entity,
             'previous_value' => $this->previous_value,
             'new_value'      => $this->new_value,
             'metadata'       => $this->metadata,

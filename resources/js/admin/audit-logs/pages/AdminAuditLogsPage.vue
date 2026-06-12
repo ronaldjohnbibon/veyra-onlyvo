@@ -63,8 +63,10 @@ const updateSort = (key: string, direction: SortDirection): void => {
   })
 }
 
-const labelFor = (value: string): string => {
-  return value.replace(/[._-]/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase())
+const labelFor = (value?: string | null): string => {
+  const label = value?.trim() || 'system'
+
+  return label.replace(/[._-]/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase())
 }
 
 const actorLabel = (log: AuditLogRecord): string => {
@@ -76,14 +78,16 @@ const entityLabel = (log: AuditLogRecord): string => {
 }
 
 const actionVariant = (
-  action: string
+  action?: string | null
 ): 'success' | 'warning' | 'destructive' | 'info' | 'neutral' | 'outline' => {
-  if (action.includes('deleted') || action.includes('deactivated')) return 'destructive'
-  if (action.includes('created') || action.includes('published') || action.includes('login')) {
+  const value = action || ''
+
+  if (value.includes('deleted') || value.includes('deactivated')) return 'destructive'
+  if (value.includes('created') || value.includes('published') || value.includes('login')) {
     return 'success'
   }
-  if (action.includes('restored') || action.includes('rolled_back')) return 'warning'
-  if (action.includes('updated') || action.includes('changed')) return 'info'
+  if (value.includes('restored') || value.includes('rolled_back')) return 'warning'
+  if (value.includes('updated') || value.includes('changed')) return 'info'
 
   return 'outline'
 }

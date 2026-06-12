@@ -3,14 +3,16 @@
 namespace App\Admin\Users\Http\Requests;
 
 use App\Admin\SystemSettings\Services\SystemSettingService;
+use App\Shared\Enums\UserType;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 
 class AdminUserRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return Auth::user()?->user_type === UserType::ADMIN && (bool) Auth::user()?->is_active;
     }
 
     /**

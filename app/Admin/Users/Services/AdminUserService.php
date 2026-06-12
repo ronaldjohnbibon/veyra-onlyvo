@@ -40,9 +40,17 @@ class AdminUserService
      */
     public function update(User $user, array $data): User
     {
-        $user->update($this->payload($data, false));
+        return DB::transaction(function () use ($user, $data): User {
+            $payload = $this->payload($data, false);
 
-        return $user->fresh();
+            $user->update($payload);
+
+            if (($payload['is_active'] ?? true) === false) {
+                $user->tokens()->delete();
+            }
+
+            return $user->fresh();
+        });
     }
 
     public function deactivate(User $user): User
@@ -60,6 +68,14 @@ class AdminUserService
         $user->update(['is_active' => true]);
 
         return $user->fresh();
+    }
+
+    public function delete(User $user): void
+    {
+        DB::transaction(function () use ($user): void {
+            $user->tokens()->delete();
+            $user->delete();
+        });
     }
 
     /**

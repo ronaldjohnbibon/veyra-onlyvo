@@ -359,7 +359,18 @@ class TemplateCatalogMaintenanceService
 
         $base = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $base);
 
-        foreach (['', '.ts', '.js', '.vue', '.json', DIRECTORY_SEPARATOR.'index.ts', DIRECTORY_SEPARATOR.'index.js', DIRECTORY_SEPARATOR.'index.vue'] as $suffix) {
+        foreach ([
+            '',
+            '.ts',
+            '.d.ts',
+            '.js',
+            '.vue',
+            '.json',
+            DIRECTORY_SEPARATOR.'index.ts',
+            DIRECTORY_SEPARATOR.'index.d.ts',
+            DIRECTORY_SEPARATOR.'index.js',
+            DIRECTORY_SEPARATOR.'index.vue',
+        ] as $suffix) {
             if (is_file($base.$suffix)) {
                 return true;
             }

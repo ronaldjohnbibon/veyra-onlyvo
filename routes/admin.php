@@ -25,17 +25,25 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
         Route::get('logs/export', [AdminAuditLogController::class, 'export'])->name('logs.export');
         Route::get('logs/{log}', [AdminAuditLogController::class, 'show'])->name('logs.show');
         Route::get('logs', [AdminAuditLogController::class, 'index'])->name('logs.index');
-        Route::get('audit-logs/export', [AdminAuditLogController::class, 'export'])->name('audit-logs.export');
-        Route::get('audit-logs/{log}', [AdminAuditLogController::class, 'show'])->name('audit-logs.show');
-        Route::get('audit-logs', [AdminAuditLogController::class, 'index'])->name('audit-logs.index');
+        Route::get(
+            'audit-logs/export',
+            fn () => redirect()->route('admin.logs.export', request()->query()),
+        )->name('audit-logs.export');
+        Route::get(
+            'audit-logs/{log}',
+            fn (string $log) => redirect()->route('admin.logs.show', ['log' => $log] + request()->query()),
+        )->name('audit-logs.show');
+        Route::get(
+            'audit-logs',
+            fn () => redirect()->route('admin.logs.index', request()->query()),
+        )->name('audit-logs.index');
         Route::get('operations', [AdminOperationsController::class, 'index'])->name('operations.index');
 
         Route::post('admin-users/{adminUser}/deactivate', [AdminUserController::class, 'deactivate'])->name('admin-users.deactivate');
         Route::post('admin-users/{adminUser}/reactivate', [AdminUserController::class, 'reactivate'])->name('admin-users.reactivate');
         Route::post('admin-users/{adminUser}/password-reset', [AdminUserController::class, 'passwordReset'])->name('admin-users.password-reset');
         Route::apiResource('admin-users', AdminUserController::class)
-            ->parameters(['admin-users' => 'adminUser'])
-            ->except(['destroy']);
+            ->parameters(['admin-users' => 'adminUser']);
 
         Route::get('design-requests/board', [AdminDesignRequestController::class, 'board'])->name('design-requests.board');
         Route::get('design-requests/workload', [AdminDesignRequestController::class, 'workload'])->name('design-requests.workload');

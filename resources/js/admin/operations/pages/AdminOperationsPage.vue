@@ -147,7 +147,38 @@ onMounted(refresh)
         <Skeleton class="h-72 rounded border" />
       </div>
 
+      <section
+        v-else-if="operationsStore.error && !operations"
+        class="rounded border border-destructive/40 bg-destructive/10 p-4"
+      >
+        <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h3 class="text-base font-semibold">Operations unavailable</h3>
+            <p class="mt-1 text-sm opacity-80">{{ operationsStore.error }}</p>
+          </div>
+          <Button
+            variant="outline_default"
+            size="sm"
+            :disabled="operationsStore.loading"
+            @click="refresh"
+          >
+            <RefreshCw class="size-4" :class="{ 'animate-spin': operationsStore.loading }" />
+            Retry
+          </Button>
+        </div>
+      </section>
+
       <template v-else-if="operations">
+        <section
+          v-if="operationsStore.error"
+          class="mb-4 rounded border border-destructive/40 bg-destructive/10 p-4"
+        >
+          <div class="flex items-start gap-2">
+            <AlertTriangle class="mt-0.5 size-4 shrink-0 text-destructive" />
+            <p class="text-sm">{{ operationsStore.error }}</p>
+          </div>
+        </section>
+
         <section
           class="mb-4 rounded border p-4"
           :class="

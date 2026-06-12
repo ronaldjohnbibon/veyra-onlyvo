@@ -58,6 +58,8 @@ class TemplateCatalogItemRequest extends FormRequest
             $this->merge(['key' => Str::slug((string) $this->input('key'))]);
         }
 
-        $this->merge(['is_active' => $this->boolean('is_active')]);
+        if ($this->has('is_active')) {
+            $this->merge(['is_active' => $this->boolean('is_active')]);
+        }
     }
 }

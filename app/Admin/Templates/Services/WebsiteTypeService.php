@@ -19,7 +19,10 @@ class WebsiteTypeService
                         ->orWhere('slug', 'like', '%'.$search.'%');
                 });
             })
-            ->withCount(['templates', 'catalogItems as available_templates_count'])
+            ->withCount([
+                'templates',
+                'catalogItems as available_templates_count' => fn ($query) => $query->where('is_active', true),
+            ])
             ->orderBy('name')
             ->paginate(
                 (int) ($filters['pageSize'] ?? 100),

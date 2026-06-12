@@ -24,6 +24,9 @@ class AdminUserController extends Controller
     {
         $this->authorizeAdmin();
 
+        $page      = max((int) $request->input('page', 1), 1);
+        $pageSize  = min(max((int) $request->input('pageSize', 15), 1), 100);
+        $status    = $request->input('status');
         $sort      = in_array($request->input('sort'), ['name', 'email', 'is_active', 'created_at', 'updated_at'], true) ? $request->input('sort') : 'created_at';
         $direction = $request->input('direction') === 'asc' ? 'asc' : 'desc';
 
@@ -39,13 +42,13 @@ class AdminUserController extends Controller
                         ->orWhere('last_name', 'like', '%'.$search.'%');
                 });
             })
-            ->when($request->input('status'), fn ($query, string $status) => $query->where('is_active', $status === 'active'))
+            ->when(in_array($status, ['active', 'inactive'], true), fn ($query) => $query->where('is_active', $status === 'active'))
             ->orderBy($sort, $direction)
             ->paginate(
-                (int) $request->input('pageSize', 15),
+                $pageSize,
                 ['*'],
                 'page',
-                (int) $request->input('page', 1),
+                $page,
             );
 
         return $this->success(AdminUserResource::collection($users), 'Admin users retrieved.');
@@ -84,8 +87,14 @@ class AdminUserController extends Controller
             return $this->error('Admin user not found.', 404);
         }
 
+        $data = $request->validated();
+
+        if ((int) Auth::id() === (int) $user->id && ($data['is_active'] ?? true) === false) {
+            return $this->error('You cannot deactivate your own admin user.', 422);
+        }
+
         $previous = $user->attributesToArray();
-        $updated  = $this->service->update($user, $request->validated())->load('tokens')->loadCount('tokens');
+        $updated  = $this->service->update($user, $data)->load('tokens')->loadCount('tokens');
         $this->auditLogs->recordModel('admin_user.updated', $updated, Auth::user(), $request, $previous, $updated->attributesToArray(), 'admin_user');
 
         return $this->success(new AdminUserResource($updated), 'Admin user updated.');
@@ -127,6 +136,28 @@ class AdminUserController extends Controller
         $this->auditLogs->recordModel('admin_user.reactivated', $updated, Auth::user(), request(), $previous, $updated->attributesToArray(), 'admin_user');
 
         return $this->success(new AdminUserResource($updated), 'Admin user reactivated.');
+    }
+
+    public function destroy(string $adminUser): JsonResponse
+    {
+        $this->authorizeAdmin();
+
+        $user = $this->adminUser($adminUser);
+
+        if (! $user) {
+            return $this->error('Admin user not found.', 404);
+        }
+
+        if ((int) Auth::id() === (int) $user->id) {
+            return $this->error('You cannot delete your own admin user.', 422);
+        }
+
+        $previous = $user->attributesToArray();
+
+        $this->service->delete($user);
+        $this->auditLogs->recordModel('admin_user.deleted', $user, Auth::user(), request(), $previous, null, 'admin_user');
+
+        return $this->success(null, 'Admin user deleted.');
     }
 
     public function passwordReset(string $adminUser): JsonResponse

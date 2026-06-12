@@ -94,8 +94,19 @@ export const useAdminUserStore = defineStore('admin-users', () => {
     }
   }
 
+  const destroy = async (id: number | string): Promise<void> => {
+    try {
+      loading.value = true
+      await adminUserService.destroy(id)
+      await index()
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     deactivate,
+    destroy,
     errors,
     generatePasswordReset,
     index,

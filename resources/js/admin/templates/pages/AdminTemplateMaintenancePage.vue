@@ -2119,13 +2119,14 @@ watch(
                       <div class="flex items-start justify-between gap-3">
                         <div>
                           <p class="text-sm font-semibold">
-                            Version {{ version.version }} · {{ version.action }}
+                            Version {{ version.version }} &middot; {{ version.action }}
                           </p>
                           <p class="mt-1 text-xs text-muted-foreground">
                             {{ version.changelog || 'No changelog provided.' }}
                           </p>
                           <p class="mt-1 text-xs text-muted-foreground">
-                            {{ version.created_by_name || version.created_by_email || 'System' }} ·
+                            {{ version.created_by_name || version.created_by_email || 'System' }}
+                            &middot;
                             {{ formatDisplayDate(version.created_at) }}
                           </p>
                         </div>

@@ -20,7 +20,7 @@ import { formatDisplayDate } from '@/shared/utils/date'
 import { useAdminUserStore } from '@/admin/users/admin-user-store'
 import { useConfirmStore } from '@/shared/stores/confirm-store'
 import type { AdminUser, AdminUserPayload, AdminUserTokenActivity } from '@/admin/users/types'
-import { KeyRound, Pencil, Power, PowerOff, ShieldAlert, UserPlus } from 'lucide-vue-next'
+import { KeyRound, Pencil, Power, PowerOff, ShieldAlert, Trash2, UserPlus } from 'lucide-vue-next'
 import { computed, onMounted, reactive, ref } from 'vue'
 
 type SortDirection = 'asc' | 'desc' | ''
@@ -42,7 +42,7 @@ const columns = [
   { key: 'is_active', label: 'Status', sortable: true },
   { key: 'last_login_at', label: 'Last Login' },
   { key: 'created_at', label: 'Created', sortable: true },
-  { key: 'actions', label: '', headerClass: 'w-[265px]', cellClass: 'text-right' },
+  { key: 'actions', label: '', headerClass: 'w-[330px]', cellClass: 'text-right' },
 ] as const
 
 const form = reactive<AdminUserPayload>({
@@ -146,6 +146,10 @@ const generatePasswordReset = async (user: AdminUser): Promise<void> => {
   selectedUser.value = user
   await userStore.generatePasswordReset(user.id)
   resetDialogOpen.value = true
+}
+
+const deleteUser = async (user: AdminUser): Promise<void> => {
+  await userStore.destroy(user.id)
 }
 
 const updateSort = (key: string, direction: SortDirection): void => {
@@ -303,6 +307,10 @@ onMounted(() => {
               <PowerOff v-if="row.is_active" class="size-3" />
               <Power v-else class="size-3" />
               {{ row.is_active ? 'Deactivate' : 'Reactivate' }}
+            </Button>
+            <Button size="xs" variant="delete" type="button" @click.stop="deleteUser(row)">
+              <Trash2 class="size-3" />
+              Delete
             </Button>
           </div>
         </template>
