@@ -73,13 +73,21 @@ class AdminDashboardService
             return 0;
         }
 
-        $query = DB::table($table);
+        try {
+            $query = DB::table($table);
 
-        if ($callback) {
-            $callback($query);
+            if ($this->hasColumn($table, 'deleted_at')) {
+                $query->whereNull($table.'.deleted_at');
+            }
+
+            if ($callback) {
+                $callback($query);
+            }
+
+            return (int) $query->count();
+        } catch (\Throwable) {
+            return 0;
         }
-
-        return (int) $query->count();
     }
 
     private function newLeadCount(): int
@@ -102,18 +110,22 @@ class AdminDashboardService
             return null;
         }
 
-        $request = DB::table('design_requests')
-            ->leftJoin('tenants', 'design_requests.tenant_id', '=', 'tenants.id')
+        $hasTenants = $this->hasTable('tenants');
+        $query      = DB::table('design_requests')
             ->where('design_requests.status', 'pending')
-            ->orderBy('design_requests.created_at')
-            ->select([
-                'design_requests.id',
-                'design_requests.title',
-                'design_requests.status',
-                'design_requests.created_at',
-                'tenants.name as tenant_name',
-            ])
-            ->first();
+            ->orderBy('design_requests.created_at');
+
+        if ($hasTenants) {
+            $query->leftJoin('tenants', 'design_requests.tenant_id', '=', 'tenants.id');
+        }
+
+        $request = $query->first([
+            'design_requests.id',
+            'design_requests.title',
+            'design_requests.status',
+            'design_requests.created_at',
+            $hasTenants ? 'tenants.name as tenant_name' : DB::raw('null as tenant_name'),
+        ]);
 
         return $request ? $this->objectToArray($request) : null;
     }
@@ -127,17 +139,22 @@ class AdminDashboardService
             return [];
         }
 
-        return DB::table('design_requests')
-            ->leftJoin('tenants', 'design_requests.tenant_id', '=', 'tenants.id')
+        $hasTenants = $this->hasTable('tenants');
+        $query      = DB::table('design_requests')
             ->orderByDesc('design_requests.created_at')
-            ->limit(5)
-            ->get([
-                'design_requests.id',
-                'design_requests.title',
-                'design_requests.status',
-                'design_requests.created_at',
-                'tenants.name as tenant_name',
-            ])
+            ->limit(5);
+
+        if ($hasTenants) {
+            $query->leftJoin('tenants', 'design_requests.tenant_id', '=', 'tenants.id');
+        }
+
+        return $query->get([
+            'design_requests.id',
+            'design_requests.title',
+            'design_requests.status',
+            'design_requests.created_at',
+            $hasTenants ? 'tenants.name as tenant_name' : DB::raw('null as tenant_name'),
+        ])
             ->map(fn (object $row): array => $this->objectToArray($row))
             ->all();
     }
@@ -151,19 +168,24 @@ class AdminDashboardService
             return [];
         }
 
-        return DB::table('template_cta_submissions')
+        $hasTenants = $this->hasTable('tenants');
+        $query      = DB::table('template_cta_submissions')
             ->join('templates', 'template_cta_submissions.template_id', '=', 'templates.id')
-            ->leftJoin('tenants', 'templates.tenant_id', '=', 'tenants.id')
             ->orderByDesc('template_cta_submissions.created_at')
-            ->limit(5)
-            ->get([
-                'template_cta_submissions.id',
-                'template_cta_submissions.cta_type',
-                'template_cta_submissions.status',
-                'template_cta_submissions.created_at',
-                'templates.name as template_name',
-                'tenants.name as tenant_name',
-            ])
+            ->limit(5);
+
+        if ($hasTenants) {
+            $query->leftJoin('tenants', 'templates.tenant_id', '=', 'tenants.id');
+        }
+
+        return $query->get([
+            'template_cta_submissions.id',
+            'template_cta_submissions.cta_type',
+            'template_cta_submissions.status',
+            'template_cta_submissions.created_at',
+            'templates.name as template_name',
+            $hasTenants ? 'tenants.name as tenant_name' : DB::raw('null as tenant_name'),
+        ])
             ->map(fn (object $row): array => $this->objectToArray($row))
             ->all();
     }
@@ -177,14 +199,32 @@ class AdminDashboardService
             return [];
         }
 
-        return DB::table('tenants')
-            ->leftJoin('users', function ($join): void {
+        $hasUsers     = $this->hasTable('users');
+        $hasTemplates = $this->hasTable('templates');
+        $query        = DB::table('tenants');
+
+        if ($hasUsers) {
+            $userHasDeletedAt = $this->hasColumn('users', 'deleted_at');
+
+            $query->leftJoin('users', function ($join) use ($userHasDeletedAt): void {
                 $join->on('users.tenant_id', '=', 'tenants.id')
-                    ->where('users.user_type', 'tenant')
-                    ->whereNull('users.deleted_at');
-            })
-            ->leftJoin('templates', 'templates.tenant_id', '=', 'tenants.id')
-            ->whereNull('tenants.deleted_at')
+                    ->where('users.user_type', 'tenant');
+
+                if ($userHasDeletedAt) {
+                    $join->whereNull('users.deleted_at');
+                }
+            });
+        }
+
+        if ($hasTemplates) {
+            $query->leftJoin('templates', 'templates.tenant_id', '=', 'tenants.id');
+        }
+
+        if ($this->hasColumn('tenants', 'deleted_at')) {
+            $query->whereNull('tenants.deleted_at');
+        }
+
+        return $query
             ->groupBy('tenants.id', 'tenants.name', 'tenants.subdomain', 'tenants.status', 'tenants.created_at', 'tenants.updated_at')
             ->orderByDesc('tenants.updated_at')
             ->limit(6)
@@ -195,11 +235,13 @@ class AdminDashboardService
                 'tenants.status',
                 'tenants.created_at',
                 'tenants.updated_at',
-                DB::raw('count(distinct users.id) as users_count'),
-                DB::raw('count(distinct templates.id) as templates_count'),
+                $hasUsers ? DB::raw('count(distinct users.id) as users_count') : DB::raw('0 as users_count'),
+                $hasTemplates ? DB::raw('count(distinct templates.id) as templates_count') : DB::raw('0 as templates_count'),
             ])
             ->map(fn (object $row): array => array_merge($this->objectToArray($row), [
-                'activity_label' => $this->tenantActivityLabel($row),
+                'users_count'     => (int) $row->users_count,
+                'templates_count' => (int) $row->templates_count,
+                'activity_label'  => $this->tenantActivityLabel($row),
             ]))
             ->all();
     }
@@ -237,6 +279,7 @@ class AdminDashboardService
     private function queueHealth(array $pendingWork): array
     {
         $openWork = (int) $pendingWork['pending_design_requests']
+            + (int) $pendingWork['under_review_requests']
             + (int) $pendingWork['changes_requested']
             + (int) $pendingWork['new_leads'];
 
@@ -340,11 +383,20 @@ class AdminDashboardService
 
     private function tenantActivityLabel(object $tenant): string
     {
-        $created = Carbon::parse((string) $tenant->created_at);
-        $updated = Carbon::parse((string) $tenant->updated_at);
+        $createdAt = (string) ($tenant->created_at ?? '');
+        $updatedAt = (string) ($tenant->updated_at ?? '');
 
-        if ($created->diffInMinutes($updated) < 5) {
-            return 'Created';
+        if ($createdAt !== '' && $updatedAt !== '') {
+            try {
+                $created = Carbon::parse($createdAt);
+                $updated = Carbon::parse($updatedAt);
+
+                if ($created->diffInMinutes($updated) < 5) {
+                    return 'Created';
+                }
+            } catch (\Throwable) {
+                // Fall through to the workspace status label when timestamps are malformed.
+            }
         }
 
         if ((int) $tenant->templates_count === 0) {
@@ -358,6 +410,15 @@ class AdminDashboardService
     {
         try {
             return Schema::hasTable($table);
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
+    private function hasColumn(string $table, string $column): bool
+    {
+        try {
+            return Schema::hasColumn($table, $column);
         } catch (\Throwable) {
             return false;
         }
@@ -383,14 +444,22 @@ class AdminDashboardService
             return 0;
         }
 
-        $size     = 0;
-        $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($path, \FilesystemIterator::SKIP_DOTS)
-        );
+        $size = 0;
+        try {
+            $iterator = new \RecursiveIteratorIterator(
+                new \RecursiveDirectoryIterator($path, \FilesystemIterator::SKIP_DOTS)
+            );
+        } catch (\Throwable) {
+            return 0;
+        }
 
         foreach ($iterator as $file) {
-            if ($file->isFile()) {
-                $size += $file->getSize();
+            try {
+                if ($file->isFile()) {
+                    $size += $file->getSize();
+                }
+            } catch (\Throwable) {
+                continue;
             }
         }
 

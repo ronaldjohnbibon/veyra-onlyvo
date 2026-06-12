@@ -139,7 +139,12 @@ const attentionCount = computed(() => {
 
   if (!work) return 0
 
-  return work.pending_design_requests + work.changes_requested + work.new_leads
+  return (
+    work.pending_design_requests +
+    work.under_review_requests +
+    work.changes_requested +
+    work.new_leads
+  )
 })
 
 const healthIcon = (item: AdminDashboardHealthItem): Component => {
@@ -184,12 +189,22 @@ const formatNumber = (value?: number): string => {
 }
 
 const formatActivityDate = (value?: string | null): string => {
+  if (!value || Number.isNaN(new Date(value).getTime())) {
+    return 'Not available'
+  }
+
   return formatDisplayDate(value, {
     month: 'short',
     day: 'numeric',
     hour: 'numeric',
     minute: '2-digit',
   })
+}
+
+const formatCtaType = (value?: string | null): string => {
+  const normalized = value?.replace(/_/g, ' ').trim()
+
+  return normalized || 'Submission'
 }
 
 onMounted(() => {
@@ -306,6 +321,12 @@ onMounted(() => {
                     </p>
                   </div>
                   <div class="rounded border bg-muted/20 p-4">
+                    <p class="text-sm font-medium text-muted-foreground">Under review</p>
+                    <p class="mt-2 text-3xl font-semibold">
+                      {{ dashboard.pending_work.under_review_requests }}
+                    </p>
+                  </div>
+                  <div class="rounded border bg-muted/20 p-4">
                     <p class="text-sm font-medium text-muted-foreground">Changes requested</p>
                     <p class="mt-2 text-3xl font-semibold">
                       {{ dashboard.pending_work.changes_requested }}
@@ -349,7 +370,7 @@ onMounted(() => {
                           dashboard.pending_work.oldest_pending_request.tenant_name ||
                           'Unknown tenant'
                         }}
-                        ·
+                        -
                         {{
                           formatActivityDate(
                             dashboard.pending_work.oldest_pending_request.created_at
@@ -413,7 +434,7 @@ onMounted(() => {
                         >
                           <div class="min-w-0">
                             <p class="truncate text-sm font-medium">
-                              {{ lead.cta_type.replace(/_/g, ' ') }}
+                              {{ formatCtaType(lead.cta_type) }}
                             </p>
                             <p class="mt-1 text-xs text-muted-foreground">
                               {{ lead.tenant_name || 'Unknown tenant' }}
