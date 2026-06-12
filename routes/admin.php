@@ -15,11 +15,11 @@ use App\Admin\Users\Http\Controllers\AdminUserController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('admin')->name('admin.')->group(function (): void {
-    Route::post('login', [AuthController::class, 'login']);
+    Route::post('login', [AuthController::class, 'login'])->name('login');
 
     Route::middleware(['api.auth', 'token.name:admin_token', 'admin.ip'])->group(function (): void {
-        Route::get('me', [AuthController::class, 'me']);
-        Route::post('logout', [AuthController::class, 'logout']);
+        Route::get('me', [AuthController::class, 'me'])->name('me');
+        Route::post('logout', [AuthController::class, 'logout'])->name('logout');
 
         Route::get('dashboard', [AdminDashboardController::class, 'index'])->name('dashboard.index');
         Route::get('logs/export', [AdminAuditLogController::class, 'export'])->name('logs.export');

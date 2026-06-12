@@ -63,6 +63,7 @@ class AuthController extends Controller
         }
 
         if ($user->user_type !== UserType::ADMIN || ! $user->is_active) {
+            RateLimiter::hit($rateLimitKey, $this->settings->integer('security.login_rate_limit_window_minutes', 1) * 60);
             $this->auditLogs->permission('admin.login.blocked', [
                 'entity_type'  => 'admin_session',
                 'entity_id'    => $user->id,
