@@ -58,6 +58,7 @@ export const useAdminTenantStore = defineStore('admin-tenants', () => {
   const showWorkspace = async (id: string): Promise<void> => {
     try {
       loading.value = true
+      workspace.value = null
       workspace.value = (await adminTenantService.workspace(id)).data
     } finally {
       loading.value = false

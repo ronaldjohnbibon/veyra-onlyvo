@@ -16,14 +16,14 @@ class TenantResource extends JsonResource
             'settings'  => $this->settings,
             'timezone'  => $this->timezone,
             'status'    => $this->status,
-            'owner'     => $this->whenLoaded('owner', fn () => [
+            'owner'     => $this->whenLoaded('owner', fn () => $this->owner ? [
                 'id'         => $this->owner?->id,
                 'name'       => $this->owner?->name,
                 'first_name' => $this->owner?->first_name,
                 'last_name'  => $this->owner?->last_name,
                 'email'      => $this->owner?->email,
                 'phone'      => $this->owner?->phone,
-            ]),
+            ] : null),
             'users_count'     => $this->whenCounted('users'),
             'templates_count' => $this->whenCounted('templates'),
             'created_at'      => $this->created_at?->toISOString(),

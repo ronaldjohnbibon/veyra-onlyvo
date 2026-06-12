@@ -158,7 +158,7 @@ class AdminTenantController extends Controller
 
     private function authorizeAdmin(): void
     {
-        abort_unless(Auth::user()?->user_type === UserType::ADMIN, 403);
+        abort_unless(Auth::user()?->user_type === UserType::ADMIN && Auth::user()?->is_active, 403);
     }
 
     /**

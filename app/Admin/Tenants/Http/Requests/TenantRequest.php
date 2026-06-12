@@ -22,8 +22,7 @@ class TenantRequest extends FormRequest
      */
     public function rules(): array
     {
-        $routeParam         = $this->route('tenant');
-        $tenantId           = is_object($routeParam) ? $routeParam->id : $routeParam;
+        $tenantId           = $this->routeTenantId();
         $ownerId            = $this->ownerId($tenantId);
         $ownerPasswordRules = $this->ownerPasswordRules();
 
@@ -48,7 +47,7 @@ class TenantRequest extends FormRequest
     {
         return [
             function (Validator $validator): void {
-                $tenantId = $this->route('tenant');
+                $tenantId = $this->routeTenantId();
 
                 if ($this->isMethod('put') && ! $this->ownerId($tenantId) && ! $this->filled('owner_password')) {
                     $validator->errors()->add('owner_password', 'The owner password field is required.');
@@ -65,7 +64,7 @@ class TenantRequest extends FormRequest
             }
         }
 
-        $subdomainSource = (string) $this->input('subdomain', $this->input('name', 'tenant'));
+        $subdomainSource = (string) ($this->input('subdomain') ?: $this->input('name', 'tenant'));
 
         $this->merge([
             'subdomain' => Str::slug($subdomainSource),
@@ -74,9 +73,16 @@ class TenantRequest extends FormRequest
         ]);
     }
 
+    private function routeTenantId(): mixed
+    {
+        $routeParam = $this->route('tenant');
+
+        return is_object($routeParam) ? $routeParam->id : $routeParam;
+    }
+
     private function ownerId(mixed $tenantId): ?int
     {
-        if (! $tenantId || is_object($tenantId)) {
+        if (! $tenantId) {
             return null;
         }
 
