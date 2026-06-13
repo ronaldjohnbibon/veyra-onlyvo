@@ -270,7 +270,12 @@ const payloadForSave = (): SystemSettingsPayload => {
 
     for (const setting of group.settings) {
       const value = getSettingValue(setting)
-      payload[group.key][setting.name] = setting.type === 'integer' ? Number(value || 0) : value
+      payload[group.key][setting.name] =
+        setting.type === 'integer' && (value === null || value === '')
+          ? null
+          : setting.type === 'integer'
+            ? Number(value)
+            : value
     }
   }
 
@@ -1111,7 +1116,9 @@ onMounted(async () => {
                                   setSettingValue(
                                     setting,
                                     setting.type === 'integer'
-                                      ? Number($event || 0)
+                                      ? $event === null || $event === ''
+                                        ? null
+                                        : Number($event)
                                       : String($event ?? '')
                                   )
                                 "

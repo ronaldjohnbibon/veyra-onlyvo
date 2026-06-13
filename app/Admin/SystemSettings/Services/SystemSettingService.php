@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Mail\Message;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
@@ -215,7 +216,10 @@ class SystemSettingService
                     }
                 }
 
-                $value = $stored[$key] ?? $aliasedValue ?? $definition['default'];
+                $value = $this->castValue(
+                    (string) $definition['type'],
+                    $stored[$key] ?? $aliasedValue ?? $definition['default'],
+                );
 
                 return [$key => $this->safeValue($key, $value, $maskSensitive)];
             })
@@ -228,7 +232,11 @@ class SystemSettingService
                 continue;
             }
 
-            $values[$legacyKey] = $this->safeValue($key, $values[$key] ?? $definition['default'], $maskSensitive);
+            $values[$legacyKey] = $this->safeValue(
+                $key,
+                $values[$key] ?? $this->castValue((string) $definition['type'], $definition['default']),
+                $maskSensitive,
+            );
         }
 
         return $values;
@@ -253,7 +261,9 @@ class SystemSettingService
 
     public function integer(string $key, int $fallback = 0): int
     {
-        return (int) $this->get($key, $fallback);
+        $value = $this->get($key, $fallback);
+
+        return $value === null || $value === '' ? $fallback : (int) $value;
     }
 
     public function boolean(string $key, bool $fallback = false): bool
@@ -267,11 +277,15 @@ class SystemSettingService
      */
     public function upsertGrouped(array $payload, ?Authenticatable $actor = null): array
     {
-        $saved = [];
+        $saved = DB::transaction(function () use ($payload, $actor): array {
+            $saved = [];
 
-        foreach ($this->flattenGroupedPayload($payload) as $key => $value) {
-            $saved[] = $this->upsert($key, $value, $actor);
-        }
+            foreach ($this->flattenGroupedPayload($payload) as $key => $value) {
+                $saved[] = $this->upsert($key, $value, $actor);
+            }
+
+            return $saved;
+        });
 
         Cache::forget(self::CACHE_KEY);
 
@@ -773,7 +787,7 @@ class SystemSettingService
     {
         return match ($type) {
             'boolean' => filter_var($value, FILTER_VALIDATE_BOOLEAN),
-            'integer' => (int) $value,
+            'integer' => $value === null || $value === '' ? null : (int) $value,
             default   => is_string($value) ? trim($value) : $value,
         };
     }

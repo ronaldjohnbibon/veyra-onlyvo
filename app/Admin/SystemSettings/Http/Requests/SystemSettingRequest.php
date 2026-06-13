@@ -20,8 +20,15 @@ class SystemSettingRequest extends FormRequest
     {
         $keys = array_keys(app(SystemSettingService::class)->definitions());
 
+        if (! $this->isMethod('post')) {
+            return [
+                'key'   => ['sometimes', 'string', Rule::in($keys)],
+                'value' => ['present', 'nullable'],
+            ];
+        }
+
         return [
-            'key'   => [$this->isMethod('post') ? 'required' : 'sometimes', 'string', Rule::in($keys), Rule::unique('system_settings', 'key')->ignore($this->route('systemSetting'))],
+            'key'   => ['required', 'string', Rule::in($keys), Rule::unique('system_settings', 'key')],
             'value' => ['present', 'nullable'],
         ];
     }

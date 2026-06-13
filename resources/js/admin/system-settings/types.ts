@@ -34,7 +34,7 @@ export interface SystemSettingGroup {
 export interface SystemSettingHistoryRecord {
   id: string
   setting_key: string
-  action: 'created' | 'updated' | 'deleted'
+  action: 'created' | 'updated' | 'deleted' | 'restored' | 'tested' | 'exported' | 'backed_up'
   previous_value: SystemSettingValue
   new_value: SystemSettingValue
   can_restore: boolean
