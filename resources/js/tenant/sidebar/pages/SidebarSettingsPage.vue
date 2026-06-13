@@ -22,6 +22,7 @@ import {
   Trash2,
 } from 'lucide-vue-next'
 import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 
 type BuilderGroup = SidebarNavItem & { items: BuilderLink[] }
 type BuilderLink = SidebarNavChild
@@ -36,6 +37,7 @@ interface ValidationIssue {
 }
 
 const sidebarStore = useSidebarStore()
+const router = useRouter()
 const groups = ref<BuilderGroup[]>([])
 const selected = ref<Selection>({ type: 'group', groupIndex: 0 })
 const previewMode = ref<'expanded' | 'collapsed'>('expanded')
@@ -44,21 +46,25 @@ const saveSuccess = ref('')
 
 const sidebar = computed(() => sidebarStore.sidebars[0] ?? null)
 const iconNames = Object.keys(iconMap) as IconName[]
-const routeSuggestions = [
-  'dashboard',
-  'templates',
-  'template-builder',
-  'posts',
-  'navigation-builder',
-  'design-requests',
-  'analytics',
-  'leads',
-  'tracking-logs',
-  'sidebar',
-  'system-settings',
-  'account',
-  'team-management',
-]
+const knownTenantRoutePaths = computed(() => {
+  return new Set(
+    router
+      .getRoutes()
+      .filter(
+        (route) =>
+          route.meta?.requiresAuth === true &&
+          route.meta?.requiresAdminAuth !== true &&
+          !route.path.includes(':')
+      )
+      .map((route) => normalizePath(route.path))
+  )
+})
+const routeSuggestions = computed(() => {
+  return [...knownTenantRoutePaths.value]
+    .map((path) => path.replace(/^\//, ''))
+    .filter(Boolean)
+    .sort()
+})
 
 const selectedGroup = computed(() => groups.value[selected.value.groupIndex] ?? null)
 const selectedLink = computed(() => {
@@ -66,8 +72,20 @@ const selectedLink = computed(() => {
 
   return selectedGroup.value?.items[selected.value.linkIndex] ?? null
 })
-const selectedItem = computed(() => selectedLink.value ?? selectedGroup.value)
-const selectedIsLink = computed(() => Boolean(selectedLink.value))
+const selectedItem = computed(() =>
+  selected.value.type === 'link' ? selectedLink.value : selectedGroup.value
+)
+const selectedIsLink = computed(() => selected.value.type === 'link' && Boolean(selectedLink.value))
+const selectedLinkCanMoveUp = computed(
+  () => selected.value.type === 'link' && selected.value.linkIndex > 0
+)
+const selectedLinkCanMoveDown = computed(() => {
+  return (
+    selected.value.type === 'link' &&
+    Boolean(selectedGroup.value) &&
+    selected.value.linkIndex < selectedGroup.value.items.length - 1
+  )
+})
 const visibleGroupCount = computed(
   () => groups.value.filter((group) => group.is_active !== false).length
 )
@@ -144,27 +162,72 @@ const iconFor = (icon?: string) => {
   return icon && icon in iconMap ? iconMap[icon as IconName] : iconMap.Circle
 }
 
+const normalizeIcon = (icon?: string): IconName => {
+  return icon && icon in iconMap ? (icon as IconName) : 'Circle'
+}
+
+const stringValue = (value: unknown, fallback = ''): string => {
+  return typeof value === 'string' ? value : fallback
+}
+
+const normalizePath = (path: string): string => {
+  if (!path) return '/'
+
+  return `/${path}`.replace(/\/+/g, '/').replace(/\/$/, '') || '/'
+}
+
+const isExternalUrl = (url: string): boolean => /^(https?:|mailto:|tel:)/i.test(url)
+
+const resolveTenantRoute = (url: string): string | null => {
+  if (!url || url === '#' || isExternalUrl(url)) return null
+  if (url.startsWith('/')) return normalizePath(url)
+
+  return normalizePath(`/${url}`)
+}
+
 const cloneGroups = (data?: SidebarData): BuilderGroup[] => {
-  return (data?.main_nav ?? []).map((group) => ({
-    title: group.title ?? '',
-    url: group.url ?? '#',
-    icon: group.icon || 'Circle',
-    description: group.description ?? '',
+  const mainNav = Array.isArray(data?.main_nav) ? data.main_nav : []
+
+  return mainNav.map((group) => ({
+    title: stringValue(group.title),
+    url: stringValue(group.url, '#'),
+    icon: normalizeIcon(group.icon),
+    description: stringValue(group.description),
     is_active: group.is_active !== false,
-    items: (group.items ?? []).map((link) => ({
-      title: link.title ?? '',
-      url: link.url ?? '',
-      icon: link.icon || 'Circle',
-      description: link.description ?? '',
+    items: (Array.isArray(group.items) ? group.items : []).map((link) => ({
+      title: stringValue(link.title),
+      url: stringValue(link.url),
+      icon: normalizeIcon(link.icon),
+      description: stringValue(link.description),
       is_active: link.is_active !== false,
     })),
   }))
 }
 
+const normalizeSelection = (): void => {
+  if (!groups.value.length) {
+    selected.value = { type: 'group', groupIndex: 0 }
+    return
+  }
+
+  const groupIndex = Math.max(0, Math.min(selected.value.groupIndex, groups.value.length - 1))
+
+  if (selected.value.type === 'link') {
+    const group = groups.value[groupIndex]
+
+    if (group?.items[selected.value.linkIndex]) {
+      selected.value = { type: 'link', groupIndex, linkIndex: selected.value.linkIndex }
+      return
+    }
+  }
+
+  selected.value = { type: 'group', groupIndex }
+}
+
 const loadSidebar = async (): Promise<void> => {
   await sidebarStore.index()
   groups.value = cloneGroups(sidebar.value?.data)
-  selected.value = { type: 'group', groupIndex: 0 }
+  normalizeSelection()
 }
 
 const selectGroup = (groupIndex: number): void => {
@@ -193,6 +256,7 @@ const deleteGroup = (index: number): void => {
     type: 'group',
     groupIndex: Math.max(0, Math.min(index, groups.value.length - 1)),
   }
+  normalizeSelection()
 }
 
 const addLink = (groupIndex: number): void => {
@@ -211,14 +275,16 @@ const addLink = (groupIndex: number): void => {
 
 const deleteLink = (groupIndex: number, linkIndex: number): void => {
   const group = groups.value[groupIndex]
-  if (!group) return
+  if (!group || !group.items[linkIndex]) return
 
   group.items.splice(linkIndex, 1)
   selected.value = { type: 'group', groupIndex }
+  normalizeSelection()
 }
 
 const moveGroup = (from: number, to: number): void => {
-  if (to < 0 || to >= groups.value.length) return
+  if (from === to || from < 0 || from >= groups.value.length || to < 0 || to >= groups.value.length)
+    return
 
   const [group] = groups.value.splice(from, 1)
   groups.value.splice(to, 0, group)
@@ -227,17 +293,41 @@ const moveGroup = (from: number, to: number): void => {
 
 const moveLink = (groupIndex: number, from: number, to: number): void => {
   const group = groups.value[groupIndex]
-  if (!group || to < 0 || to >= group.items.length) return
+  if (
+    !group ||
+    from === to ||
+    from < 0 ||
+    from >= group.items.length ||
+    to < 0 ||
+    to >= group.items.length
+  )
+    return
 
   const [link] = group.items.splice(from, 1)
   group.items.splice(to, 0, link)
   selected.value = { type: 'link', groupIndex, linkIndex: to }
 }
 
-const updateSelectedVisibility = (value: boolean | 'indeterminate'): void => {
-  if (!selectedItem.value) return
+const moveSelectedLink = (direction: -1 | 1): void => {
+  if (selected.value.type !== 'link') return
 
-  selectedItem.value.is_active = Boolean(value)
+  moveLink(
+    selected.value.groupIndex,
+    selected.value.linkIndex,
+    selected.value.linkIndex + direction
+  )
+}
+
+const deleteSelectedLink = (): void => {
+  if (selected.value.type !== 'link') return
+
+  deleteLink(selected.value.groupIndex, selected.value.linkIndex)
+}
+
+const updateSelectedVisibility = (value: boolean | 'indeterminate'): void => {
+  if (!selectedItem.value || value === 'indeterminate') return
+
+  selectedItem.value.is_active = value
 }
 
 const applyRouteSuggestion = (route: string): void => {
@@ -258,9 +348,9 @@ const urlIssues = (value: string, label: string, groupWithLinks = false): Valida
     return issues
   }
 
-  if (/^(https?:|mailto:|tel:)/.test(url)) {
+  if (isExternalUrl(url)) {
     try {
-      if (url.startsWith('http')) new URL(url)
+      if (/^https?:/i.test(url)) new URL(url)
       return issues
     } catch {
       return [
@@ -273,7 +363,7 @@ const urlIssues = (value: string, label: string, groupWithLinks = false): Valida
     }
   }
 
-  if (!/^[a-z0-9][a-z0-9-/]*$/.test(url.replace(/^\//, ''))) {
+  if (!/^[a-z0-9][a-z0-9-/]*$/i.test(url.replace(/^\//, ''))) {
     issues.push({
       key: `${label}-url-format`,
       level: 'error',
@@ -281,8 +371,8 @@ const urlIssues = (value: string, label: string, groupWithLinks = false): Valida
     })
   }
 
-  const normalized = url.replace(/^\//, '')
-  if (!routeSuggestions.includes(normalized)) {
+  const routePath = resolveTenantRoute(url)
+  if (routePath && !knownTenantRoutePaths.value.has(routePath)) {
     issues.push({
       key: `${label}-url-warning`,
       level: 'warning',
@@ -350,7 +440,7 @@ onMounted(loadSidebar)
     <div class="min-h-screen rounded pb-16">
       <div class="module-heading-container">
         <div>
-          <h2 class="module-container-title">Sidebar Settings</h2>
+          <h2 class="module-container-title">Navigation Builder</h2>
           <p class="module-container-description">
             Build the tenant sidebar by editing one group or link at a time.
           </p>
@@ -484,7 +574,7 @@ onMounted(loadSidebar)
               </p>
             </div>
 
-            <div v-if="selectedGroup" class="flex flex-wrap gap-2">
+            <div v-if="selectedItem" class="flex flex-wrap gap-2">
               <Button
                 v-if="selected.type === 'group'"
                 type="button"
@@ -508,24 +598,24 @@ onMounted(loadSidebar)
                 <ChevronDown class="size-4" />
               </Button>
               <Button
-                v-if="selected.type === 'link'"
+                v-if="selectedIsLink"
                 type="button"
                 size="icon-sm"
                 variant="navigate"
-                :disabled="selected.linkIndex === 0"
+                :disabled="!selectedLinkCanMoveUp"
                 aria-label="Move link up"
-                @click="moveLink(selected.groupIndex, selected.linkIndex, selected.linkIndex - 1)"
+                @click="moveSelectedLink(-1)"
               >
                 <ChevronUp class="size-4" />
               </Button>
               <Button
-                v-if="selected.type === 'link'"
+                v-if="selectedIsLink"
                 type="button"
                 size="icon-sm"
                 variant="navigate"
-                :disabled="selected.linkIndex === selectedGroup.items.length - 1"
+                :disabled="!selectedLinkCanMoveDown"
                 aria-label="Move link down"
-                @click="moveLink(selected.groupIndex, selected.linkIndex, selected.linkIndex + 1)"
+                @click="moveSelectedLink(1)"
               >
                 <ChevronDown class="size-4" />
               </Button>
@@ -540,12 +630,12 @@ onMounted(loadSidebar)
                 <Trash2 class="size-4" />
               </Button>
               <Button
-                v-else
+                v-else-if="selectedIsLink"
                 type="button"
                 size="icon-sm"
                 variant="delete"
                 aria-label="Delete link"
-                @click="deleteLink(selected.groupIndex, selected.linkIndex)"
+                @click="deleteSelectedLink"
               >
                 <Trash2 class="size-4" />
               </Button>

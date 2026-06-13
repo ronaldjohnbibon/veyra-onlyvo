@@ -2,6 +2,7 @@
 
 namespace App\Tenant\Templates\Http\Requests;
 
+use App\Tenant\Templates\Models\TemplateCtaSubmission;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -18,7 +19,7 @@ class TemplateCtaSubmissionStatusRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'status' => ['required', 'string', Rule::in(['new', 'contacted', 'archived'])],
+            'status' => ['required', 'string', Rule::in(TemplateCtaSubmission::TENANT_EDITABLE_STATUSES)],
         ];
     }
 }

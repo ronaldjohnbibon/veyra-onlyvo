@@ -2,6 +2,7 @@
 
 namespace App\Tenant\Templates\Http\Requests;
 
+use App\Tenant\Templates\Models\TemplateCtaSubmission;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -19,7 +20,7 @@ class TemplateCtaSubmissionIndexRequest extends FormRequest
     {
         return [
             'search'      => ['nullable', 'string', 'max:255'],
-            'status'      => ['nullable', 'string', Rule::in(['new', 'contacted', 'archived'])],
+            'status'      => ['nullable', 'string', Rule::in(TemplateCtaSubmission::STATUSES)],
             'template_id' => ['nullable', 'uuid'],
             'cta_type'    => ['nullable', 'string', 'max:60'],
             'from'        => ['nullable', 'date'],

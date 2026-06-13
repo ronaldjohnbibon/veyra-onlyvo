@@ -21,6 +21,8 @@ const statusLabels: Record<string, string> = {
   under_review: 'Under Review',
   completed: 'Completed',
   contacted: 'Contacted',
+  closed: 'Closed',
+  spam: 'Spam',
 }
 
 const statusVariants: Record<string, BadgeVariant> = {
@@ -29,6 +31,7 @@ const statusVariants: Record<string, BadgeVariant> = {
   changes_requested: 'warning',
   completed: 'success',
   contacted: 'success',
+  closed: 'success',
   enabled: 'success',
   published: 'success',
   scheduled: 'info',
@@ -42,6 +45,7 @@ const statusVariants: Record<string, BadgeVariant> = {
   inactive: 'neutral',
   failed: 'destructive',
   rejected: 'destructive',
+  spam: 'destructive',
 }
 
 const normalizeStatus = (status: string): string => status.trim().toLowerCase().replace(/\s+/g, '_')

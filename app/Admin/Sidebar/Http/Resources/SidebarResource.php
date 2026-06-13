@@ -13,10 +13,15 @@ class SidebarResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $mainNav   = $this->data['main_nav'] ?? [];
+        $data      = is_array($this->data) ? $this->data : [];
+        $mainNav   = is_array($data['main_nav'] ?? null) ? $data['main_nav'] : [];
         $linkCount = 0;
 
         foreach ($mainNav as $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+
             $linkCount++;
 
             if (! empty($item['items']) && is_array($item['items'])) {
@@ -30,7 +35,7 @@ class SidebarResource extends JsonResource
             'name'        => $this->name,
             'description' => $this->description,
             'is_admin'    => (bool) $this->is_admin,
-            'data'        => $this->data,
+            'data'        => $data,
             'stats'       => [
                 'nav_groups' => count($mainNav),
                 'links'      => $linkCount,

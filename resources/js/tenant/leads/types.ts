@@ -1,4 +1,5 @@
-export type LeadStatus = 'new' | 'contacted' | 'archived'
+export type LeadStatus = 'new' | 'contacted' | 'closed' | 'spam' | 'archived'
+export type LeadEditableStatus = Extract<LeadStatus, 'new' | 'contacted' | 'archived'>
 
 export interface LeadRecord {
   id: string
@@ -55,6 +56,8 @@ export interface LeadFilters {
 export interface LeadStatusCounts {
   new: number
   contacted: number
+  closed: number
+  spam: number
   archived: number
 }
 

@@ -64,6 +64,8 @@ class TemplateCtaSubmissionService
         return [
             'new'       => (int) ($counts['new'] ?? 0),
             'contacted' => (int) ($counts['contacted'] ?? 0),
+            'closed'    => (int) ($counts['closed'] ?? 0),
+            'spam'      => (int) ($counts['spam'] ?? 0),
             'archived'  => (int) ($counts['archived'] ?? 0),
         ];
     }
@@ -118,11 +120,7 @@ class TemplateCtaSubmissionService
         return [
             'templates' => $templates,
             'cta_types' => $ctaTypes,
-            'statuses'  => [
-                ['value' => 'new', 'label' => 'New'],
-                ['value' => 'contacted', 'label' => 'Contacted'],
-                ['value' => 'archived', 'label' => 'Archived'],
-            ],
+            'statuses'  => $this->statusOptions(),
         ];
     }
 
@@ -168,5 +166,18 @@ class TemplateCtaSubmissionService
             ->replace('_', ' ')
             ->title()
             ->toString();
+    }
+
+    /**
+     * @return array<int, array{value: string, label: string}>
+     */
+    private function statusOptions(): array
+    {
+        return collect(TemplateCtaSubmission::STATUSES)
+            ->map(fn (string $status): array => [
+                'value' => $status,
+                'label' => $this->label($status),
+            ])
+            ->all();
     }
 }

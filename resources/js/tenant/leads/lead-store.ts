@@ -2,12 +2,12 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { leadService } from '@/tenant/leads/api/leads'
 import type {
+  LeadEditableStatus,
   LeadFilters,
   LeadMeta,
   LeadParams,
   LeadPagination,
   LeadRecord,
-  LeadStatus,
   LeadStatusCounts,
 } from '@/tenant/leads/types'
 
@@ -17,6 +17,8 @@ const defaultFilters = (): LeadFilters => ({
   statuses: [
     { value: 'new', label: 'New' },
     { value: 'contacted', label: 'Contacted' },
+    { value: 'closed', label: 'Closed' },
+    { value: 'spam', label: 'Spam' },
     { value: 'archived', label: 'Archived' },
   ],
 })
@@ -24,6 +26,8 @@ const defaultFilters = (): LeadFilters => ({
 const defaultCounts = (): LeadStatusCounts => ({
   new: 0,
   contacted: 0,
+  closed: 0,
+  spam: 0,
   archived: 0,
 })
 
@@ -76,7 +80,7 @@ export const useLeadStore = defineStore('tenant-leads', () => {
     }
   }
 
-  const updateStatus = async (id: string, status: LeadStatus): Promise<void> => {
+  const updateStatus = async (id: string, status: LeadEditableStatus): Promise<void> => {
     try {
       loading.value = true
       lead.value = (await leadService.updateStatus(id, status)).data

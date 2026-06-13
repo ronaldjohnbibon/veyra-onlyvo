@@ -11,6 +11,20 @@ class TemplateCtaSubmission extends Model
 {
     use HasFactory, HasUuids;
 
+    public const STATUSES = [
+        'new',
+        'contacted',
+        'closed',
+        'spam',
+        'archived',
+    ];
+
+    public const TENANT_EDITABLE_STATUSES = [
+        'new',
+        'contacted',
+        'archived',
+    ];
+
     protected $fillable = [
         'template_id',
         'cta_type',

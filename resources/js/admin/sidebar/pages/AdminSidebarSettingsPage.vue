@@ -178,7 +178,7 @@ const isExternalUrl = (url: string): boolean => /^(https?:|mailto:|tel:)/i.test(
 const resolveAdminRoute = (url: string): string | null => {
   if (!url || url === '#' || isExternalUrl(url)) return null
   if (url.startsWith('/admin')) return normalizePath(url)
-  if (url.startsWith('/')) return normalizePath(url)
+  if (url.startsWith('/')) return normalizePath(`/admin${url}`)
 
   return normalizePath(`/admin/${url}`)
 }

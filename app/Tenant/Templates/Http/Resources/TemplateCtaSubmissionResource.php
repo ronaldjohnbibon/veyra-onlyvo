@@ -19,7 +19,7 @@ class TemplateCtaSubmissionResource extends JsonResource
             'template_id'   => $this->template_id,
             'template_name' => $template?->business_name ?: $template?->name,
             'template_slug' => $template?->slug,
-            'template_url'  => $template ? $this->templateUrl($request, $template->slug) : null,
+            'template_url'  => $template?->slug ? $this->templateUrl($request, (string) $template->slug) : null,
             'cta_type'      => $this->cta_type,
             'payload'       => $this->payload ?? [],
             'summary'       => $this->summary($this->payload),

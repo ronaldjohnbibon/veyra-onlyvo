@@ -1,10 +1,10 @@
 import http from '@/shared/api/http'
 import type {
+  LeadEditableStatus,
   LeadMeta,
   LeadPagination,
   LeadParams,
   LeadRecord,
-  LeadStatus,
 } from '@/tenant/leads/types'
 
 interface LeadsResponse {
@@ -26,7 +26,7 @@ export const leadService = {
     return http.get<LeadResponse>(`leads/${id}`).then((response) => response.data)
   },
 
-  updateStatus(id: string, status: LeadStatus) {
+  updateStatus(id: string, status: LeadEditableStatus) {
     return http
       .put<LeadResponse>(`leads/${id}/status`, { status })
       .then((response) => response.data)

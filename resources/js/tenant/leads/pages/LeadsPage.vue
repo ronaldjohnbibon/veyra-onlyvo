@@ -24,7 +24,7 @@ import {
 import { formatDisplayDate } from '@/shared/utils/date'
 import { getStatusBadgeVariant, getStatusLabel } from '@/shared/utils/status'
 import { useLeadStore } from '@/tenant/leads/lead-store'
-import type { LeadParams, LeadRecord, LeadStatus } from '@/tenant/leads/types'
+import type { LeadEditableStatus, LeadParams, LeadRecord, LeadStatus } from '@/tenant/leads/types'
 import { Archive, CheckCircle2, Download, ExternalLink, Inbox, RotateCcw } from 'lucide-vue-next'
 import { computed, onMounted, ref } from 'vue'
 
@@ -58,6 +58,18 @@ const statusCards = computed(() => [
     value: leadStore.statusCounts.contacted,
     status: 'contacted' as LeadStatus,
     description: 'Follow-up started',
+  },
+  {
+    label: 'Closed',
+    value: leadStore.statusCounts.closed,
+    status: 'closed' as LeadStatus,
+    description: 'Completed follow-up',
+  },
+  {
+    label: 'Spam',
+    value: leadStore.statusCounts.spam,
+    status: 'spam' as LeadStatus,
+    description: 'Not a valid lead',
   },
   {
     label: 'Archived',
@@ -135,10 +147,11 @@ const emptyDescription = computed(() => {
   return 'When visitors submit a CTA form on a published website, new leads will appear here for follow-up.'
 })
 
-const labelFor = (value: string): string => {
-  return value
+const labelFor = (value?: string | null): string => {
+  return String(value ?? '')
     .replace(/_/g, ' ')
     .replace(/\w\S*/g, (word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .trim()
 }
 
 const displayPayloadValue = (value: unknown): string => {
@@ -164,11 +177,11 @@ const openDetails = async (lead: LeadRecord): Promise<void> => {
   detailsOpen.value = true
 }
 
-const updateStatus = async (lead: LeadRecord, status: LeadStatus): Promise<void> => {
+const updateStatus = async (lead: LeadRecord, status: LeadEditableStatus): Promise<void> => {
   await leadStore.updateStatus(lead.id, status)
 }
 
-const updateSelectedStatus = async (status: LeadStatus): Promise<void> => {
+const updateSelectedStatus = async (status: LeadEditableStatus): Promise<void> => {
   if (!selectedLead.value) return
 
   await updateStatus(selectedLead.value, status)
@@ -206,7 +219,7 @@ onMounted(() => {
         </Button>
       </div>
 
-      <div class="mb-4 grid gap-3 md:grid-cols-3">
+      <div class="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <Card
           v-for="card in statusCards"
           :key="card.status"
@@ -382,7 +395,9 @@ onMounted(() => {
         </template>
 
         <template #cell-cta_type="{ row }">
-          <span class="text-sm text-muted-foreground">{{ labelFor(row.cta_type) }}</span>
+          <span class="text-sm text-muted-foreground">
+            {{ labelFor(row.cta_type) || 'CTA Form' }}
+          </span>
         </template>
 
         <template #cell-created_at="{ row }">
@@ -434,7 +449,7 @@ onMounted(() => {
               <Badge :variant="getStatusBadgeVariant(selectedLead.status)">
                 {{ getStatusLabel(selectedLead.status) }}
               </Badge>
-              <Badge variant="outline">{{ labelFor(selectedLead.cta_type) }}</Badge>
+              <Badge variant="outline">{{ labelFor(selectedLead.cta_type) || 'CTA Form' }}</Badge>
               <Button
                 v-if="selectedLead.template_url"
                 as-child

@@ -84,9 +84,11 @@ class TemplateCtaSubmissionRequest extends FormRequest
                 return;
             }
 
+            $fields = $cta['fields'] ?? [];
+
             $payloadValidator = Validator::make(
                 $this->input('payload', []),
-                $this->payloadRules($cta['fields'] ?? [])
+                $this->payloadRules(is_array($fields) ? $fields : [])
             );
 
             if ($payloadValidator->fails()) {

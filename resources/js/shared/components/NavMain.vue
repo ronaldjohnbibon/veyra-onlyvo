@@ -28,9 +28,12 @@ const route = useRoute()
 const resolveUrl = (url: string): string => {
   if (isExternalUrl(url)) return url
   if (url === '#') return route.path
-  if (url.startsWith('/')) return url
 
   const base = route.path.startsWith('/admin') ? '/admin' : ''
+
+  if (url.startsWith('/')) {
+    return `${base && !url.startsWith(base) ? base : ''}${url}`.replace(/\/+/g, '/')
+  }
 
   return `${base}/${url}`.replace(/\/+/g, '/')
 }
