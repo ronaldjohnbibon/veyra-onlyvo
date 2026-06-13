@@ -73,6 +73,7 @@ export interface TenantDashboardChecklistItem {
 }
 
 export interface TenantDashboardModuleStatus {
+  templates: boolean
   analytics: boolean
   posts: boolean
   design_requests: boolean

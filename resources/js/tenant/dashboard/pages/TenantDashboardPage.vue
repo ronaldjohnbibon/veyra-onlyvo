@@ -2,6 +2,7 @@
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
+import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/shared/components/ui/empty'
 import { Skeleton } from '@/shared/components/ui/skeleton'
 import { formatDisplayDate } from '@/shared/utils/date'
 import { getStatusBadgeVariant, getStatusLabel } from '@/shared/utils/status'
@@ -40,35 +41,45 @@ const checklistPercent = computed(() => {
 })
 
 const nextChecklistItem = computed<TenantDashboardChecklistItem | null>(() => {
-  return dashboard.value?.launch_checklist.find((item) => !item.completed) ?? null
+  return (
+    dashboard.value?.launch_checklist.find(
+      (item) => !item.completed && checklistItemEnabled(item)
+    ) ?? null
+  )
 })
 
 const metricCards = computed(() => {
   const metrics = dashboard.value?.metrics
+  const modules = dashboard.value?.module_status
 
   return [
     {
       label: 'Recent Visits',
       value: metrics?.recent_visits ?? 0,
-      detail: `${metrics?.today_visits ?? 0} today`,
+      detail:
+        modules?.analytics === false ? 'Analytics disabled' : `${metrics?.today_visits ?? 0} today`,
       icon: BarChart3,
     },
     {
       label: 'CTA Activity',
       value: metrics?.recent_cta_events ?? 0,
-      detail: `${metrics?.today_cta_events ?? 0} today`,
+      detail:
+        modules?.analytics === false
+          ? 'Analytics disabled'
+          : `${metrics?.today_cta_events ?? 0} today`,
       icon: MousePointerClick,
     },
     {
       label: 'New Leads',
       value: metrics?.new_leads ?? 0,
-      detail: `${metrics?.recent_leads ?? 0} this week`,
+      detail:
+        modules?.cta_forms === false ? 'Forms disabled' : `${metrics?.recent_leads ?? 0} this week`,
       icon: Inbox,
     },
     {
       label: 'Pending Requests',
       value: metrics?.pending_design_requests ?? 0,
-      detail: 'Design work in progress',
+      detail: modules?.design_requests === false ? 'Requests disabled' : 'Design work in progress',
       icon: Palette,
     },
   ]
@@ -80,6 +91,16 @@ const labelFor = (value: string): string => {
   return value
     .replace(/_/g, ' ')
     .replace(/\w\S*/g, (word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+}
+
+const checklistItemEnabled = (item: TenantDashboardChecklistItem): boolean => {
+  const modules = dashboard.value?.module_status
+
+  if (!modules) return false
+  if (item.key === 'publish_site') return modules.templates
+  if (item.key === 'first_post') return modules.posts
+
+  return true
 }
 
 onMounted(() => {
@@ -116,13 +137,13 @@ onMounted(() => {
                 Preview Site
               </a>
             </Button>
-            <Button as-child variant="update" size="sm">
+            <Button v-if="dashboard.module_status.templates" as-child variant="update" size="sm">
               <RouterLink to="/templates">
                 <Sparkles class="size-4" />
                 Edit Website
               </RouterLink>
             </Button>
-            <Button as-child variant="create" size="sm">
+            <Button v-if="dashboard.module_status.posts" as-child variant="create" size="sm">
               <RouterLink to="/posts">
                 <FileText class="size-4" />
                 New Post
@@ -212,6 +233,15 @@ onMounted(() => {
                       </Button>
                     </div>
                   </div>
+                  <div
+                    v-else-if="!dashboard.module_status.templates"
+                    class="rounded border border-dashed p-6 text-center"
+                  >
+                    <p class="font-medium">Templates module disabled</p>
+                    <p class="mt-1 text-sm text-muted-foreground">
+                      Website setup actions are hidden until templates are enabled.
+                    </p>
+                  </div>
                   <div v-else class="rounded border border-dashed p-6 text-center">
                     <p class="font-medium">No public site yet</p>
                     <p class="mt-1 text-sm text-muted-foreground">
@@ -268,7 +298,12 @@ onMounted(() => {
               <Card>
                 <CardHeader class="flex flex-row items-center justify-between">
                   <CardTitle class="text-base">Recent Posts</CardTitle>
-                  <Button as-child variant="navigate" size="sm">
+                  <Button
+                    v-if="dashboard.module_status.posts"
+                    as-child
+                    variant="navigate"
+                    size="sm"
+                  >
                     <RouterLink to="/posts">View All</RouterLink>
                   </Button>
                 </CardHeader>
@@ -311,7 +346,11 @@ onMounted(() => {
                   <div v-else class="rounded border border-dashed p-6 text-center">
                     <p class="font-medium">No posts yet</p>
                     <p class="mt-1 text-sm text-muted-foreground">
-                      Publish your first update, story, or announcement.
+                      {{
+                        dashboard.module_status.posts
+                          ? 'Publish your first update, story, or announcement.'
+                          : 'Posts are hidden until the posts module is enabled.'
+                      }}
                     </p>
                   </div>
                 </CardContent>
@@ -324,7 +363,12 @@ onMounted(() => {
                     <Badge :variant="dashboard.site.cta_forms_enabled ? 'info' : 'outline'">
                       Forms {{ dashboard.site.cta_forms_enabled ? 'On' : 'Off' }}
                     </Badge>
-                    <Button as-child variant="navigate" size="sm">
+                    <Button
+                      v-if="dashboard.module_status.cta_forms"
+                      as-child
+                      variant="navigate"
+                      size="sm"
+                    >
                       <RouterLink to="/leads">Open</RouterLink>
                     </Button>
                   </div>
@@ -350,7 +394,11 @@ onMounted(() => {
                   <div v-else class="rounded border border-dashed p-6 text-center">
                     <p class="font-medium">No form submissions yet</p>
                     <p class="mt-1 text-sm text-muted-foreground">
-                      Leads will appear after visitors submit website forms.
+                      {{
+                        dashboard.module_status.cta_forms
+                          ? 'Leads will appear after visitors submit website forms.'
+                          : 'Lead collection is hidden until forms are enabled.'
+                      }}
                     </p>
                   </div>
                 </CardContent>
@@ -364,11 +412,13 @@ onMounted(() => {
                 <CardTitle class="text-base">Launch Checklist</CardTitle>
               </CardHeader>
               <CardContent class="space-y-3">
-                <RouterLink
+                <component
+                  :is="checklistItemEnabled(item) ? RouterLink : 'div'"
                   v-for="item in dashboard.launch_checklist"
                   :key="item.key"
-                  :to="item.to"
+                  :to="checklistItemEnabled(item) ? item.to : undefined"
                   class="flex items-start gap-3 rounded border p-3 transition hover:bg-muted/60"
+                  :class="{ 'opacity-60 hover:bg-transparent': !checklistItemEnabled(item) }"
                 >
                   <CheckCircle2
                     class="mt-0.5 size-4 shrink-0"
@@ -380,14 +430,19 @@ onMounted(() => {
                       {{ item.description }}
                     </span>
                   </span>
-                </RouterLink>
+                </component>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader class="flex flex-row items-center justify-between">
                 <CardTitle class="text-base">Design Requests</CardTitle>
-                <Button as-child variant="navigate" size="sm">
+                <Button
+                  v-if="dashboard.module_status.design_requests"
+                  as-child
+                  variant="navigate"
+                  size="sm"
+                >
                   <RouterLink to="/design-requests">Open</RouterLink>
                 </Button>
               </CardHeader>
@@ -412,7 +467,11 @@ onMounted(() => {
                 <div v-else class="rounded border border-dashed p-6 text-center">
                   <p class="font-medium">No pending design work</p>
                   <p class="mt-1 text-sm text-muted-foreground">
-                    Request help when you want a custom layout or polish pass.
+                    {{
+                      dashboard.module_status.design_requests
+                        ? 'Request help when you want a custom layout or polish pass.'
+                        : 'Design requests are hidden until the module is enabled.'
+                    }}
                   </p>
                 </div>
               </CardContent>
@@ -457,7 +516,7 @@ onMounted(() => {
         </div>
       </template>
 
-      <template v-else>
+      <template v-else-if="dashboardStore.loading || !dashboardStore.loaded">
         <div class="mb-4 flex items-center justify-between">
           <div class="space-y-2">
             <Skeleton class="h-7 w-48" />
@@ -478,6 +537,16 @@ onMounted(() => {
           <Skeleton class="h-[34rem] rounded" />
         </div>
       </template>
+
+      <Empty v-else class="min-h-[420px] border bg-muted/20">
+        <EmptyHeader>
+          <EmptyTitle>Dashboard unavailable</EmptyTitle>
+          <EmptyDescription>
+            {{ dashboardStore.error || 'Refresh the dashboard to load workspace data.' }}
+          </EmptyDescription>
+        </EmptyHeader>
+        <Button variant="outline_default" size="sm" @click="dashboardStore.index"> Refresh </Button>
+      </Empty>
     </div>
   </div>
 </template>

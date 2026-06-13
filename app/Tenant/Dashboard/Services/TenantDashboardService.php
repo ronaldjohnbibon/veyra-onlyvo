@@ -25,23 +25,31 @@ class TenantDashboardService
     {
         $tenantId        = (string) $tenant->id;
         $values          = $this->tenantSettings->values($tenant);
+        $templatesActive = $this->settings->featureEnabled('enable_templates_module');
         $analyticsActive = $this->settings->featureEnabled('enable_analytics_module');
-        $postsActive     = $this->settings->featureEnabled('enable_posts_module');
+        $postsActive     = $templatesActive && $this->settings->featureEnabled('enable_posts_module');
         $requestsActive  = $this->settings->featureEnabled('enable_design_requests_module');
-        $formsActive     = $this->settings->featureEnabled('enable_cta_forms');
+        $formsActive     = $templatesActive && $this->settings->featureEnabled('enable_cta_forms');
+        $visitorTracking = $analyticsActive && (bool) ($values['analytics.enable_visitor_tracking'] ?? true);
+        $ctaTracking     = $analyticsActive && (bool) ($values['analytics.enable_cta_tracking'] ?? true);
+        $formsEnabled    = $formsActive     && (bool) ($values['website.contact_form_enabled'] ?? true);
 
-        $defaultTemplate = Template::query()
-            ->with('websiteType')
-            ->where('is_default', true)
-            ->orderByDesc('updated_at')
-            ->first();
+        $defaultTemplate = $templatesActive
+            ? Template::query()
+                ->with('websiteType')
+                ->where('is_default', true)
+                ->orderByDesc('updated_at')
+                ->first()
+            : null;
 
-        $latestPublishedTemplate = Template::query()
-            ->with('websiteType')
-            ->where('status', 'published')
-            ->orderByDesc('is_default')
-            ->latest('updated_at')
-            ->first();
+        $latestPublishedTemplate = $templatesActive
+            ? Template::query()
+                ->with('websiteType')
+                ->where('status', 'published')
+                ->orderByDesc('is_default')
+                ->latest('updated_at')
+                ->first()
+            : null;
 
         $activeTemplate = $defaultTemplate ?? $latestPublishedTemplate;
         $siteIsLive     = (string) ($values['website.site_status'] ?? 'live') === 'live';
@@ -51,20 +59,21 @@ class TenantDashboardService
                 'name'              => $this->siteName($tenant, $activeTemplate, $values),
                 'status'            => (string) ($values['website.site_status'] ?? 'live'),
                 'public_url'        => $this->publicTemplateUrl($baseUrl, $activeTemplate, $siteIsLive),
-                'tracking_enabled'  => $analyticsActive && (bool) ($values['analytics.enable_visitor_tracking'] ?? true),
-                'cta_forms_enabled' => $formsActive && (bool) ($values['website.contact_form_enabled'] ?? true),
+                'tracking_enabled'  => $visitorTracking,
+                'cta_forms_enabled' => $formsEnabled,
             ],
-            'default_template' => $activeTemplate ? $this->templateSummary($activeTemplate, $baseUrl, $siteIsLive) : null,
-            'metrics'          => $this->metrics($tenantId, $analyticsActive, $postsActive, $requestsActive),
-            'recent_posts'     => $postsActive ? $this->recentPosts($tenantId, $baseUrl) : [],
-            'recent_leads'     => $formsActive ? $this->recentLeads($tenantId) : [],
+            'default_template'        => $activeTemplate ? $this->templateSummary($activeTemplate, $baseUrl, $siteIsLive) : null,
+            'metrics'                 => $this->metrics($tenantId, $visitorTracking, $ctaTracking, $postsActive, $requestsActive, $formsEnabled),
+            'recent_posts'            => $postsActive ? $this->recentPosts($tenantId, $baseUrl) : [],
+            'recent_leads'            => $formsEnabled ? $this->recentLeads($tenantId) : [],
             'pending_design_requests' => $requestsActive ? $this->pendingDesignRequests($tenantId) : [],
-            'launch_checklist' => $this->launchChecklist($values, $activeTemplate, $tenantId, $analyticsActive, $postsActive),
-            'module_status'    => [
+            'launch_checklist'        => $this->launchChecklist($values, $activeTemplate, $tenantId, $analyticsActive, $postsActive),
+            'module_status'           => [
+                'templates'       => $templatesActive,
                 'analytics'       => $analyticsActive,
                 'posts'           => $postsActive,
                 'design_requests' => $requestsActive,
-                'cta_forms'       => $formsActive,
+                'cta_forms'       => $formsEnabled,
             ],
         ];
     }
@@ -84,18 +93,18 @@ class TenantDashboardService
     /**
      * @return array<string, mixed>
      */
-    private function metrics(string $tenantId, bool $analyticsActive, bool $postsActive, bool $requestsActive): array
+    private function metrics(string $tenantId, bool $visitorTracking, bool $ctaTracking, bool $postsActive, bool $requestsActive, bool $formsEnabled): array
     {
         $sevenDaysAgo = now()->subDays(6)->toDateString();
         $today        = now()->toDateString();
 
         return [
-            'recent_visits'           => $analyticsActive ? DB::table('visitor_visits')->where('tenant_id', $tenantId)->where('visit_date', '>=', $sevenDaysAgo)->count() : 0,
-            'today_visits'            => $analyticsActive ? DB::table('visitor_visits')->where('tenant_id', $tenantId)->where('visit_date', $today)->count() : 0,
-            'recent_cta_events'       => $analyticsActive ? DB::table('cta_events')->where('tenant_id', $tenantId)->where('event_date', '>=', $sevenDaysAgo)->count() : 0,
-            'today_cta_events'        => $analyticsActive ? DB::table('cta_events')->where('tenant_id', $tenantId)->where('event_date', $today)->count() : 0,
-            'new_leads'               => $this->leadQuery($tenantId)->where('template_cta_submissions.status', 'new')->count(),
-            'recent_leads'            => $this->leadQuery($tenantId)->whereDate('template_cta_submissions.created_at', '>=', $sevenDaysAgo)->count(),
+            'recent_visits'           => $visitorTracking ? DB::table('visitor_visits')->where('tenant_id', $tenantId)->where('visit_date', '>=', $sevenDaysAgo)->count() : 0,
+            'today_visits'            => $visitorTracking ? DB::table('visitor_visits')->where('tenant_id', $tenantId)->where('visit_date', $today)->count() : 0,
+            'recent_cta_events'       => $ctaTracking ? DB::table('cta_events')->where('tenant_id', $tenantId)->where('event_date', '>=', $sevenDaysAgo)->count() : 0,
+            'today_cta_events'        => $ctaTracking ? DB::table('cta_events')->where('tenant_id', $tenantId)->where('event_date', $today)->count() : 0,
+            'new_leads'               => $formsEnabled ? $this->leadQuery($tenantId)->where('template_cta_submissions.status', 'new')->count() : 0,
+            'recent_leads'            => $formsEnabled ? $this->leadQuery($tenantId)->whereDate('template_cta_submissions.created_at', '>=', $sevenDaysAgo)->count() : 0,
             'published_posts'         => $postsActive ? $this->postQuery($tenantId)->where('posts.status', 'published')->count() : 0,
             'draft_posts'             => $postsActive ? $this->postQuery($tenantId)->where('posts.status', 'draft')->count() : 0,
             'pending_design_requests' => $requestsActive ? DesignRequest::query()->where('tenant_id', $tenantId)->whereIn('status', ['pending', 'under_review', 'approved'])->count() : 0,
@@ -114,16 +123,16 @@ class TenantDashboardService
             ->limit(5)
             ->get()
             ->map(fn (Post $post): array => [
-                'id'           => $post->id,
-                'template_id'  => $post->template_id,
-                'template_name'=> $post->template?->business_name ?: $post->template?->name,
-                'site_slug'    => $post->template?->slug,
-                'title'        => $post->title,
-                'slug'         => $post->slug,
-                'status'       => $post->status,
-                'public_url'   => $post->template && $post->status === 'published' ? $this->postUrl($baseUrl, $post->template->slug, $post->slug) : null,
-                'published_at' => $post->published_at,
-                'updated_at'   => $post->updated_at,
+                'id'            => $post->id,
+                'template_id'   => $post->template_id,
+                'template_name' => $post->template?->business_name ?: $post->template?->name,
+                'site_slug'     => $post->template?->slug,
+                'title'         => $post->title,
+                'slug'          => $post->slug,
+                'status'        => $post->status,
+                'public_url'    => $post->template && $post->status === 'published' ? $this->postUrl($baseUrl, $post->template->slug, $post->slug) : null,
+                'published_at'  => $post->published_at,
+                'updated_at'    => $post->updated_at,
             ])
             ->values()
             ->all();
