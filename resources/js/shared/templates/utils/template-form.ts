@@ -44,6 +44,35 @@ export const stringContent = (content: TemplateContent, keys: string[], fallback
   return fallback
 }
 
+const setExistingContentValue = (
+  content: TemplateContent,
+  keys: string[],
+  value: string
+): TemplateContent => {
+  for (const key of keys) {
+    if (Object.prototype.hasOwnProperty.call(content, key)) {
+      content[key] = value
+    }
+  }
+
+  return content
+}
+
+export const contentWithTemplateDetails = (form: TemplatePayload): TemplateContent => {
+  const content = { ...contentRecord(form.content) }
+
+  setExistingContentValue(content, ['business_name', 'display_name'], form.business_name)
+  setExistingContentValue(content, ['contact_email', 'email'], form.contact_info.email)
+  setExistingContentValue(content, ['contact_phone', 'phone'], form.contact_info.phone)
+  setExistingContentValue(
+    content,
+    ['contact_address', 'contact_location', 'location', 'address'],
+    form.contact_info.address
+  )
+
+  return content
+}
+
 export const createBlankTemplate = (websiteType?: WebsiteType | null): TemplatePayload => {
   const templateName = websiteType?.name ?? 'Website'
 
@@ -96,23 +125,15 @@ export const applyCatalogStyleDefaults = (
 }
 
 export const payloadForSave = (form: TemplatePayload, status: TemplateStatus): TemplatePayload => {
-  const content = contentRecord(form.content)
-  const businessName = stringContent(content, ['business_name', 'display_name'], form.business_name)
-  const email = stringContent(content, ['contact_email', 'email'], form.contact_info.email)
-  const phone = stringContent(content, ['contact_phone', 'phone'], form.contact_info.phone)
-  const address = stringContent(
-    content,
-    ['contact_address', 'contact_location', 'location', 'address'],
-    form.contact_info.address
-  )
+  const content = contentWithTemplateDetails(form)
 
   return {
     ...form,
-    business_name: businessName || form.name,
+    business_name: form.business_name || form.name,
     contact_info: {
-      email: email || 'hello@example.com',
-      phone: phone || '+1 555 0100',
-      address,
+      email: form.contact_info.email || 'hello@example.com',
+      phone: form.contact_info.phone || '+1 555 0100',
+      address: form.contact_info.address,
     },
     social_links: {
       ...form.social_links,

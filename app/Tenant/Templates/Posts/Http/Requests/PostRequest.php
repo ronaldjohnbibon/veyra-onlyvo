@@ -34,9 +34,11 @@ class PostRequest extends FormRequest
 
     public function prepareForValidation(): void
     {
+        $slug = $this->filled('slug') ? str($this->input('slug'))->slug()->toString() : null;
+
         $this->merge([
             'title'          => trim((string) $this->input('title')),
-            'slug'           => $this->filled('slug') ? str($this->input('slug'))->slug()->toString() : null,
+            'slug'           => $slug ?: null,
             'content'        => trim((string) $this->input('content')),
             'excerpt'        => $this->filled('excerpt') ? trim((string) $this->input('excerpt')) : null,
             'featured_image' => $this->filled('featured_image') ? trim((string) $this->input('featured_image')) : null,

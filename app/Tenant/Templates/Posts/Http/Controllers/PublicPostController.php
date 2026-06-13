@@ -30,6 +30,7 @@ class PublicPostController extends Controller
 
         // Show published posts only.
         $posts = $template->posts()
+            ->reorder()
             ->with('template.tenant')
             ->whereIn('status', ['published', 'scheduled'])
             ->whereNotNull('published_at')
@@ -49,6 +50,7 @@ class PublicPostController extends Controller
         $template = $this->publishedTemplate($siteSlug);
         $post     = $template
             ? $template->posts()
+                ->reorder()
                 ->whereIn('status', ['published', 'scheduled'])
                 ->where('slug', $postSlug)
                 ->whereNotNull('published_at')

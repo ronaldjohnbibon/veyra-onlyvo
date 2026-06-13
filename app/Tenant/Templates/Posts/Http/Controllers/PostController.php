@@ -44,8 +44,11 @@ class PostController extends Controller
         $sort       = (string) $request->input('sort', 'created_at');
         $sortColumn = $sorts[$sort] ?? 'created_at';
         $direction  = $request->input('direction') === 'asc' ? 'asc' : 'desc';
+        $pageSize   = max(1, min(100, (int) $request->input('pageSize', 15)));
+        $page       = max(1, (int) $request->input('page', 1));
 
         $posts = $templateRecord->posts()
+            ->reorder()
             ->filter([
                 'search' => $request->input('search'),
                 'status' => $request->input('status'),
@@ -53,10 +56,10 @@ class PostController extends Controller
             ->orderBy($sortColumn, $direction)
             ->orderBy('title')
             ->paginate(
-                (int) $request->input('pageSize', 15),
+                $pageSize,
                 ['*'],
                 'page',
-                (int) $request->input('page', 1),
+                $page,
             );
 
         return $this->success(PostResource::collection($posts), 'Posts retrieved.');

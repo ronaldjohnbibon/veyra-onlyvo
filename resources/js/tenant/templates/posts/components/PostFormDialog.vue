@@ -60,7 +60,6 @@ const form = ref<PostFormState>({
   status: 'draft',
   published_at: '',
 })
-const maxFeaturedImageSize = 4 * 1024 * 1024
 
 const isEditing = computed(() => Boolean(props.post?.id))
 const dialogTitle = computed(() => (isEditing.value ? 'Edit Post' : 'Create Post'))
@@ -169,15 +168,11 @@ const handleImageUpload = async (event: Event): Promise<void> => {
 
   if (!file || !props.templateId) return
 
-  if (file.size > maxFeaturedImageSize) {
-    formError.value = 'Featured image must be 4 MB or smaller.'
-    input.value = ''
-    return
-  }
-
   try {
     form.value.featured_image = await postStore.uploadFeaturedImage(props.templateId, file)
     formError.value = ''
+  } catch {
+    formError.value = postStore.errors.image?.[0] || 'Featured image upload failed.'
   } finally {
     input.value = ''
   }

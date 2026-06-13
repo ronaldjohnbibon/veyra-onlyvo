@@ -21,15 +21,16 @@ const postSlug = computed(() => String(route.params.postSlug || ''))
 const loadPost = async (): Promise<void> => {
   await publicPostStore.loadPost(siteSlug.value, postSlug.value)
 
-  if (publicPostStore.post) {
-    applyTenantPublicHead(publicPostStore.post.tenant_settings, {
-      title: publicPostStore.post.seo_title || publicPostStore.post.title,
-      description: publicPostStore.post.meta_description || publicPostStore.post.excerpt,
-      image:
-        publicPostStore.post.featured_image || fallbackImage(publicPostStore.post.tenant_settings),
+  const post = publicPostStore.post
+
+  if (post) {
+    applyTenantPublicHead(post.tenant_settings, {
+      title: post.seo_title || post.title,
+      description: post.meta_description || post.excerpt,
+      image: post.featured_image || fallbackImage(post.tenant_settings),
       path: window.location.pathname,
     })
-    await analyticsStore.trackPublicVisit(publicPostStore.post.template_id, window.location.href)
+    await analyticsStore.trackPublicVisit(post.template_id, window.location.href)
   }
 }
 

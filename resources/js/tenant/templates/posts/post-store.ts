@@ -78,7 +78,11 @@ export const usePostStore = defineStore('tenant-posts', () => {
   const uploadFeaturedImage = async (templateId: string, image: File): Promise<string> => {
     try {
       loading.value = true
+      errors.value = {}
       return (await postService.uploadFeaturedImage(templateId, image)).data.url
+    } catch (err) {
+      errors.value = validationErrorsFrom(err)
+      throw err
     } finally {
       loading.value = false
     }

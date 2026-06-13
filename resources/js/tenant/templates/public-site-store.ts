@@ -22,9 +22,15 @@ export const usePublicSiteStore = defineStore('public-site', () => {
         : await templateService.publicDefault()
 
       template.value = response.data
-      posts.value = template.value?.slug
-        ? (await postService.publicIndex(template.value.slug)).data
-        : []
+      posts.value = []
+
+      if (template.value?.slug) {
+        try {
+          posts.value = (await postService.publicIndex(template.value.slug)).data
+        } catch {
+          posts.value = []
+        }
+      }
     } catch (error) {
       template.value = null
       posts.value = []

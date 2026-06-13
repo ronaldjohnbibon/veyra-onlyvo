@@ -16,6 +16,7 @@ import { getTemplateCatalogItem } from '@/shared/templates/template-catalog'
 import { useTemplateStore } from '@/tenant/templates/template-store'
 import {
   applyCatalogStyleDefaults,
+  contentWithTemplateDetails,
   contentRecord,
   createBlankTemplate,
   mergeTemplateContent,
@@ -117,6 +118,7 @@ const previewTemplate = computed<TemplateRecord>(() => ({
   id: selectedTemplateId.value ?? 'preview',
   tenant_id: '',
   ...form.value,
+  content: contentWithTemplateDetails(form.value),
   website_type_id: form.value.website_type_id,
   website_type: selectedWebsiteType.value ?? undefined,
   public_url: selectedSavedTemplate.value?.public_url,
@@ -150,7 +152,7 @@ const linkIssues = computed<BuilderIssue[]>(() => {
 })
 
 const requiredContentMissing = computed(() => {
-  const content = contentRecord(form.value.content)
+  const content = contentWithTemplateDetails(form.value)
 
   return dynamicFieldSchema.value
     .filter((field) => field.required)
@@ -270,6 +272,20 @@ const openTemplate = async (template: TemplateRecord): Promise<void> => {
 
 const saveTemplate = async (status: TemplateStatus): Promise<void> => {
   if (!canSave.value) return
+
+  if (status === 'published' && requiredContentMissing.value.length) {
+    activeSection.value = 'content'
+    formError.value = 'Complete required template content before publishing.'
+
+    return
+  }
+
+  if (status === 'published' && linkIssues.value.length) {
+    activeSection.value = 'checks'
+    formError.value = 'Resolve broken-looking links or image URLs before publishing.'
+
+    return
+  }
 
   const payload = payloadForSave(form.value, status)
   formError.value = ''

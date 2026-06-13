@@ -113,7 +113,7 @@ class TemplateService
             ]);
         }
 
-        return $data;
+        return $this->syncContentFromDetails($data);
     }
 
     /**
@@ -170,6 +170,42 @@ class TemplateService
         }
 
         return $content;
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function syncContentFromDetails(array $data): array
+    {
+        if (! isset($data['content']) || ! is_array($data['content'])) {
+            $data['content'] = [];
+        }
+
+        $content = $data['content'];
+        $this->setExistingContentValue($content, ['business_name', 'display_name'], (string) ($data['business_name'] ?? ''));
+
+        $contactInfo = is_array($data['contact_info'] ?? null) ? $data['contact_info'] : [];
+        $this->setExistingContentValue($content, ['contact_email', 'email'], (string) ($contactInfo['email'] ?? ''));
+        $this->setExistingContentValue($content, ['contact_phone', 'phone'], (string) ($contactInfo['phone'] ?? ''));
+        $this->setExistingContentValue($content, ['contact_address', 'contact_location', 'location', 'address'], (string) ($contactInfo['address'] ?? ''));
+
+        $data['content'] = $content;
+
+        return $data;
+    }
+
+    /**
+     * @param  array<string, mixed>  $content
+     * @param  array<int, string>  $keys
+     */
+    private function setExistingContentValue(array &$content, array $keys, string $value): void
+    {
+        foreach ($keys as $key) {
+            if (array_key_exists($key, $content)) {
+                $content[$key] = $value;
+            }
+        }
     }
 
     private function storeDataUrlImage(string $value, string $folder): string

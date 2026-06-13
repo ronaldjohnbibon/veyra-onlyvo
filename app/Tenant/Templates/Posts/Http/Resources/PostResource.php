@@ -61,6 +61,10 @@ class PostResource extends JsonResource
             return '/'.$path;
         }
 
+        if (str_starts_with($path, '/')) {
+            return $path;
+        }
+
         if (! parse_url($value, PHP_URL_SCHEME)) {
             return '/storage/'.ltrim($value, '/');
         }
