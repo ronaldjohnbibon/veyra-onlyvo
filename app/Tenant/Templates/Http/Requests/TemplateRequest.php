@@ -86,12 +86,12 @@ class TemplateRequest extends FormRequest
         $slugSource   = $providedSlug ? (string) $this->input('slug') : (string) $this->input('name', 'site');
 
         $this->merge([
-            'slug'       => $providedSlug ? Str::slug($slugSource) : $this->uniqueSlug($slugSource),
+            'slug'       => $providedSlug ? Str::slug($slugSource) : $this->uniqueSlug($tenantId, $slugSource),
             'is_default' => $this->boolean('is_default'),
         ]);
     }
 
-    private function uniqueSlug(string $value): string
+    private function uniqueSlug(?string $tenantId, string $value): string
     {
         $routeParam = $this->route('template');
         $templateId = is_object($routeParam) ? $routeParam->id : $routeParam;
@@ -99,16 +99,17 @@ class TemplateRequest extends FormRequest
         $slug       = $baseSlug;
         $nextIndex  = 2;
 
-        while ($this->slugExists($slug, $templateId)) {
+        while ($this->slugExists($tenantId, $slug, $templateId)) {
             $slug = $baseSlug.'-'.$nextIndex++;
         }
 
         return $slug;
     }
 
-    private function slugExists(string $slug, mixed $templateId): bool
+    private function slugExists(?string $tenantId, string $slug, mixed $templateId): bool
     {
         return Template::query()
+            ->when($tenantId, fn ($query) => $query->where('tenant_id', $tenantId))
             ->where('slug', $slug)
             ->when($templateId, fn ($query) => $query->whereKeyNot($templateId))
             ->exists();

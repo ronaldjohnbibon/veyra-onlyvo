@@ -12,6 +12,7 @@ use App\Tenant\Templates\Models\Template;
 use App\Tenant\Templates\Models\WebsiteType;
 use App\Tenant\Templates\Services\TemplateCatalogService;
 use App\Tenant\Templates\Services\TemplateService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -68,9 +69,7 @@ class TemplateController extends Controller
             return $response;
         }
 
-        $record = Template::query()
-            ->with('websiteType')
-            ->find($template);
+        $record = $this->tenantTemplate($template);
 
         if (! $record) {
             return $this->error('Template not found.', 404);
@@ -85,9 +84,7 @@ class TemplateController extends Controller
             return $response;
         }
 
-        $record = Template::query()
-            ->with('websiteType')
-            ->find($template);
+        $record = $this->tenantTemplate($template);
 
         if (! $record) {
             return $this->error('Template not found.', 404);
@@ -108,9 +105,7 @@ class TemplateController extends Controller
             return $response;
         }
 
-        $record = Template::query()
-            ->with('websiteType')
-            ->find($template);
+        $record = $this->tenantTemplate($template);
 
         if (! $record) {
             return $this->error('Template not found.', 404);
@@ -129,9 +124,7 @@ class TemplateController extends Controller
             return $response;
         }
 
-        $record = Template::query()
-            ->with('websiteType')
-            ->find($template);
+        $record = $this->tenantTemplate($template);
 
         if (! $record) {
             return $this->error('Template not found.', 404);
@@ -179,16 +172,22 @@ class TemplateController extends Controller
             return $response;
         }
 
-        $record = Template::query()
-            ->with('websiteType')
-            ->where('status', 'published')
-            ->find($template);
+        $record = $this->tenantTemplate($template, true);
 
         if (! $record) {
             return $this->error('Published template not found.', 404);
         }
 
         return $this->success(new TemplateResource($record), 'Published template retrieved.');
+    }
+
+    private function tenantTemplate(string $template, bool $publishedOnly = false): ?Template
+    {
+        return Template::query()
+            ->with(['tenant', 'websiteType'])
+            ->where('tenant_id', $this->tenantId())
+            ->when($publishedOnly, fn (Builder $query) => $query->where('status', 'published'))
+            ->find($template);
     }
 
     private function tenantId(): string

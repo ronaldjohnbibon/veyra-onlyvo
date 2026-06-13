@@ -62,6 +62,21 @@ export const useTemplateStore = defineStore('tenant-templates', () => {
     try {
       loading.value = true
       template.value = (await templateService.show(id)).data
+    } catch (err) {
+      template.value = null
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const showPublished = async (id: string): Promise<void> => {
+    try {
+      loading.value = true
+      template.value = (await templateService.published(id)).data
+    } catch (err) {
+      template.value = null
+      throw err
     } finally {
       loading.value = false
     }
@@ -150,6 +165,7 @@ export const useTemplateStore = defineStore('tenant-templates', () => {
     params,
     resetDefault,
     show,
+    showPublished,
     store,
     submitCta,
     template,

@@ -11,7 +11,11 @@ const templateStore = useTemplateStore()
 const templateId = String(route.params.id)
 
 onMounted(async () => {
-  await templateStore.show(templateId)
+  try {
+    await templateStore.showPublished(templateId)
+  } catch {
+    // The empty state below handles unpublished, missing, or inaccessible templates.
+  }
 })
 </script>
 

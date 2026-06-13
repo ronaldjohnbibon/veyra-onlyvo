@@ -44,6 +44,10 @@ export const templateService = {
     return http.get<TemplateResponse>(`templates/${id}`).then((response) => response.data)
   },
 
+  published(id: string) {
+    return http.get<TemplateResponse>(`templates/${id}/published`).then((response) => response.data)
+  },
+
   store(payload: TemplatePayload) {
     return http.post<TemplateResponse>('templates', payload).then((response) => response.data)
   },

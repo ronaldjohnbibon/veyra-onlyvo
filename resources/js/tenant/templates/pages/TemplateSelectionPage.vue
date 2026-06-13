@@ -84,7 +84,8 @@ const selectedWebsiteType = computed<WebsiteType | null>(() => {
 
 const selectedSavedTemplate = computed<TemplateRecord | null>(() => {
   return (
-    templateStore.templates.find((template) => template.id === selectedTemplateId.value) ?? null
+    templateStore.templates.find((template) => template.id === selectedTemplateId.value) ??
+    (templateStore.template?.id === selectedTemplateId.value ? templateStore.template : null)
   )
 })
 
@@ -335,7 +336,7 @@ const handleLogoUpload = (event: Event): void => {
 }
 
 const openPreviewPage = (): void => {
-  if (!selectedTemplateId.value) return
+  if (!selectedTemplateId.value || form.value.status !== 'published') return
 
   router.push({ name: 'templates.published', params: { id: selectedTemplateId.value } })
 }
@@ -451,7 +452,7 @@ watch(
               variant="navigate"
               size="sm"
               type="button"
-              :disabled="!selectedTemplateId"
+              :disabled="!selectedTemplateId || form.status !== 'published'"
               @click="openPreviewPage"
             >
               <ExternalLink class="size-4" />
