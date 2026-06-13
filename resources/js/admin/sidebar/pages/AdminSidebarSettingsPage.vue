@@ -69,8 +69,20 @@ const selectedLink = computed(() => {
 
   return selectedGroup.value?.items[selected.value.linkIndex] ?? null
 })
-const selectedItem = computed(() => selectedLink.value ?? selectedGroup.value)
-const selectedIsLink = computed(() => Boolean(selectedLink.value))
+const selectedItem = computed(() =>
+  selected.value.type === 'link' ? selectedLink.value : selectedGroup.value
+)
+const selectedIsLink = computed(() => selected.value.type === 'link' && Boolean(selectedLink.value))
+const selectedLinkCanMoveUp = computed(
+  () => selected.value.type === 'link' && selected.value.linkIndex > 0
+)
+const selectedLinkCanMoveDown = computed(() => {
+  return (
+    selected.value.type === 'link' &&
+    Boolean(selectedGroup.value) &&
+    selected.value.linkIndex < selectedGroup.value.items.length - 1
+  )
+})
 const visibleGroupCount = computed(
   () => groups.value.filter((group) => group.is_active !== false).length
 )
@@ -147,6 +159,14 @@ const iconFor = (icon?: string) => {
   return icon && icon in iconMap ? iconMap[icon as IconName] : iconMap.Circle
 }
 
+const normalizeIcon = (icon?: string): IconName => {
+  return icon && icon in iconMap ? (icon as IconName) : 'Circle'
+}
+
+const stringValue = (value: unknown, fallback = ''): string => {
+  return typeof value === 'string' ? value : fallback
+}
+
 const normalizePath = (path: string): string => {
   if (!path) return '/'
 
@@ -164,26 +184,48 @@ const resolveAdminRoute = (url: string): string | null => {
 }
 
 const cloneGroups = (data?: SidebarData): BuilderGroup[] => {
-  return (data?.main_nav ?? []).map((group) => ({
-    title: group.title ?? '',
-    url: group.url ?? '#',
-    icon: group.icon || 'Circle',
-    description: group.description ?? '',
+  const mainNav = Array.isArray(data?.main_nav) ? data.main_nav : []
+
+  return mainNav.map((group) => ({
+    title: stringValue(group.title),
+    url: stringValue(group.url, '#'),
+    icon: normalizeIcon(group.icon),
+    description: stringValue(group.description),
     is_active: group.is_active !== false,
-    items: (group.items ?? []).map((link) => ({
-      title: link.title ?? '',
-      url: link.url ?? '',
-      icon: link.icon || 'Circle',
-      description: link.description ?? '',
+    items: (Array.isArray(group.items) ? group.items : []).map((link) => ({
+      title: stringValue(link.title),
+      url: stringValue(link.url),
+      icon: normalizeIcon(link.icon),
+      description: stringValue(link.description),
       is_active: link.is_active !== false,
     })),
   }))
 }
 
+const normalizeSelection = (): void => {
+  if (!groups.value.length) {
+    selected.value = { type: 'group', groupIndex: 0 }
+    return
+  }
+
+  const groupIndex = Math.max(0, Math.min(selected.value.groupIndex, groups.value.length - 1))
+
+  if (selected.value.type === 'link') {
+    const group = groups.value[groupIndex]
+
+    if (group?.items[selected.value.linkIndex]) {
+      selected.value = { type: 'link', groupIndex, linkIndex: selected.value.linkIndex }
+      return
+    }
+  }
+
+  selected.value = { type: 'group', groupIndex }
+}
+
 const loadSidebar = async (): Promise<void> => {
   await sidebarStore.index()
   groups.value = cloneGroups(sidebar.value?.data)
-  selected.value = { type: 'group', groupIndex: 0 }
+  normalizeSelection()
 }
 
 const selectGroup = (groupIndex: number): void => {
@@ -212,6 +254,7 @@ const deleteGroup = (index: number): void => {
     type: 'group',
     groupIndex: Math.max(0, Math.min(index, groups.value.length - 1)),
   }
+  normalizeSelection()
 }
 
 const addLink = (groupIndex: number): void => {
@@ -230,14 +273,16 @@ const addLink = (groupIndex: number): void => {
 
 const deleteLink = (groupIndex: number, linkIndex: number): void => {
   const group = groups.value[groupIndex]
-  if (!group) return
+  if (!group || !group.items[linkIndex]) return
 
   group.items.splice(linkIndex, 1)
   selected.value = { type: 'group', groupIndex }
+  normalizeSelection()
 }
 
 const moveGroup = (from: number, to: number): void => {
-  if (to < 0 || to >= groups.value.length) return
+  if (from === to || from < 0 || from >= groups.value.length || to < 0 || to >= groups.value.length)
+    return
 
   const [group] = groups.value.splice(from, 1)
   groups.value.splice(to, 0, group)
@@ -246,11 +291,35 @@ const moveGroup = (from: number, to: number): void => {
 
 const moveLink = (groupIndex: number, from: number, to: number): void => {
   const group = groups.value[groupIndex]
-  if (!group || to < 0 || to >= group.items.length) return
+  if (
+    !group ||
+    from === to ||
+    from < 0 ||
+    from >= group.items.length ||
+    to < 0 ||
+    to >= group.items.length
+  )
+    return
 
   const [link] = group.items.splice(from, 1)
   group.items.splice(to, 0, link)
   selected.value = { type: 'link', groupIndex, linkIndex: to }
+}
+
+const moveSelectedLink = (direction: -1 | 1): void => {
+  if (selected.value.type !== 'link') return
+
+  moveLink(
+    selected.value.groupIndex,
+    selected.value.linkIndex,
+    selected.value.linkIndex + direction
+  )
+}
+
+const deleteSelectedLink = (): void => {
+  if (selected.value.type !== 'link') return
+
+  deleteLink(selected.value.groupIndex, selected.value.linkIndex)
 }
 
 const moveLinkToGroup = (
@@ -261,11 +330,12 @@ const moveLinkToGroup = (
 ): void => {
   const fromGroup = groups.value[fromGroupIndex]
   const toGroup = groups.value[toGroupIndex]
-  if (!fromGroup || !toGroup) return
+  if (!fromGroup || !toGroup || !fromGroup.items[fromLinkIndex]) return
 
   const [link] = fromGroup.items.splice(fromLinkIndex, 1)
+  const targetIndex = Math.max(0, Math.min(toLinkIndex, toGroup.items.length))
   const adjustedIndex =
-    fromGroupIndex === toGroupIndex && fromLinkIndex < toLinkIndex ? toLinkIndex - 1 : toLinkIndex
+    fromGroupIndex === toGroupIndex && fromLinkIndex < toLinkIndex ? targetIndex - 1 : targetIndex
 
   toGroup.items.splice(Math.max(0, adjustedIndex), 0, link)
   selected.value = {
@@ -283,17 +353,13 @@ const startDrag = (event: DragEvent, payload: DragPayload): void => {
 
 const dropOnGroup = (groupIndex: number): void => {
   const payload = dragging.value
-  if (!payload) return
+  const group = groups.value[groupIndex]
+  if (!payload || !group) return
 
   if (payload.type === 'group') {
     moveGroup(payload.groupIndex, groupIndex)
   } else {
-    moveLinkToGroup(
-      payload.groupIndex,
-      payload.linkIndex,
-      groupIndex,
-      groups.value[groupIndex].items.length
-    )
+    moveLinkToGroup(payload.groupIndex, payload.linkIndex, groupIndex, group.items.length)
   }
 
   dragging.value = null
@@ -308,9 +374,9 @@ const dropOnLink = (groupIndex: number, linkIndex: number): void => {
 }
 
 const updateSelectedVisibility = (value: boolean | 'indeterminate'): void => {
-  if (!selectedItem.value) return
+  if (!selectedItem.value || value === 'indeterminate') return
 
-  selectedItem.value.is_active = Boolean(value)
+  selectedItem.value.is_active = value
 }
 
 const applyRouteSuggestion = (route: string): void => {
@@ -333,7 +399,7 @@ const urlIssues = (value: string, label: string, groupWithLinks = false): Valida
 
   if (isExternalUrl(url)) {
     try {
-      if (url.startsWith('http')) new URL(url)
+      if (/^https?:/i.test(url)) new URL(url)
       return issues
     } catch {
       return [
@@ -382,13 +448,13 @@ const payloadData = (): SidebarData => {
     main_nav: groups.value.map((group) => ({
       title: group.title.trim(),
       url: group.url.trim() || '#',
-      icon: group.icon || 'Circle',
+      icon: normalizeIcon(group.icon),
       description: group.description?.trim() || '',
       is_active: group.is_active !== false,
       items: group.items.map((link) => ({
         title: link.title.trim(),
         url: link.url.trim(),
-        icon: link.icon || 'Circle',
+        icon: normalizeIcon(link.icon),
         description: link.description?.trim() || '',
         is_active: link.is_active !== false,
       })),
@@ -569,7 +635,7 @@ onMounted(loadSidebar)
               </p>
             </div>
 
-            <div v-if="selectedGroup" class="flex flex-wrap gap-2">
+            <div v-if="selectedItem" class="flex flex-wrap gap-2">
               <Button
                 v-if="selected.type === 'group'"
                 type="button"
@@ -593,24 +659,24 @@ onMounted(loadSidebar)
                 <ChevronDown class="size-4" />
               </Button>
               <Button
-                v-if="selected.type === 'link'"
+                v-if="selectedIsLink"
                 type="button"
                 size="icon-sm"
                 variant="navigate"
-                :disabled="selected.linkIndex === 0"
+                :disabled="!selectedLinkCanMoveUp"
                 aria-label="Move link up"
-                @click="moveLink(selected.groupIndex, selected.linkIndex, selected.linkIndex - 1)"
+                @click="moveSelectedLink(-1)"
               >
                 <ChevronUp class="size-4" />
               </Button>
               <Button
-                v-if="selected.type === 'link'"
+                v-if="selectedIsLink"
                 type="button"
                 size="icon-sm"
                 variant="navigate"
-                :disabled="selected.linkIndex === selectedGroup.items.length - 1"
+                :disabled="!selectedLinkCanMoveDown"
                 aria-label="Move link down"
-                @click="moveLink(selected.groupIndex, selected.linkIndex, selected.linkIndex + 1)"
+                @click="moveSelectedLink(1)"
               >
                 <ChevronDown class="size-4" />
               </Button>
@@ -625,12 +691,12 @@ onMounted(loadSidebar)
                 <Trash2 class="size-4" />
               </Button>
               <Button
-                v-else
+                v-else-if="selectedIsLink"
                 type="button"
                 size="icon-sm"
                 variant="delete"
                 aria-label="Delete link"
-                @click="deleteLink(selected.groupIndex, selected.linkIndex)"
+                @click="deleteSelectedLink"
               >
                 <Trash2 class="size-4" />
               </Button>

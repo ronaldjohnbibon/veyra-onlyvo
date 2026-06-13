@@ -35,9 +35,9 @@ const resolveUrl = (url: string): string => {
   return `${base}/${url}`.replace(/\/+/g, '/')
 }
 
-const isExternalUrl = (url: string): boolean => /^(https?:|mailto:|tel:)/.test(url)
+const isExternalUrl = (url: string): boolean => /^(https?:|mailto:|tel:)/i.test(url)
 
-const opensNewTab = (url: string): boolean => /^https?:/.test(url)
+const opensNewTab = (url: string): boolean => /^https?:/i.test(url)
 
 const isRouteActive = (url: string): boolean => {
   if (isExternalUrl(url)) return false
