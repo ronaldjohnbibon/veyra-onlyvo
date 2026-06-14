@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
+import { onMounted } from 'vue'
 import { cn } from '@/shared/utils/utils'
 import { Button } from '@/shared/components/ui/button'
 import {
@@ -18,6 +19,10 @@ const props = defineProps<{
 }>()
 
 const authStore = useAuthStore()
+
+onMounted(() => {
+  authStore.clearFeedback()
+})
 </script>
 
 <template>
@@ -33,7 +38,12 @@ const authStore = useAuthStore()
             <form @submit.prevent="authStore.forgotPassword">
               <FieldGroup>
                 <Field v-if="authStore.message">
-                  <p class="text-sm">{{ authStore.message }}</p>
+                  <p
+                    class="text-sm"
+                    :class="{ 'text-destructive': authStore.messageType === 'error' }"
+                  >
+                    {{ authStore.message }}
+                  </p>
                 </Field>
                 <Field>
                   <FieldLabel for="email"> Email </FieldLabel>

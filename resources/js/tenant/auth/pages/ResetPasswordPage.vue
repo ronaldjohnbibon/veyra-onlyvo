@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
-import { onMounted } from 'vue'
+import { onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { cn } from '@/shared/utils/utils'
 import { Button } from '@/shared/components/ui/button'
@@ -22,10 +22,26 @@ const props = defineProps<{
 const route = useRoute()
 const authStore = useAuthStore()
 
+const queryValue = (value: unknown): string => {
+  if (Array.isArray(value)) {
+    return String(value[0] ?? '')
+  }
+
+  return String(value ?? '')
+}
+
 onMounted(() => {
-  authStore.resetPasswordForm.token = String(route.query.token ?? '')
-  authStore.resetPasswordForm.email = String(route.query.email ?? '')
+  authStore.clearFeedback()
 })
+
+watch(
+  () => route.query,
+  (query) => {
+    authStore.resetPasswordForm.token = queryValue(query.token)
+    authStore.resetPasswordForm.email = queryValue(query.email)
+  },
+  { immediate: true }
+)
 </script>
 
 <template>
@@ -41,7 +57,12 @@ onMounted(() => {
             <form @submit.prevent="authStore.resetPassword">
               <FieldGroup>
                 <Field v-if="authStore.message">
-                  <p class="text-destructive text-sm">{{ authStore.message }}</p>
+                  <p
+                    class="text-sm"
+                    :class="{ 'text-destructive': authStore.messageType === 'error' }"
+                  >
+                    {{ authStore.message }}
+                  </p>
                 </Field>
                 <Field>
                   <FieldLabel for="email"> Email </FieldLabel>

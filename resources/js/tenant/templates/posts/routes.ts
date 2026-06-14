@@ -17,7 +17,7 @@ const routes: RouteRecordRaw[] = [
 
 export const publicPostRoutes: RouteRecordRaw[] = [
   {
-    path: '/:siteSlug([a-z0-9][a-z0-9-]*)/posts/:postSlug([a-z0-9][a-z0-9-]*)',
+    path: '/:siteSlug/posts/:postSlug',
     name: 'public.posts.show',
     component: () => import('@/tenant/templates/posts/pages/PublicPostPage.vue'),
     meta: {

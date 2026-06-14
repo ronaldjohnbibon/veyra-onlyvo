@@ -11,11 +11,13 @@ export const usePublicSiteStore = defineStore('public-site', () => {
   const posts = ref<PostRecord[]>([])
   const loading = ref(false)
   const notFound = ref(false)
+  const errorMessage = ref('')
 
   const loadSite = async (siteSlug: string): Promise<void> => {
     try {
       loading.value = true
       notFound.value = false
+      errorMessage.value = ''
 
       const response = siteSlug
         ? await templateService.publicShow(siteSlug)
@@ -35,6 +37,9 @@ export const usePublicSiteStore = defineStore('public-site', () => {
       template.value = null
       posts.value = []
       notFound.value = isNotFoundError(error)
+      errorMessage.value = notFound.value
+        ? 'This site is not published yet or no longer exists.'
+        : 'This site is temporarily unavailable.'
     } finally {
       loading.value = false
     }
@@ -42,6 +47,7 @@ export const usePublicSiteStore = defineStore('public-site', () => {
 
   return {
     loadSite,
+    errorMessage,
     loading,
     notFound,
     posts,

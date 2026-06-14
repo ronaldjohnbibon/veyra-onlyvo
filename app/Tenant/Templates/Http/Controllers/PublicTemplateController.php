@@ -50,9 +50,13 @@ class PublicTemplateController extends Controller
         }
 
         $homepageSlug = $this->tenantSettings->string($tenant, 'website.homepage_slug');
-        $template     = $this->publishedQuery()
-            ->when($homepageSlug !== '', fn (Builder $query) => $query->where('slug', $homepageSlug))
-            ->when($homepageSlug === '', fn (Builder $query) => $query->where('is_default', true))
+        $template     = $homepageSlug !== ''
+            ? $this->publishedQuery()->where('slug', $homepageSlug)->first()
+            : null;
+
+        $template ??= $this->publishedQuery()
+            ->orderByDesc('is_default')
+            ->latest('updated_at')
             ->first();
 
         if (! $template) {

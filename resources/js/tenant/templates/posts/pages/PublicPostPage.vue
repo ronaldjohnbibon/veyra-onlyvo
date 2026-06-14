@@ -15,8 +15,16 @@ const route = useRoute()
 const analyticsStore = useAnalyticsStore()
 const publicPostStore = usePublicPostStore()
 
-const siteSlug = computed(() => String(route.params.siteSlug || ''))
-const postSlug = computed(() => String(route.params.postSlug || ''))
+const routeParam = (value: unknown): string => {
+  if (Array.isArray(value)) {
+    return String(value[0] ?? '')
+  }
+
+  return String(value ?? '')
+}
+
+const siteSlug = computed(() => routeParam(route.params.siteSlug))
+const postSlug = computed(() => routeParam(route.params.postSlug))
 
 const loadPost = async (): Promise<void> => {
   await publicPostStore.loadPost(siteSlug.value, postSlug.value)
@@ -31,7 +39,15 @@ const loadPost = async (): Promise<void> => {
       path: window.location.pathname,
     })
     await analyticsStore.trackPublicVisit(post.template_id, window.location.href)
+    return
   }
+
+  applyTenantPublicHead(undefined, {
+    title: 'Post unavailable',
+    description: publicPostStore.errorMessage || 'This post is not available.',
+    indexable: false,
+    path: window.location.pathname,
+  })
 }
 
 const postImage = computed(() => {
@@ -95,12 +111,14 @@ watch([siteSlug, postSlug], loadPost)
     </article>
 
     <section
-      v-else-if="!publicPostStore.loading && publicPostStore.notFound"
+      v-else-if="
+        !publicPostStore.loading && (publicPostStore.notFound || publicPostStore.errorMessage)
+      "
       class="mx-auto flex min-h-screen max-w-xl flex-col items-center justify-center px-6 text-center"
     >
       <h1 class="text-2xl font-semibold text-foreground">Post unavailable</h1>
       <p class="mt-3 text-sm text-muted-foreground">
-        This post is not published yet or no longer exists.
+        {{ publicPostStore.errorMessage || 'This post is not published yet or no longer exists.' }}
       </p>
     </section>
 

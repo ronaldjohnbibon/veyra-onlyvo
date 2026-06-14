@@ -25,7 +25,7 @@ class AuthService
         return DB::transaction(function () use ($data): Tenant {
             $tenant = Tenant::create([
                 'name'      => $data['name'],
-                'subdomain' => $this->generateSubdomain($data['name']),
+                'subdomain' => $data['subdomain'],
                 'timezone'  => $this->settings->string('tenant_defaults.default_tenant_timezone', 'UTC'),
                 'status'    => $this->settings->string('tenant_defaults.default_tenant_status', 'active'),
                 'settings'  => [
@@ -110,14 +110,5 @@ class AuthService
             'status'           => 'published',
             'is_default'       => true,
         ]);
-    }
-
-    private function generateSubdomain(string $companyName): string
-    {
-        $subdomain = strtolower($companyName);
-        $subdomain = preg_replace('/[^a-z0-9]+/i', '-', $subdomain) ?? '';
-        $subdomain = preg_replace('/-+/', '-', $subdomain)          ?? '';
-
-        return trim($subdomain, '-');
     }
 }

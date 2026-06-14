@@ -17,6 +17,7 @@ export const useAuthStore = defineStore('tenant-auth', () => {
   const loading = ref(false)
   const errors = ref<Record<string, string[]>>({})
   const message = ref('')
+  const messageType = ref<'success' | 'error' | null>(null)
 
   const registerForm = reactive<RegisterFormInterface>({
     email: '',
@@ -42,6 +43,22 @@ export const useAuthStore = defineStore('tenant-auth', () => {
     password_confirmation: '',
   })
 
+  const clearFeedback = (): void => {
+    errors.value = {}
+    message.value = ''
+    messageType.value = null
+  }
+
+  const setSuccessMessage = (text: string): void => {
+    message.value = text
+    messageType.value = 'success'
+  }
+
+  const setErrorMessage = (text: string): void => {
+    message.value = text
+    messageType.value = 'error'
+  }
+
   const setToken = (newToken: string | null): void => {
     token.value = newToken
 
@@ -53,19 +70,43 @@ export const useAuthStore = defineStore('tenant-auth', () => {
     localStorage.removeItem('tenant_token')
   }
 
+  const tenantBaseHost = (): string => {
+    const configuredDomain = String(
+      (
+        window as unknown as {
+          __TENANTED_DOMAIN__?: string | null
+        }
+      ).__TENANTED_DOMAIN__ || ''
+    )
+      .trim()
+      .replace(/^https?:\/\//, '')
+      .replace(/\/.*$/, '')
+      .replace(/:\d+$/, '')
+
+    if (configuredDomain) {
+      return configuredDomain
+    }
+
+    const { hostname } = window.location
+    const localHosts = ['localhost', '127.0.0.1']
+
+    if (localHosts.includes(hostname) || hostname.endsWith('.localhost')) {
+      return 'localhost'
+    }
+
+    const parts = hostname.split('.')
+
+    return parts.length > 2 ? parts.slice(1).join('.') : hostname
+  }
+
   const redirectToTenantLogin = async (subdomain?: string): Promise<void> => {
     if (!subdomain) {
       await router.push({ name: 'TenantLogin' })
       return
     }
 
-    const { protocol, hostname, port } = window.location
-    const localHosts = ['localhost', '127.0.0.1']
-    const baseHost = localHosts.includes(hostname)
-      ? 'localhost'
-      : hostname.endsWith('.localhost')
-        ? 'localhost'
-        : hostname.split('.').slice(1).join('.') || hostname
+    const { protocol, port } = window.location
+    const baseHost = tenantBaseHost()
     const targetPort = port ? `:${port}` : ''
 
     window.location.assign(`${protocol}//${subdomain}.${baseHost}${targetPort}/login`)
@@ -74,8 +115,7 @@ export const useAuthStore = defineStore('tenant-auth', () => {
   const login = async (): Promise<void> => {
     try {
       loading.value = true
-      errors.value = {}
-      message.value = ''
+      clearFeedback()
 
       const data = await authService.login(loginForm)
       setToken(data.data.tenant_token)
@@ -89,7 +129,7 @@ export const useAuthStore = defineStore('tenant-auth', () => {
       )
     } catch (err) {
       errors.value = validationErrorsFrom(err)
-      message.value = apiMessageFrom(err, 'Unable to log in.')
+      setErrorMessage(apiMessageFrom(err, 'Unable to log in.'))
     } finally {
       loading.value = false
     }
@@ -102,14 +142,13 @@ export const useAuthStore = defineStore('tenant-auth', () => {
   const register = async (): Promise<void> => {
     try {
       loading.value = true
-      errors.value = {}
-      message.value = ''
+      clearFeedback()
 
       const data = await authService.register(registerForm)
       await redirectToTenantLogin(data.data?.subdomain)
     } catch (err) {
       errors.value = validationErrorsFrom(err)
-      message.value = apiMessageFrom(err, 'Unable to create account.')
+      setErrorMessage(apiMessageFrom(err, 'Unable to create account.'))
     } finally {
       loading.value = false
     }
@@ -151,14 +190,13 @@ export const useAuthStore = defineStore('tenant-auth', () => {
   const forgotPassword = async (): Promise<void> => {
     try {
       loading.value = true
-      errors.value = {}
-      message.value = ''
+      clearFeedback()
 
       const data = await authService.forgotPassword(forgotPasswordForm)
-      message.value = data.message ?? 'Password reset link sent.'
+      setSuccessMessage(data.message ?? 'Password reset link sent.')
     } catch (err) {
       errors.value = validationErrorsFrom(err)
-      message.value = apiMessageFrom(err, 'Unable to send reset link.')
+      setErrorMessage(apiMessageFrom(err, 'Unable to send reset link.'))
     } finally {
       loading.value = false
     }
@@ -167,15 +205,16 @@ export const useAuthStore = defineStore('tenant-auth', () => {
   const resetPassword = async (): Promise<void> => {
     try {
       loading.value = true
-      errors.value = {}
-      message.value = ''
+      clearFeedback()
 
       const data = await authService.resetPassword(resetPasswordForm)
-      message.value = data.message ?? 'Password reset successfully.'
+      setSuccessMessage(data.message ?? 'Password reset successfully.')
+      setToken(null)
+      user.value = null
       await router.push({ name: 'TenantLogin' })
     } catch (err) {
       errors.value = validationErrorsFrom(err)
-      message.value = apiMessageFrom(err, 'Unable to reset password.')
+      setErrorMessage(apiMessageFrom(err, 'Unable to reset password.'))
     } finally {
       loading.value = false
     }
@@ -188,6 +227,7 @@ export const useAuthStore = defineStore('tenant-auth', () => {
     loading,
     errors,
     message,
+    messageType,
     registerForm,
     loginForm,
     forgotPasswordForm,
@@ -199,5 +239,6 @@ export const useAuthStore = defineStore('tenant-auth', () => {
     logout,
     forgotPassword,
     resetPassword,
+    clearFeedback,
   }
 })

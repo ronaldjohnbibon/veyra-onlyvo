@@ -14,7 +14,16 @@ class ForgotPasswordRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => ['required', 'email'],
+            'email' => ['required', 'email', 'max:255'],
         ];
+    }
+
+    public function prepareForValidation(): void
+    {
+        if ($this->has('email')) {
+            $this->merge([
+                'email' => trim((string) $this->input('email')) ?: null,
+            ]);
+        }
     }
 }

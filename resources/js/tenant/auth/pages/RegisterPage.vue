@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { HTMLAttributes } from 'vue'
+import { computed, type HTMLAttributes } from 'vue'
 import { GalleryVerticalEnd } from 'lucide-vue-next'
 import { cn } from '@/shared/utils/utils'
 import { Button } from '@/shared/components/ui/button'
@@ -29,6 +29,9 @@ const applicationName = String(runtimeSettings['general.application_name'] || 'O
 const logoUrl = String(runtimeSettings['general.logo'] || '')
 const privacyPolicyUrl = String(runtimeSettings['compliance.privacy_policy_url'] || '')
 const termsOfServiceUrl = String(runtimeSettings['compliance.terms_of_service_url'] || '')
+const companyNameError = computed(
+  () => authStore.errors.name?.[0] ?? authStore.errors.subdomain?.[0] ?? ''
+)
 </script>
 
 <template>
@@ -101,8 +104,8 @@ const termsOfServiceUrl = String(runtimeSettings['compliance.terms_of_service_ur
                     autocomplete="organization"
                   />
 
-                  <span v-if="authStore.errors.name" class="text-destructive text-[12px]">
-                    {{ authStore.errors.name[0] }}
+                  <span v-if="companyNameError" class="text-destructive text-[12px]">
+                    {{ companyNameError }}
                   </span>
                 </Field>
                 <Field>

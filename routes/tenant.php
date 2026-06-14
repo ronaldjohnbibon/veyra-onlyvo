@@ -87,10 +87,19 @@ Route::prefix('public')->name('public.')->group(function (): void {
         Route::post('analytics/cta-events', [PublicCtaTrackingController::class, 'store'])->name('analytics.cta-events.store');
 
         Route::get('sites/default', [PublicTemplateController::class, 'defaultSite'])->name('sites.default');
-        Route::get('sites/{slug}', [PublicTemplateController::class, 'show'])->name('sites.show');
+        Route::get('sites/{slug}', [PublicTemplateController::class, 'show'])
+            ->where('slug', '[a-z0-9][a-z0-9-]*')
+            ->name('sites.show');
         Route::post('template-cta-submissions', [TemplateCtaSubmissionController::class, 'store'])->name('template-cta-submissions.store');
 
-        Route::get('sites/{siteSlug}/posts', [PublicPostController::class, 'index'])->name('sites.posts.index');
-        Route::get('sites/{siteSlug}/posts/{postSlug}', [PublicPostController::class, 'show'])->name('sites.posts.show');
+        Route::get('sites/{siteSlug}/posts', [PublicPostController::class, 'index'])
+            ->where('siteSlug', '[a-z0-9][a-z0-9-]*')
+            ->name('sites.posts.index');
+        Route::get('sites/{siteSlug}/posts/{postSlug}', [PublicPostController::class, 'show'])
+            ->where([
+                'siteSlug' => '[a-z0-9][a-z0-9-]*',
+                'postSlug' => '[a-z0-9][a-z0-9-]*',
+            ])
+            ->name('sites.posts.show');
     });
 });

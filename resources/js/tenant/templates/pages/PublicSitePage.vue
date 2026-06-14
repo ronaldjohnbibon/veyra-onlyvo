@@ -22,6 +22,10 @@ const viewedCtas = new Set<string>()
 const siteSlug = computed(() => {
   const slug = route.params.siteSlug
 
+  if (Array.isArray(slug)) {
+    return slug[0] ?? ''
+  }
+
   return typeof slug === 'string' ? slug : ''
 })
 
@@ -35,7 +39,15 @@ const loadSite = async (): Promise<void> => {
     await analyticsStore.trackPublicVisit(publicSiteStore.template.id, window.location.href)
     await nextTick()
     observePublicCtaViews()
+    return
   }
+
+  applyTenantPublicHead(undefined, {
+    title: 'Site unavailable',
+    description: publicSiteStore.errorMessage || 'This site is not available.',
+    indexable: false,
+    path: window.location.pathname,
+  })
 }
 
 // Capture public CTA clicks from current and future templates.
@@ -165,12 +177,14 @@ watch(siteSlug, () => {
     </section>
 
     <section
-      v-else-if="!publicSiteStore.loading && publicSiteStore.notFound"
+      v-else-if="
+        !publicSiteStore.loading && (publicSiteStore.notFound || publicSiteStore.errorMessage)
+      "
       class="mx-auto flex min-h-screen max-w-xl flex-col items-center justify-center px-6 text-center"
     >
       <h1 class="text-2xl font-semibold text-foreground">Site unavailable</h1>
       <p class="mt-3 text-sm text-muted-foreground">
-        This site is not published yet or no longer exists.
+        {{ publicSiteStore.errorMessage || 'This site is not published yet or no longer exists.' }}
       </p>
     </section>
 

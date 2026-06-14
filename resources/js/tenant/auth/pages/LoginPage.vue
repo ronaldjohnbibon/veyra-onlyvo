@@ -40,7 +40,12 @@ const registrationEnabled = runtimeSettings['authentication.allow_tenant_registr
             <form @submit.prevent="authStore.login">
               <FieldGroup>
                 <Field v-if="authStore.message">
-                  <p class="text-destructive text-sm">{{ authStore.message }}</p>
+                  <p
+                    class="text-sm"
+                    :class="{ 'text-destructive': authStore.messageType === 'error' }"
+                  >
+                    {{ authStore.message }}
+                  </p>
                 </Field>
                 <Field>
                   <FieldLabel for="email"> Email </FieldLabel>

@@ -23,8 +23,17 @@ class ResetPasswordRequest extends FormRequest
 
         return [
             'token'    => ['required', 'string'],
-            'email'    => ['required', 'email'],
+            'email'    => ['required', 'email', 'max:255'],
             'password' => $passwordRules,
         ];
+    }
+
+    public function prepareForValidation(): void
+    {
+        if ($this->has('email')) {
+            $this->merge([
+                'email' => trim((string) $this->input('email')) ?: null,
+            ]);
+        }
     }
 }

@@ -11,6 +11,7 @@
     $canonicalDomain = rtrim($settings->string('seo.canonical_domain'), '/');
     $canonicalUrl = $canonicalDomain ? (str_starts_with($canonicalDomain, 'http') ? $canonicalDomain : 'https://'.$canonicalDomain).request()->getRequestUri() : null;
     $allowIndexing = $settings->boolean('seo.allow_search_engine_indexing', true);
+    $tenantedDomain = config('multitenancy.resolvers.subdomain.domain');
 @endphp
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
@@ -32,6 +33,7 @@
         @endif
         <script>
             window.__SYSTEM_SETTINGS__ = @json($publicSettings);
+            window.__TENANTED_DOMAIN__ = @json($tenantedDomain);
         </script>
         @vite(['resources/css/app.css', 'resources/js/app.ts'])
     </head>

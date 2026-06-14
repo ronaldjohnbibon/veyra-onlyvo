@@ -222,6 +222,8 @@ class AuthController extends Controller
         );
 
         if ($status !== Password::PASSWORD_RESET) {
+            $errorField = $status === Password::INVALID_TOKEN ? 'token' : 'email';
+
             $this->logs->auth('tenant.password_reset_failed', [
                 'tenant_id'    => $this->requestTenantId(),
                 'severity'     => 'warning',
@@ -231,7 +233,7 @@ class AuthController extends Controller
             ], null, $request);
 
             return $this->error(__($status), 422, [
-                'email' => [__($status)],
+                $errorField => [__($status)],
             ]);
         }
 

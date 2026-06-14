@@ -18,13 +18,13 @@ class PublicPostController extends Controller
 
     public function index(string $siteSlug): JsonResponse
     {
-        if (! $this->settings->featureEnabled('enable_posts_module')) {
-            return $this->error('Posts module is disabled.', 403);
+        if ($response = $this->publicPostsDisabled()) {
+            return $response;
         }
 
         $template = $this->publishedTemplate($siteSlug);
 
-        if (! $template || $this->tenantSettings->string($template->tenant, 'website.site_status', 'live') !== 'live') {
+        if (! $this->templateIsLive($template)) {
             return $this->error('Published site not found.', 404);
         }
 
@@ -43,8 +43,8 @@ class PublicPostController extends Controller
 
     public function show(string $siteSlug, string $postSlug): JsonResponse
     {
-        if (! $this->settings->featureEnabled('enable_posts_module')) {
-            return $this->error('Posts module is disabled.', 403);
+        if ($response = $this->publicPostsDisabled()) {
+            return $response;
         }
 
         $template = $this->publishedTemplate($siteSlug);
@@ -58,15 +58,32 @@ class PublicPostController extends Controller
                 ->first()
             : null;
 
-        if (
-            ! $template
-            || $this->tenantSettings->string($template->tenant, 'website.site_status', 'live') !== 'live'
-            || ! $post
-        ) {
+        if (! $this->templateIsLive($template) || ! $post) {
             return $this->error('Published post not found.', 404);
         }
 
         return $this->success(new PostResource($post->load('template.tenant')), 'Published post retrieved.');
+    }
+
+    private function publicPostsDisabled(): ?JsonResponse
+    {
+        if (
+            ! $this->settings->featureEnabled('enable_templates_module')
+            || ! $this->settings->featureEnabled('enable_posts_module')
+        ) {
+            return $this->error('Posts module is disabled.', 403);
+        }
+
+        return null;
+    }
+
+    private function templateIsLive(?Template $template): bool
+    {
+        if (! $template) {
+            return false;
+        }
+
+        return $this->tenantSettings->string($template->tenant, 'website.site_status', 'live') === 'live';
     }
 
     private function publishedTemplate(string $siteSlug): ?Template

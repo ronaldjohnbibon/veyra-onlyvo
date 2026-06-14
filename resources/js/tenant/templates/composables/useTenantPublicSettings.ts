@@ -87,6 +87,7 @@ export const applyTenantPublicHead = (
     title?: string | null
     description?: string | null
     image?: string | null
+    indexable?: boolean
     path?: string
   } = {}
 ): void => {
@@ -106,21 +107,27 @@ export const applyTenantPublicHead = (
   setMeta(
     'name',
     'robots',
-    settingBoolean(settings, 'seo.allow_search_engine_indexing', true)
+    (options.indexable ?? settingBoolean(settings, 'seo.allow_search_engine_indexing', true))
       ? 'index,follow'
       : 'noindex,nofollow'
   )
   setMeta('property', 'og:title', title)
   setMeta('property', 'og:description', description)
-  if (image) setMeta('property', 'og:image', absoluteUrl(image))
+  if (image) {
+    setMeta('property', 'og:image', absoluteUrl(image))
+  } else {
+    removeMeta('property', 'og:image')
+  }
 
   const favicon = settingString(settings, 'profile.favicon')
   if (favicon) setLink('icon', absoluteUrl(favicon))
 
-  const canonicalDomain = settingString(settings, 'seo.canonical_domain').replace(/\/+$/, '')
+  const canonicalDomain = canonicalBaseUrl(settingString(settings, 'seo.canonical_domain'))
   if (canonicalDomain) {
     const path = options.path || window.location.pathname
     setLink('canonical', `${canonicalDomain}${path.startsWith('/') ? path : `/${path}`}`)
+  } else {
+    removeLink('canonical')
   }
 }
 
@@ -159,9 +166,26 @@ const setLink = (rel: string, href: string): void => {
   element.href = href
 }
 
+const removeMeta = (attribute: 'name' | 'property', key: string): void => {
+  document.head.querySelector<HTMLMetaElement>(`meta[${attribute}="${key}"]`)?.remove()
+}
+
+const removeLink = (rel: string): void => {
+  document.head.querySelector<HTMLLinkElement>(`link[rel="${rel}"]`)?.remove()
+}
+
 const absoluteUrl = (value: string): string => {
   if (!value) return ''
   if (/^https?:\/\//i.test(value)) return value
 
   return `${window.location.origin}${value.startsWith('/') ? value : `/${value}`}`
+}
+
+const canonicalBaseUrl = (value: string): string => {
+  const trimmed = value.trim().replace(/\/+$/, '')
+
+  if (!trimmed) return ''
+  if (/^https?:\/\//i.test(trimmed)) return trimmed
+
+  return `https://${trimmed}`
 }

@@ -41,7 +41,7 @@ const routes: RouteRecordRaw[] = [
 
 export const publicTemplateRoutes: RouteRecordRaw[] = [
   {
-    path: '/:siteSlug([a-z0-9][a-z0-9-]*)',
+    path: '/:siteSlug',
     name: 'public.sites.show',
     component: () => import('@/tenant/templates/pages/PublicSitePage.vue'),
     meta: {
