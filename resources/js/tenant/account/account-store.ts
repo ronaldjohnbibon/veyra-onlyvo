@@ -13,8 +13,10 @@ export const useAccountStore = defineStore('tenant-account', () => {
   const authStore = useAuthStore()
   const account = ref<AccountPayload | null>(null)
   const loading = ref(false)
+  const loadingAction = ref<'show' | 'profile' | 'password' | null>(null)
   const errors = ref<Record<string, string[]>>({})
   const message = ref('')
+  const messageType = ref<'success' | 'error' | ''>('')
 
   const profileForm = reactive<AccountProfilePayload>({
     name: '',
@@ -55,47 +57,61 @@ export const useAccountStore = defineStore('tenant-account', () => {
   const show = async (): Promise<void> => {
     try {
       loading.value = true
+      loadingAction.value = 'show'
       errors.value = {}
       message.value = ''
+      messageType.value = ''
       setAccount((await accountService.show()).data)
     } catch (err) {
       errors.value = validationErrorsFrom(err)
       message.value = apiMessageFrom(err, 'Unable to load account settings.')
+      messageType.value = 'error'
     } finally {
       loading.value = false
+      loadingAction.value = null
     }
   }
 
   const updateProfile = async (): Promise<void> => {
     try {
       loading.value = true
+      loadingAction.value = 'profile'
       errors.value = {}
       message.value = ''
+      messageType.value = ''
       setAccount((await accountService.updateProfile(profileForm)).data)
       message.value = 'Profile updated.'
+      messageType.value = 'success'
     } catch (err) {
       errors.value = validationErrorsFrom(err)
       message.value = apiMessageFrom(err, 'Unable to update profile.')
+      messageType.value = 'error'
       throw err
     } finally {
       loading.value = false
+      loadingAction.value = null
     }
   }
 
   const updatePassword = async (): Promise<void> => {
     try {
       loading.value = true
+      loadingAction.value = 'password'
       errors.value = {}
       message.value = ''
+      messageType.value = ''
       setAccount((await accountService.updatePassword(passwordForm)).data)
       clearPassword()
       message.value = 'Password updated.'
+      messageType.value = 'success'
     } catch (err) {
       errors.value = validationErrorsFrom(err)
       message.value = apiMessageFrom(err, 'Unable to update password.')
+      messageType.value = 'error'
       throw err
     } finally {
       loading.value = false
+      loadingAction.value = null
     }
   }
 
@@ -105,7 +121,9 @@ export const useAccountStore = defineStore('tenant-account', () => {
     errors,
     hydrateProfile,
     loading,
+    loadingAction,
     message,
+    messageType,
     passwordForm,
     profileForm,
     show,

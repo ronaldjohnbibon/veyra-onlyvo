@@ -227,7 +227,10 @@ const emptyText = computed(() => {
   if (
     trackingLogStore.params.search ||
     trackingLogStore.params.event_type ||
-    trackingLogStore.params.template_id
+    trackingLogStore.params.template_id ||
+    trackingLogStore.params.conversion_status ||
+    trackingLogStore.params.from ||
+    trackingLogStore.params.to
   ) {
     return 'No activity matches the current filters. Try clearing filters or widening the date range.'
   }
@@ -471,7 +474,13 @@ onMounted(() => {
           </CardHeader>
           <CardContent>
             <div
-              v-if="!trackingLogStore.logs.length"
+              v-if="trackingLogStore.loading"
+              class="rounded border bg-muted/40 p-6 text-center text-sm text-muted-foreground"
+            >
+              Loading tracking logs...
+            </div>
+            <div
+              v-else-if="!trackingLogStore.logs.length"
               class="rounded border bg-muted/40 p-6 text-center text-sm text-muted-foreground"
             >
               {{ emptyText }}

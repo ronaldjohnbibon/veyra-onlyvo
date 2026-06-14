@@ -27,6 +27,13 @@ export const useTenantSystemSettingStore = defineStore('tenant-system-settings',
   const loading = ref(false)
   const errors = ref<Record<string, string[]>>({})
 
+  const cleanHistoryParams = (value: SystemSettingHistoryParams): SystemSettingHistoryParams =>
+    Object.fromEntries(
+      Object.entries(value).filter(
+        ([, entry]) => entry !== '' && entry !== null && entry !== undefined
+      )
+    ) as SystemSettingHistoryParams
+
   const index = async (): Promise<void> => {
     try {
       loading.value = true
@@ -63,7 +70,9 @@ export const useTenantSystemSettingStore = defineStore('tenant-system-settings',
     try {
       loading.value = true
       historyParams.value = { ...historyParams.value, ...newParams }
-      const response = await tenantSystemSettingService.history(historyParams.value)
+      const response = await tenantSystemSettingService.history(
+        cleanHistoryParams(historyParams.value)
+      )
       history.value = response.data.data
       historyTotal.value = response.data.pagination.total
     } finally {

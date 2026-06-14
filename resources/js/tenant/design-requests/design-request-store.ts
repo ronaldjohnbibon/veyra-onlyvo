@@ -23,12 +23,19 @@ export const useDesignRequestStore = defineStore('tenant-design-requests', () =>
     status: '',
   })
 
+  const cleanParams = (value: DesignRequestParams): DesignRequestParams =>
+    Object.fromEntries(
+      Object.entries(value).filter(
+        ([, entry]) => entry !== '' && entry !== null && entry !== undefined
+      )
+    ) as DesignRequestParams
+
   const index = async (newParams: Partial<DesignRequestParams> = {}): Promise<void> => {
     try {
       loading.value = true
       params.value = { ...params.value, ...newParams }
 
-      const response = await designRequestService.index(params.value)
+      const response = await designRequestService.index(cleanParams(params.value))
       requests.value = response.data ?? []
       total.value = response.pagination?.total ?? requests.value.length
     } finally {

@@ -3,6 +3,7 @@
 namespace App\Tenant\Templates\Http\Resources;
 
 use App\Tenant\SystemSettings\Services\TenantSystemSettingService;
+use App\Tenant\Tenants\Models\Tenant;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -37,10 +38,20 @@ class TemplateResource extends JsonResource
             'text_color'       => $this->text_color,
             'status'           => $this->status,
             'is_default'       => (bool) $this->is_default,
-            'tenant_settings'  => $tenant ? $tenantSettings->values($tenant) : [],
+            'tenant_settings'  => $tenant ? $this->tenantSettings($request, $tenantSettings, $tenant) : [],
             'created_at'       => $this->created_at,
             'updated_at'       => $this->updated_at,
         ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function tenantSettings(Request $request, TenantSystemSettingService $settings, Tenant $tenant): array
+    {
+        return str_starts_with((string) $request->route()?->getName(), 'public.')
+            ? $settings->publicValues($tenant)
+            : $settings->values($tenant);
     }
 
     private function publicUrl(Request $request): string

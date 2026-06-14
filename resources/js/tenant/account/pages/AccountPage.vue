@@ -31,6 +31,7 @@ const ownerMember = computed(
 )
 const isInitialLoading = computed(() => accountStore.loading && !accountStore.account)
 const isTeamManagement = computed(() => route.name === 'tenant.team-management')
+const canViewTeamManagement = computed(() => Boolean(workspace.value?.team_management_allowed))
 const pageTitle = computed(() => (isTeamManagement.value ? 'Team Management' : 'Account/Profile'))
 const pageDescription = computed(() =>
   isTeamManagement.value
@@ -49,11 +50,19 @@ const profileComplete = computed(() => {
 const fieldError = (field: string): string | null => accountStore.errors[field]?.[0] ?? null
 
 const updateProfile = async (): Promise<void> => {
-  await accountStore.updateProfile()
+  try {
+    await accountStore.updateProfile()
+  } catch {
+    // Validation and API messages are rendered from the store.
+  }
 }
 
 const updatePassword = async (): Promise<void> => {
-  await accountStore.updatePassword()
+  try {
+    await accountStore.updatePassword()
+  } catch {
+    // Validation and API messages are rendered from the store.
+  }
 }
 
 onMounted(accountStore.show)
@@ -103,7 +112,7 @@ onMounted(accountStore.show)
 
       <div v-else class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_24rem]">
         <main class="space-y-4">
-          <section class="rounded border bg-background">
+          <section v-if="!isTeamManagement" class="rounded border bg-background">
             <div
               class="flex flex-col gap-3 border-b p-4 md:flex-row md:items-start md:justify-between"
             >
@@ -189,13 +198,13 @@ onMounted(accountStore.show)
               <div class="md:col-span-2">
                 <Button type="submit" variant="update" :disabled="accountStore.loading">
                   <Save class="size-4" />
-                  {{ accountStore.loading ? 'Saving...' : 'Save Profile' }}
+                  {{ accountStore.loadingAction === 'profile' ? 'Saving...' : 'Save Profile' }}
                 </Button>
               </div>
             </form>
           </section>
 
-          <section class="rounded border bg-background">
+          <section v-if="!isTeamManagement" class="rounded border bg-background">
             <div class="flex gap-3 border-b p-4">
               <div
                 class="flex size-10 shrink-0 items-center justify-center rounded border bg-primary/5 text-primary"
@@ -254,25 +263,36 @@ onMounted(accountStore.show)
               <div class="md:col-span-2">
                 <Button type="submit" variant="update" :disabled="accountStore.loading">
                   <KeyRound class="size-4" />
-                  {{ accountStore.loading ? 'Updating...' : 'Update Password' }}
+                  {{
+                    accountStore.loadingAction === 'password' ? 'Updating...' : 'Update Password'
+                  }}
                 </Button>
               </div>
             </form>
           </section>
 
           <section class="rounded border bg-background">
-            <div class="flex gap-3 border-b p-4">
-              <div
-                class="flex size-10 shrink-0 items-center justify-center rounded border bg-primary/5 text-primary"
-              >
-                <Users class="size-5" />
+            <div
+              class="flex flex-col gap-3 border-b p-4 md:flex-row md:items-start md:justify-between"
+            >
+              <div class="flex gap-3">
+                <div
+                  class="flex size-10 shrink-0 items-center justify-center rounded border bg-primary/5 text-primary"
+                >
+                  <Users class="size-5" />
+                </div>
+                <div>
+                  <h3 class="text-base font-semibold">
+                    {{ isTeamManagement ? 'Members' : 'Team' }}
+                  </h3>
+                  <p class="mt-1 text-sm text-muted-foreground">
+                    View the people currently attached to this tenant workspace.
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 class="text-base font-semibold">Team</h3>
-                <p class="mt-1 text-sm text-muted-foreground">
-                  View the people currently attached to this tenant workspace.
-                </p>
-              </div>
+              <Badge v-if="isTeamManagement" variant="outline">
+                {{ canViewTeamManagement ? 'Read only' : 'No access' }}
+              </Badge>
             </div>
 
             <div class="p-4">
@@ -280,7 +300,11 @@ onMounted(accountStore.show)
                 v-if="!workspace?.members.length"
                 class="rounded border bg-muted/30 p-5 text-sm text-muted-foreground"
               >
-                No workspace members were found.
+                {{
+                  canViewTeamManagement
+                    ? 'No workspace team members were found.'
+                    : 'Team members are not available for your account.'
+                }}
               </div>
 
               <div v-else class="space-y-2">
@@ -351,7 +375,9 @@ onMounted(accountStore.show)
               <div class="rounded border p-3">
                 <p class="text-xs text-muted-foreground">Owner</p>
                 <p class="mt-1 text-sm font-semibold">{{ ownerMember?.name || 'Not assigned' }}</p>
-                <p class="mt-1 text-xs text-muted-foreground">{{ ownerMember?.email }}</p>
+                <p class="mt-1 text-xs text-muted-foreground">
+                  {{ ownerMember?.email || 'No owner email available' }}
+                </p>
               </div>
 
               <div class="rounded border p-3">
@@ -363,7 +389,9 @@ onMounted(accountStore.show)
                   {{
                     workspace?.current_user_owner
                       ? 'You are the workspace owner.'
-                      : 'You are a workspace member.'
+                      : canViewTeamManagement
+                        ? 'You are a workspace member.'
+                        : 'You do not have team management access.'
                   }}
                 </p>
               </div>
@@ -374,7 +402,7 @@ onMounted(accountStore.show)
             <CardHeader>
               <CardTitle class="text-base">What Exists Today</CardTitle>
             </CardHeader>
-            <CardContent class="space-y-3">
+            <CardContent v-if="!isTeamManagement" class="space-y-3">
               <div class="flex items-start gap-3 rounded border p-3">
                 <User class="mt-0.5 size-4 text-primary" />
                 <div>
@@ -417,11 +445,45 @@ onMounted(accountStore.show)
                 </div>
               </div>
             </CardContent>
+            <CardContent v-else class="space-y-3">
+              <div class="flex items-start gap-3 rounded border p-3">
+                <UserPlus class="mt-0.5 size-4 text-muted-foreground" />
+                <div>
+                  <p class="text-sm font-semibold">Invite or create members</p>
+                  <p class="text-sm text-muted-foreground">
+                    Not available; no invite or create route exists yet.
+                  </p>
+                </div>
+              </div>
+              <div class="flex items-start gap-3 rounded border p-3">
+                <Users class="mt-0.5 size-4 text-muted-foreground" />
+                <div>
+                  <p class="text-sm font-semibold">Edit or remove members</p>
+                  <p class="text-sm text-muted-foreground">
+                    Not available; this workspace list is read only.
+                  </p>
+                </div>
+              </div>
+              <div class="flex items-start gap-3 rounded border p-3">
+                <Shield class="mt-0.5 size-4 text-muted-foreground" />
+                <div>
+                  <p class="text-sm font-semibold">Roles and permissions</p>
+                  <p class="text-sm text-muted-foreground">
+                    {{ workspace?.permissions_summary || 'No role system is configured yet.' }}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
           </Card>
 
           <p
             v-if="accountStore.message"
-            class="rounded border border-emerald-200 bg-emerald-50 p-3 text-sm font-medium text-emerald-800"
+            class="rounded border p-3 text-sm font-medium"
+            :class="
+              accountStore.messageType === 'error'
+                ? 'border-destructive/40 bg-destructive/10 text-destructive'
+                : 'border-emerald-200 bg-emerald-50 text-emerald-800'
+            "
           >
             {{ accountStore.message }}
           </p>

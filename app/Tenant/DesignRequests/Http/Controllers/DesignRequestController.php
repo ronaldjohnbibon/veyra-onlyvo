@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Tenant\AuditLogs\Services\TenantLogService;
 use App\Tenant\DesignRequests\Http\Requests\DesignRequestActionRequest;
 use App\Tenant\DesignRequests\Http\Requests\DesignRequestCommentRequest;
+use App\Tenant\DesignRequests\Http\Requests\DesignRequestIndexRequest;
 use App\Tenant\DesignRequests\Http\Requests\DesignRequestRequest;
 use App\Tenant\DesignRequests\Http\Resources\DesignRequestResource;
 use App\Tenant\DesignRequests\Models\DesignRequest;
@@ -14,8 +15,8 @@ use App\Tenant\SystemSettings\Services\SystemSettingService;
 use App\Tenant\SystemSettings\Services\TenantNotificationService;
 use App\Tenant\Tenants\Models\Tenant;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Sprout\Contracts\Tenant as CurrentTenant;
 
 class DesignRequestController extends Controller
 {
@@ -26,51 +27,55 @@ class DesignRequestController extends Controller
         private readonly TenantLogService $logs,
     ) {}
 
-    public function index(Request $request): JsonResponse
+    public function index(DesignRequestIndexRequest $request, CurrentTenant $tenant): JsonResponse
     {
         if (! $this->settings->featureEnabled('enable_design_requests_module')) {
             return $this->error('Design requests module is disabled.', 403);
         }
 
-        $sorts = [
+        $tenantId = $this->tenantId($tenant);
+        $filters  = $request->validated();
+        $sorts    = [
             'created_at' => 'created_at',
             'status'     => 'status',
             'title'      => 'title',
         ];
-        $sort       = (string) $request->input('sort', 'created_at');
+        $sort       = (string) ($filters['sort'] ?? 'created_at');
         $sortColumn = $sorts[$sort] ?? 'created_at';
-        $direction  = $request->input('direction') === 'asc' ? 'asc' : 'desc';
+        $direction  = ($filters['direction'] ?? 'desc') === 'asc' ? 'asc' : 'desc';
 
         $requests = DesignRequest::query()
             ->with('files')
+            ->where('tenant_id', $tenantId)
             ->filter([
-                'search' => $request->input('search'),
-                'status' => $request->input('status'),
+                'search' => $filters['search'] ?? null,
+                'status' => $filters['status'] ?? null,
             ])
             ->orderBy($sortColumn, $direction)
             ->orderBy('title')
             ->paginate(
-                (int) $request->input('pageSize', 15),
+                (int) ($filters['pageSize'] ?? 15),
                 ['*'],
                 'page',
-                (int) $request->input('page', 1),
+                (int) ($filters['page'] ?? 1),
             );
 
         return $this->success(DesignRequestResource::collection($requests), 'Design requests retrieved.');
     }
 
-    public function store(DesignRequestRequest $request): JsonResponse
+    public function store(DesignRequestRequest $request, CurrentTenant $tenant): JsonResponse
     {
         if (! $this->settings->featureEnabled('enable_design_requests_module')) {
             return $this->error('Design requests module is disabled.', 403);
         }
 
-        $user = Auth::user();
+        $user     = Auth::user();
+        $tenantId = $this->tenantId($tenant);
 
         abort_unless($user?->tenant_id, 403);
 
         $designRequest = $this->service->create($user, $request->validated());
-        $tenant        = Tenant::query()->find($user->tenant_id);
+        $tenant        = Tenant::query()->find($tenantId);
         $this->logs->recordModel('design_request.created', $designRequest, $user, $request, null, $designRequest->attributesToArray(), 'design_request', null, [
             'files_count' => $designRequest->files()->count(),
         ]);
@@ -88,16 +93,13 @@ class DesignRequestController extends Controller
         return $this->success(new DesignRequestResource($designRequest->load('events')), 'Design request submitted.', 201);
     }
 
-    public function show(string $designRequest): JsonResponse
+    public function show(string $designRequest, CurrentTenant $tenant): JsonResponse
     {
         if (! $this->settings->featureEnabled('enable_design_requests_module')) {
             return $this->error('Design requests module is disabled.', 403);
         }
 
-        $record = DesignRequest::query()
-            ->with(['files', 'events'])
-            ->whereKey($designRequest)
-            ->first();
+        $record = $this->findRequest($designRequest, $this->tenantId($tenant));
 
         if (! $record) {
             return $this->error('Design request not found.', 404);
@@ -106,19 +108,17 @@ class DesignRequestController extends Controller
         return $this->success(new DesignRequestResource($record), 'Design request retrieved.');
     }
 
-    public function comment(DesignRequestCommentRequest $request, string $designRequest): JsonResponse
+    public function comment(DesignRequestCommentRequest $request, string $designRequest, CurrentTenant $tenant): JsonResponse
     {
         if (! $this->settings->featureEnabled('enable_design_requests_module')) {
             return $this->error('Design requests module is disabled.', 403);
         }
 
-        $user = Auth::user();
+        $user     = Auth::user();
+        $tenantId = $this->tenantId($tenant);
         abort_unless($user?->tenant_id, 403);
 
-        $record = DesignRequest::query()
-            ->with(['files', 'events'])
-            ->whereKey($designRequest)
-            ->first();
+        $record = $this->findRequest($designRequest, $tenantId);
 
         if (! $record) {
             return $this->error('Design request not found.', 404);
@@ -138,19 +138,17 @@ class DesignRequestController extends Controller
         );
     }
 
-    public function action(DesignRequestActionRequest $request, string $designRequest): JsonResponse
+    public function action(DesignRequestActionRequest $request, string $designRequest, CurrentTenant $tenant): JsonResponse
     {
         if (! $this->settings->featureEnabled('enable_design_requests_module')) {
             return $this->error('Design requests module is disabled.', 403);
         }
 
-        $user = Auth::user();
+        $user     = Auth::user();
+        $tenantId = $this->tenantId($tenant);
         abort_unless($user?->tenant_id, 403);
 
-        $record = DesignRequest::query()
-            ->with(['files', 'events'])
-            ->whereKey($designRequest)
-            ->first();
+        $record = $this->findRequest($designRequest, $tenantId);
 
         if (! $record) {
             return $this->error('Design request not found.', 404);
@@ -166,5 +164,24 @@ class DesignRequestController extends Controller
             new DesignRequestResource($updated),
             'Request updated.',
         );
+    }
+
+    private function findRequest(string $id, string $tenantId): ?DesignRequest
+    {
+        return DesignRequest::query()
+            ->with(['files', 'events'])
+            ->where('tenant_id', $tenantId)
+            ->whereKey($id)
+            ->first();
+    }
+
+    private function tenantId(CurrentTenant $tenant): string
+    {
+        $tenantId     = (string) $tenant->getTenantKey();
+        $userTenantId = Auth::user()?->tenant_id;
+
+        abort_unless($userTenantId && hash_equals($tenantId, (string) $userTenantId), 403);
+
+        return $tenantId;
     }
 }

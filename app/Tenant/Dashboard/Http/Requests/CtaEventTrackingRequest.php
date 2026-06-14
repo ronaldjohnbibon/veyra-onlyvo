@@ -11,6 +11,7 @@ class CtaEventTrackingRequest extends FormRequest
      * @var array<int, string>
      */
     public const EVENT_TYPES = [
+        'cta_view',
         'button_click',
         'link_click',
         'form_opened',

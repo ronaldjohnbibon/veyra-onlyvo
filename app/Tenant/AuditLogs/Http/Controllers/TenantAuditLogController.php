@@ -5,10 +5,10 @@ namespace App\Tenant\AuditLogs\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Tenant\AuditLogs\Http\Requests\AuditLogIndexRequest;
 use App\Tenant\AuditLogs\Http\Resources\AuditLogResource;
-use App\Tenant\AuditLogs\Models\AuditLog;
 use App\Tenant\AuditLogs\Services\TenantLogService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use Sprout\Contracts\Tenant as CurrentTenant;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class TenantAuditLogController extends Controller
@@ -17,19 +17,16 @@ class TenantAuditLogController extends Controller
         private readonly TenantLogService $service,
     ) {}
 
-    public function index(AuditLogIndexRequest $request): JsonResponse
+    public function index(AuditLogIndexRequest $request, CurrentTenant $tenant): JsonResponse
     {
-        $logs = $this->service->search($this->tenantId(), $request->validated());
+        $logs = $this->service->search($this->tenantId($tenant), $request->validated());
 
         return $this->success(AuditLogResource::collection($logs), 'Audit logs retrieved.');
     }
 
-    public function show(string $log): JsonResponse
+    public function show(string $log, CurrentTenant $tenant): JsonResponse
     {
-        $record = AuditLog::withoutTenantRestrictions(fn () => AuditLog::query()
-            ->where('tenant_id', $this->tenantId())
-            ->whereKey($log)
-            ->first());
+        $record = $this->service->find($this->tenantId($tenant), $log);
 
         if (! $record) {
             return $this->error('Audit log not found.', 404);
@@ -38,9 +35,9 @@ class TenantAuditLogController extends Controller
         return $this->success(new AuditLogResource($record), 'Audit log retrieved.');
     }
 
-    public function export(AuditLogIndexRequest $request): StreamedResponse
+    public function export(AuditLogIndexRequest $request, CurrentTenant $tenant): StreamedResponse
     {
-        $rows = $this->service->export($this->tenantId(), $request->validated());
+        $rows = $this->service->export($this->tenantId($tenant), $request->validated());
 
         return response()->streamDownload(function () use ($rows): void {
             $handle = fopen('php://output', 'w');
@@ -71,11 +68,12 @@ class TenantAuditLogController extends Controller
         }, 'tenant-audit-logs.csv', ['Content-Type' => 'text/csv']);
     }
 
-    private function tenantId(): string
+    private function tenantId(CurrentTenant $tenant): string
     {
-        $tenantId = Auth::user()?->tenant_id;
+        $tenantId     = (string) $tenant->getTenantKey();
+        $userTenantId = Auth::user()?->tenant_id;
 
-        abort_unless($tenantId, 403);
+        abort_unless($userTenantId && hash_equals($tenantId, (string) $userTenantId), 403);
 
         return $tenantId;
     }

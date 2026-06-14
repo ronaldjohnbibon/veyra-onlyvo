@@ -111,8 +111,15 @@ const formatJson = (value: unknown): string => {
 }
 
 const openDetails = async (log: AuditLogRecord): Promise<void> => {
-  await auditStore.show(log.id)
-  detailsOpen.value = true
+  detailsOpen.value = false
+  auditStore.selected = null
+
+  try {
+    await auditStore.show(log.id)
+    detailsOpen.value = true
+  } catch {
+    detailsOpen.value = false
+  }
 }
 
 const downloadBlob = (blob: Blob, filename: string): void => {

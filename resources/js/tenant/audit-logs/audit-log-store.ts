@@ -25,12 +25,19 @@ export const useTenantAuditLogStore = defineStore('tenant-audit-logs', () => {
     direction: 'desc',
   })
 
+  const cleanParams = (value: AuditLogParams): AuditLogParams =>
+    Object.fromEntries(
+      Object.entries(value).filter(
+        ([, entry]) => entry !== '' && entry !== null && entry !== undefined
+      )
+    ) as AuditLogParams
+
   const index = async (newParams: Partial<AuditLogParams> = {}): Promise<void> => {
     try {
       loading.value = true
       params.value = { ...params.value, ...newParams }
 
-      const response = await tenantAuditLogService.index(params.value)
+      const response = await tenantAuditLogService.index(cleanParams(params.value))
       logs.value = response.data ?? []
       total.value = response.pagination?.total ?? logs.value.length
     } finally {
@@ -50,7 +57,7 @@ export const useTenantAuditLogStore = defineStore('tenant-audit-logs', () => {
   const exportLogs = async (): Promise<Blob> => {
     try {
       exporting.value = true
-      return await tenantAuditLogService.export(params.value)
+      return await tenantAuditLogService.export(cleanParams({ ...params.value, page: 1 }))
     } finally {
       exporting.value = false
     }

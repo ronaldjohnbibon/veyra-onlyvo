@@ -10,6 +10,7 @@ use App\Tenant\AuditLogs\Services\TenantLogService;
 use App\Tenant\Users\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use Sprout\Contracts\Tenant as CurrentTenant;
 
 class AccountController extends Controller
 {
@@ -18,16 +19,16 @@ class AccountController extends Controller
         private readonly TenantLogService $logs,
     ) {}
 
-    public function show(): JsonResponse
+    public function show(CurrentTenant $tenant): JsonResponse
     {
-        $user = $this->currentUser();
+        $user = $this->currentUser($tenant);
 
         return $this->success($this->service->accountPayload($user), 'Account workspace retrieved.');
     }
 
-    public function updateProfile(AccountProfileRequest $request): JsonResponse
+    public function updateProfile(AccountProfileRequest $request, CurrentTenant $tenant): JsonResponse
     {
-        $user = $this->currentUser();
+        $user     = $this->currentUser($tenant);
         $previous = $user->attributesToArray();
         $user     = $this->service->updateProfile($user, $request->validated());
         $this->logs->recordModel('account.profile_updated', $user, $user, $request, $previous, $user->attributesToArray(), 'tenant_user');
@@ -35,13 +36,15 @@ class AccountController extends Controller
         return $this->success($this->service->accountPayload($user), 'Profile updated.');
     }
 
-    public function updatePassword(AccountPasswordRequest $request): JsonResponse
+    public function updatePassword(AccountPasswordRequest $request, CurrentTenant $tenant): JsonResponse
     {
-        $user = $this->currentUser();
+        $user = $this->currentUser($tenant);
+        $data = $request->validated();
+
         $user = $this->service->updatePassword(
             $user,
-            (string) $request->input('current_password'),
-            (string) $request->input('password'),
+            (string) $data['current_password'],
+            (string) $data['password'],
         );
         $this->logs->auth('account.password_updated', [
             'tenant_id'    => $user->tenant_id,
@@ -53,10 +56,13 @@ class AccountController extends Controller
         return $this->success($this->service->accountPayload($user), 'Password updated.');
     }
 
-    private function currentUser(): User
+    private function currentUser(CurrentTenant $tenant): User
     {
-        /** @var User $user */
-        $user = Auth::user();
+        $user     = Auth::user();
+        $tenantId = (string) $tenant->getTenantKey();
+
+        abort_unless($user instanceof User, 403);
+        abort_unless($user->tenant_id && hash_equals($tenantId, (string) $user->tenant_id), 403);
 
         return $user;
     }

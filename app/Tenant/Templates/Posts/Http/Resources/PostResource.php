@@ -3,6 +3,7 @@
 namespace App\Tenant\Templates\Posts\Http\Resources;
 
 use App\Tenant\SystemSettings\Services\TenantSystemSettingService;
+use App\Tenant\Tenants\Models\Tenant;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -17,24 +18,36 @@ class PostResource extends JsonResource
         $tenant   = $template?->relationLoaded('tenant') ? $template->tenant : null;
 
         return [
-            'id'              => $this->id,
-            'template_id'     => $this->template_id,
-            'site_slug'       => $template?->slug,
-            'site_name'       => $template?->business_name,
-            'title'           => $this->title,
-            'slug'            => $this->slug,
-            'content'         => $this->content,
-            'excerpt'         => $this->excerpt ?: str(strip_tags((string) $this->content))->limit(180)->toString(),
-            'featured_image'  => $this->featuredImageUrl($request),
-            'seo_title'       => $this->seo_title,
+            'id'               => $this->id,
+            'template_id'      => $this->template_id,
+            'site_slug'        => $template?->slug,
+            'site_name'        => $template?->business_name,
+            'title'            => $this->title,
+            'slug'             => $this->slug,
+            'content'          => $this->content,
+            'excerpt'          => $this->excerpt ?: str(strip_tags((string) $this->content))->limit(180)->toString(),
+            'featured_image'   => $this->featuredImageUrl($request),
+            'seo_title'        => $this->seo_title,
             'meta_description' => $this->meta_description,
-            'tags'            => $this->tags ?? [],
-            'status'          => $this->status,
-            'tenant_settings' => $tenant ? app(TenantSystemSettingService::class)->values($tenant) : [],
-            'published_at'    => $this->published_at,
-            'created_at'      => $this->created_at,
-            'updated_at'      => $this->updated_at,
+            'tags'             => $this->tags ?? [],
+            'status'           => $this->status,
+            'tenant_settings'  => $tenant ? $this->tenantSettings($request, $tenant) : [],
+            'published_at'     => $this->published_at,
+            'created_at'       => $this->created_at,
+            'updated_at'       => $this->updated_at,
         ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function tenantSettings(Request $request, Tenant $tenant): array
+    {
+        $settings = app(TenantSystemSettingService::class);
+
+        return str_starts_with((string) $request->route()?->getName(), 'public.')
+            ? $settings->publicValues($tenant)
+            : $settings->values($tenant);
     }
 
     private function featuredImageUrl(Request $request): ?string

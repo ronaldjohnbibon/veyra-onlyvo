@@ -8,6 +8,7 @@ use App\Tenant\TrackingLogs\Http\Requests\TrackingLogIndexRequest;
 use App\Tenant\TrackingLogs\Services\TrackingLogService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use Sprout\Contracts\Tenant as CurrentTenant;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class TrackingLogController extends Controller
@@ -17,22 +18,22 @@ class TrackingLogController extends Controller
         private readonly SystemSettingService $settings,
     ) {}
 
-    public function index(TrackingLogIndexRequest $request): JsonResponse
+    public function index(TrackingLogIndexRequest $request, CurrentTenant $tenant): JsonResponse
     {
         if (! $this->settings->featureEnabled('enable_tracking_logs')) {
             return $this->error('Tracking logs are disabled.', 403);
         }
 
-        return $this->success($this->service->index($this->tenantId(), $request->validated()), 'Tracking logs retrieved.');
+        return $this->success($this->service->index($this->tenantId($tenant), $request->validated()), 'Tracking logs retrieved.');
     }
 
-    public function export(TrackingLogIndexRequest $request): StreamedResponse
+    public function export(TrackingLogIndexRequest $request, CurrentTenant $tenant): StreamedResponse
     {
         if (! $this->settings->featureEnabled('enable_tracking_logs')) {
             abort(403, 'Tracking logs are disabled.');
         }
 
-        $rows = $this->service->exportRows($this->tenantId(), $request->validated());
+        $rows = $this->service->exportRows($this->tenantId($tenant), $request->validated());
 
         return response()->streamDownload(function () use ($rows): void {
             $handle = fopen('php://output', 'w');
@@ -81,11 +82,12 @@ class TrackingLogController extends Controller
         }, 'tracking-logs.csv', ['Content-Type' => 'text/csv']);
     }
 
-    private function tenantId(): string
+    private function tenantId(CurrentTenant $tenant): string
     {
-        $tenantId = Auth::user()?->tenant_id;
+        $tenantId     = (string) $tenant->getTenantKey();
+        $userTenantId = Auth::user()?->tenant_id;
 
-        abort_unless($tenantId, 403);
+        abort_unless($userTenantId && hash_equals($tenantId, (string) $userTenantId), 403);
 
         return $tenantId;
     }

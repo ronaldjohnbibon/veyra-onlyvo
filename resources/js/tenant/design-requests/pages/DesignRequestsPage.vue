@@ -92,6 +92,7 @@ const emptyDescription = computed(() =>
     ? 'Clear the search or status filter to see more design requests.'
     : 'Share a goal, reference links, and optional files so the design team can review what you need.'
 )
+const canTakeTenantAction = computed(() => selectedRequest.value?.status === 'under_review')
 
 const resetForm = (): void => {
   form.title = ''
@@ -117,8 +118,14 @@ const openDetailsDialog = async (request: DesignRequestRecord): Promise<void> =>
   commentText.value = ''
   actionMessage.value = ''
   collaborationError.value = ''
-  await designRequestStore.show(request.id)
-  selectedRequest.value = designRequestStore.request
+
+  try {
+    await designRequestStore.show(request.id)
+    selectedRequest.value = designRequestStore.request
+  } catch {
+    selectedRequest.value = null
+    detailsDialogOpen.value = false
+  }
 }
 
 const parseReferenceLinks = (): string[] => {
@@ -166,6 +173,7 @@ const resetFilters = (): void => {
 }
 
 const formatFileSize = (size: number): string => {
+  if (size <= 0) return '0 KB'
   if (size < 1024 * 1024) return `${Math.max(1, Math.round(size / 1024))} KB`
 
   return `${(size / 1024 / 1024).toFixed(1)} MB`
@@ -208,7 +216,7 @@ const submitComment = async (): Promise<void> => {
 }
 
 const runAction = async (action: 'approve' | 'request_changes'): Promise<void> => {
-  if (!selectedRequest.value) return
+  if (!selectedRequest.value || !canTakeTenantAction.value) return
 
   try {
     collaborationError.value = ''
@@ -572,7 +580,7 @@ onMounted(() => {
             </div>
 
             <aside class="space-y-4">
-              <div class="rounded border bg-card p-4">
+              <div v-if="canTakeTenantAction" class="rounded border bg-card p-4">
                 <h3 class="text-sm font-semibold">Tenant Actions</h3>
                 <p class="mt-2 text-xs leading-5 text-muted-foreground">
                   Approve the current direction or ask the design team for changes.

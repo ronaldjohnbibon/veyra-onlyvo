@@ -30,6 +30,7 @@ export interface AccountWorkspace {
   invites_supported: boolean
   roles_supported: boolean
   billing_supported: boolean
+  team_management_allowed: boolean
   permissions_summary: string
 }
 

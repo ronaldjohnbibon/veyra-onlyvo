@@ -9,6 +9,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator as EmptyPaginator;
 use Illuminate\Support\Facades\Schema;
 
 class TenantLogService
@@ -112,6 +113,10 @@ class TenantLogService
      */
     public function search(string $tenantId, array $filters): LengthAwarePaginator
     {
+        if (! $this->tableExists()) {
+            return $this->emptyPaginator($filters);
+        }
+
         $sorts = [
             'occurred_at' => 'occurred_at',
             'category'    => 'category',
@@ -154,6 +159,19 @@ class TenantLogService
             ));
     }
 
+    public function find(string $tenantId, string $id): ?AuditLog
+    {
+        if (! $this->tableExists()) {
+            return null;
+        }
+
+        return AuditLog::withoutTenantRestrictions(fn () => AuditLog::query()
+            ->where('tenant_id', $tenantId)
+            ->where('scope', 'tenant')
+            ->whereKey($id)
+            ->first());
+    }
+
     /**
      * @param  array<string, mixed>  $filters
      * @return array<int, array<string, mixed>>
@@ -161,6 +179,7 @@ class TenantLogService
     public function export(string $tenantId, array $filters): array
     {
         $filters['pageSize'] = 5000;
+        $filters['page']     = 1;
 
         return $this->search($tenantId, $filters)
             ->getCollection()
@@ -197,6 +216,19 @@ class TenantLogService
         } catch (\Throwable) {
             return false;
         }
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     */
+    private function emptyPaginator(array $filters): LengthAwarePaginator
+    {
+        return new EmptyPaginator(
+            [],
+            0,
+            (int) ($filters['pageSize'] ?? 15),
+            (int) ($filters['page'] ?? 1),
+        );
     }
 
     private function applySearch(Builder $query, string $search): void

@@ -84,7 +84,7 @@ router.beforeEach(async (to) => {
   }
 
   if (to.meta.requiresAuth && !auth.isAuthenticated) {
-    return { name: 'TenantLogin' }
+    return { name: 'TenantLogin', query: { redirect: to.fullPath } }
   }
 
   if (featureFlag && runtimeSettings[featureFlag] === false) {

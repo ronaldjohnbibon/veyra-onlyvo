@@ -290,8 +290,16 @@ class TrackingLogService
      */
     private function utmValues(string $url): array
     {
-        $queryString = (string) (parse_url($url, PHP_URL_QUERY) ?: '');
+        $queryString = parse_url($url, PHP_URL_QUERY);
         $params      = [];
+
+        if (! is_string($queryString) || $queryString === '') {
+            return [
+                'utm_source'   => null,
+                'utm_medium'   => null,
+                'utm_campaign' => null,
+            ];
+        }
 
         parse_str($queryString, $params);
 
@@ -304,6 +312,10 @@ class TrackingLogService
 
     private function nullableParam(mixed $value): ?string
     {
+        while (is_array($value)) {
+            $value = reset($value);
+        }
+
         $text = trim((string) $value);
 
         return $text === '' ? null : $text;
@@ -339,9 +351,9 @@ class TrackingLogService
         }
 
         return match (true) {
-            str_contains($userAgent, 'Edg/')     || str_contains($userAgent, 'Edge/')      => 'Edge',
-            str_contains($userAgent, 'OPR/')     || str_contains($userAgent, 'Opera')      => 'Opera',
-            str_contains($userAgent, 'Chrome/')  || str_contains($userAgent, 'CriOS/')  => 'Chrome',
+            str_contains($userAgent, 'Edg/')     || str_contains($userAgent, 'Edge/')  => 'Edge',
+            str_contains($userAgent, 'OPR/')     || str_contains($userAgent, 'Opera')  => 'Opera',
+            str_contains($userAgent, 'Chrome/')  || str_contains($userAgent, 'CriOS/') => 'Chrome',
             str_contains($userAgent, 'Firefox/') || str_contains($userAgent, 'FxiOS/') => 'Firefox',
             str_contains($userAgent, 'Safari/')                                        => 'Safari',
             default                                                                    => 'Other',

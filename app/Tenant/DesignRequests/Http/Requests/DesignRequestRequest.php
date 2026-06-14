@@ -41,6 +41,13 @@ class DesignRequestRequest extends FormRequest
 
         if (is_string($links)) {
             $links = array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', $links) ?: []));
+        } elseif (is_array($links)) {
+            $links = array_filter(array_map(
+                fn (mixed $link): string => trim((string) $link),
+                $links,
+            ));
+        } else {
+            $links = [];
         }
 
         $this->merge([

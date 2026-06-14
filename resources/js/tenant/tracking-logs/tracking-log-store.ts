@@ -29,10 +29,18 @@ export const useTrackingLogStore = defineStore('tracking-logs', () => {
     conversion_status: '',
   })
 
+  const cleanParams = (value: TrackingLogParams): TrackingLogParams => {
+    return Object.fromEntries(
+      Object.entries(value).filter(
+        ([, entry]) => entry !== undefined && entry !== null && entry !== ''
+      )
+    ) as TrackingLogParams
+  }
+
   const index = async (newParams: Partial<TrackingLogParams> = {}): Promise<void> => {
     try {
       loading.value = true
-      params.value = { ...params.value, ...newParams }
+      params.value = cleanParams({ ...params.value, ...newParams })
 
       const response = await trackingLogService.index(params.value)
       logs.value = response.data.data ?? []
@@ -60,7 +68,7 @@ export const useTrackingLogStore = defineStore('tracking-logs', () => {
   }
 
   const exportCsv = async (): Promise<void> => {
-    const blob = await trackingLogService.exportCsv(params.value)
+    const blob = await trackingLogService.exportCsv(cleanParams(params.value))
     const url = window.URL.createObjectURL(blob)
     const link = document.createElement('a')
 

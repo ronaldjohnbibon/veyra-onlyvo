@@ -21,10 +21,25 @@ export const useAnalyticsStore = defineStore('analytics', () => {
   const trackedRoutes = ref(new Set<string>())
   const recentCtaEvents = ref(new Map<string, number>())
 
+  const cleanParams = (value: AnalyticsParams): AnalyticsParams => {
+    const next = Object.fromEntries(
+      Object.entries(value).filter(
+        ([, entry]) => entry !== undefined && entry !== null && entry !== ''
+      )
+    ) as AnalyticsParams
+
+    if (next.period !== 'custom') {
+      delete next.from
+      delete next.to
+    }
+
+    return next
+  }
+
   const index = async (newParams: Partial<AnalyticsParams> = {}): Promise<void> => {
     try {
       loading.value = true
-      params.value = { ...params.value, ...newParams }
+      params.value = cleanParams({ ...params.value, ...newParams })
       dashboard.value = (await analyticsService.dashboard(params.value)).data
     } finally {
       loading.value = false

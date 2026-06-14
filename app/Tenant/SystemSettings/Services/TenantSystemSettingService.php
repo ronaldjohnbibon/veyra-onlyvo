@@ -110,8 +110,21 @@ class TenantSystemSettingService
 
         return collect(self::DEFINITIONS)
             ->mapWithKeys(function (array $definition, string $key) use ($stored, $tenant): array {
-                return [$key => $stored[$key] ?? $this->defaultValue($tenant, $key, $definition['default'])];
+                return [$key => array_key_exists($key, $stored) ? $stored[$key] : $this->defaultValue($tenant, $key, $definition['default'])];
             })
+            ->all();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function publicValues(Tenant $tenant): array
+    {
+        $values = $this->values($tenant);
+
+        return collect(self::DEFINITIONS)
+            ->filter(fn (array $definition): bool => (bool) $definition['public'])
+            ->mapWithKeys(fn (array $definition, string $key): array => [$key => array_key_exists($key, $values) ? $values[$key] : $definition['default']])
             ->all();
     }
 
@@ -257,11 +270,13 @@ class TenantSystemSettingService
 
     private function defaultValue(Tenant $tenant, string $key, mixed $default): mixed
     {
-        return match ($key) {
+        $value = match ($key) {
             'profile.business_name' => $tenant->name,
             'profile.timezone'      => $tenant->timezone,
             default                 => $default,
         };
+
+        return $value === null || $value === '' ? $default : $value;
     }
 
     /**

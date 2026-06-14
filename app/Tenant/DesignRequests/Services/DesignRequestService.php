@@ -7,6 +7,7 @@ use App\Tenant\Users\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class DesignRequestService
 {
@@ -61,6 +62,12 @@ class DesignRequestService
 
     public function tenantAction(DesignRequest $request, User $user, string $action, ?string $message = null): DesignRequest
     {
+        if ($request->status !== 'under_review') {
+            throw ValidationException::withMessages([
+                'action' => ['This request can only be approved or changed while it is under review.'],
+            ]);
+        }
+
         $fromStatus = $request->status;
         $toStatus   = $action === 'approve' ? 'approved' : 'changes_requested';
         $eventType  = $action === 'approve' ? 'approval' : 'changes_requested';

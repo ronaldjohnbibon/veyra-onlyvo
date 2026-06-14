@@ -42,8 +42,13 @@ class AnalyticsController extends Controller
         }
 
         $tenant = $this->tenant();
+        $this->service->pruneExpired(
+            (string) $tenant->id,
+            $this->tenantSettings->integer($tenant, 'analytics.retention_days', 365),
+        );
+
         $dashboard = $this->service->dashboard((string) $tenant->id, $request->validated());
-        $filename = 'tenant-analytics-'.$dashboard['range']['from'].'-to-'.$dashboard['range']['to'].'.csv';
+        $filename  = 'tenant-analytics-'.$dashboard['range']['from'].'-to-'.$dashboard['range']['to'].'.csv';
 
         return response()->streamDownload(function () use ($dashboard): void {
             $handle = fopen('php://output', 'w');

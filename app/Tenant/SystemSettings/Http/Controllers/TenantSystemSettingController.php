@@ -12,6 +12,7 @@ use App\Tenant\SystemSettings\Services\TenantSystemSettingService;
 use App\Tenant\Tenants\Models\Tenant;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use Sprout\Contracts\Tenant as CurrentTenant;
 
 class TenantSystemSettingController extends Controller
 {
@@ -20,9 +21,9 @@ class TenantSystemSettingController extends Controller
         private readonly TenantLogService $logs,
     ) {}
 
-    public function index(): JsonResponse
+    public function index(CurrentTenant $currentTenant): JsonResponse
     {
-        $tenant  = $this->tenant();
+        $tenant  = $this->tenant($currentTenant);
         $history = $this->historyPayload($tenant);
 
         return $this->success([
@@ -32,14 +33,14 @@ class TenantSystemSettingController extends Controller
         ], 'Tenant system settings retrieved.');
     }
 
-    public function history(TenantSystemSettingHistoryIndexRequest $request): JsonResponse
+    public function history(TenantSystemSettingHistoryIndexRequest $request, CurrentTenant $currentTenant): JsonResponse
     {
-        return $this->success($this->historyPayload($this->tenant(), $request->validated()), 'Tenant system settings history retrieved.');
+        return $this->success($this->historyPayload($this->tenant($currentTenant), $request->validated()), 'Tenant system settings history retrieved.');
     }
 
-    public function updateBulk(TenantSystemSettingBulkRequest $request): JsonResponse
+    public function updateBulk(TenantSystemSettingBulkRequest $request, CurrentTenant $currentTenant): JsonResponse
     {
-        $tenant  = $this->service->upsertGrouped($this->tenant(), $request->validated('settings'), Auth::user());
+        $tenant  = $this->service->upsertGrouped($this->tenant($currentTenant), $request->validated('settings'), Auth::user());
         $history = $this->historyPayload($tenant);
         $this->logs->system('tenant_system_settings.updated', [
             'tenant_id'    => $tenant->id,
@@ -56,9 +57,9 @@ class TenantSystemSettingController extends Controller
         ], 'Tenant system settings updated.');
     }
 
-    public function uploadImage(TenantSystemSettingImageUploadRequest $request): JsonResponse
+    public function uploadImage(TenantSystemSettingImageUploadRequest $request, CurrentTenant $currentTenant): JsonResponse
     {
-        $tenant = $this->tenant();
+        $tenant = $this->tenant($currentTenant);
         $image  = $request->file('image');
 
         abort_unless($image, 422);
@@ -84,11 +85,12 @@ class TenantSystemSettingController extends Controller
         ], 'Image uploaded.', 201);
     }
 
-    private function tenant(): Tenant
+    private function tenant(CurrentTenant $currentTenant): Tenant
     {
-        $tenantId = Auth::user()?->tenant_id;
+        $tenantId     = (string) $currentTenant->getTenantKey();
+        $userTenantId = Auth::user()?->tenant_id;
 
-        abort_unless($tenantId, 403);
+        abort_unless($userTenantId && hash_equals($tenantId, (string) $userTenantId), 403);
 
         $tenant = Tenant::query()->find($tenantId);
 

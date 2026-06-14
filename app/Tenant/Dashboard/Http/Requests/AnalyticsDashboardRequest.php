@@ -19,8 +19,8 @@ class AnalyticsDashboardRequest extends FormRequest
     {
         return [
             'period'         => ['nullable', Rule::in(['today', 'last_7_days', 'last_30_days', 'custom'])],
-            'from'           => ['nullable', 'date'],
-            'to'             => ['nullable', 'date'],
+            'from'           => ['nullable', 'required_if:period,custom', 'date'],
+            'to'             => ['nullable', 'required_if:period,custom', 'date'],
             'pageSize'       => ['nullable', 'integer', 'min:5', 'max:50'],
             'top_pages_page' => ['nullable', 'integer', 'min:1'],
             'referrers_page' => ['nullable', 'integer', 'min:1'],

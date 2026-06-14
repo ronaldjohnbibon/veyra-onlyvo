@@ -81,13 +81,22 @@ export const useAuthStore = defineStore('tenant-auth', () => {
       setToken(data.data.tenant_token)
       user.value = data.data.user
 
-      await router.push({ name: 'tenant.dashboard' })
+      const redirect = router.currentRoute.value.query.redirect
+      const redirectPath = Array.isArray(redirect) ? redirect[0] : redirect
+
+      await router.push(
+        isLocalRedirectPath(redirectPath) ? redirectPath : { name: 'tenant.dashboard' }
+      )
     } catch (err) {
       errors.value = validationErrorsFrom(err)
       message.value = apiMessageFrom(err, 'Unable to log in.')
     } finally {
       loading.value = false
     }
+  }
+
+  const isLocalRedirectPath = (path?: string | null): path is string => {
+    return Boolean(path && path.startsWith('/') && !path.startsWith('//'))
   }
 
   const register = async (): Promise<void> => {

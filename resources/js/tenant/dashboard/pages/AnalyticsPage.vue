@@ -48,32 +48,32 @@ const summaryCards = computed(() => [
     label: 'Visits',
     value: rangeSummary.value?.visits ?? 0,
     icon: Eye,
-    change: comparison.value?.changes.visits,
+    change: comparison.value?.changes?.visits,
   },
   {
     label: 'Unique Visitors',
     value: rangeSummary.value?.unique_visitors ?? 0,
     icon: Users,
-    change: comparison.value?.changes.unique_visitors,
+    change: comparison.value?.changes?.unique_visitors,
   },
   {
     label: 'CTA Events',
     value: rangeSummary.value?.cta_events ?? 0,
     icon: MousePointerClick,
-    change: comparison.value?.changes.cta_events,
+    change: comparison.value?.changes?.cta_events,
   },
   {
     label: 'Submissions',
     value: rangeSummary.value?.submissions ?? 0,
     icon: Target,
-    change: comparison.value?.changes.submissions,
+    change: comparison.value?.changes?.submissions,
   },
   {
     label: 'Submission Rate',
     value: rangeSummary.value?.submission_rate ?? 0,
     icon: Percent,
     percent: true,
-    change: comparison.value?.changes.submission_rate,
+    change: comparison.value?.changes?.submission_rate,
   },
 ])
 
@@ -82,6 +82,8 @@ const period = computed({
   set: (value: AnalyticsPeriod) => {
     if (value === 'custom') {
       analyticsStore.params.period = value
+      customFrom.value ||= analyticsStore.params.from ?? dashboard.value?.range?.from ?? ''
+      customTo.value ||= analyticsStore.params.to ?? dashboard.value?.range?.to ?? ''
       return
     }
 
@@ -89,9 +91,9 @@ const period = computed({
   },
 })
 
-const topPages = computed(() => dashboard.value?.top_pages.data ?? [])
-const referrers = computed(() => dashboard.value?.top_referrers.data ?? [])
-const topCtas = computed(() => dashboard.value?.top_ctas.data ?? [])
+const topPages = computed(() => dashboard.value?.top_pages?.data ?? [])
+const referrers = computed(() => dashboard.value?.top_referrers?.data ?? [])
+const topCtas = computed(() => dashboard.value?.top_ctas?.data ?? [])
 const ctaEventTypes = computed(() => dashboard.value?.cta_events_by_type ?? [])
 const conversions = computed(() => dashboard.value?.conversions)
 const insights = computed(() => dashboard.value?.insights ?? [])
@@ -100,16 +102,18 @@ const devices = computed(() => dashboard.value?.devices ?? [])
 const browsers = computed(() => dashboard.value?.browsers ?? [])
 const funnel = computed(() => dashboard.value?.funnel)
 const ctaDrilldowns = computed(() => dashboard.value?.cta_drilldowns ?? [])
-const pagePagination = computed(() => dashboard.value?.top_pages.pagination)
-const referrerPagination = computed(() => dashboard.value?.top_referrers.pagination)
-const ctaPagination = computed(() => dashboard.value?.top_ctas.pagination)
+const pagePagination = computed(() => dashboard.value?.top_pages?.pagination)
+const referrerPagination = computed(() => dashboard.value?.top_referrers?.pagination)
+const ctaPagination = computed(() => dashboard.value?.top_ctas?.pagination)
 
 const formatNumber = (value: number): string => {
-  return new Intl.NumberFormat().format(value)
+  return new Intl.NumberFormat().format(Number.isFinite(value) ? value : 0)
 }
 
 const formatPercent = (value: number): string => {
-  return `${new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(value)}%`
+  return `${new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(
+    Number.isFinite(value) ? value : 0
+  )}%`
 }
 
 const changeText = (change?: AnalyticsChange): string => {
@@ -139,7 +143,7 @@ const titleCase = (value: string): string => {
 const chartPoints = (items: AnalyticsDailyTotal[]): string => {
   if (!items.length) return ''
 
-  const max = Math.max(1, ...items.map((item) => item.total))
+  const max = Math.max(1, ...items.map((item) => (Number.isFinite(item.total) ? item.total : 0)))
   const width = 560
   const height = 150
   const left = 20
@@ -149,7 +153,7 @@ const chartPoints = (items: AnalyticsDailyTotal[]): string => {
   return items
     .map((item, index) => {
       const x = left + step * index
-      const y = top + height - (item.total / max) * height
+      const y = top + height - ((Number.isFinite(item.total) ? item.total : 0) / max) * height
 
       return `${x},${y}`
     })
@@ -167,26 +171,51 @@ const chartLabels = (items: AnalyticsDailyTotal[]): AnalyticsDailyTotal[] => {
 }
 
 const maxTotal = (items: AnalyticsDailyTotal[]): number => {
-  return Math.max(0, ...items.map((item) => item.total))
+  return Math.max(0, ...items.map((item) => (Number.isFinite(item.total) ? item.total : 0)))
+}
+
+const chartLabelX = (items: AnalyticsDailyTotal[], date: string): number => {
+  const index = items.findIndex((row) => row.date === date)
+
+  if (index < 0 || items.length <= 1) return 20
+
+  return 20 + (index / (items.length - 1)) * 560
 }
 
 const maxCtaTotal = (items: AnalyticsCtaTotalRow[]): number => {
-  return Math.max(1, ...items.map((item) => item.total))
+  return Math.max(1, ...items.map((item) => (Number.isFinite(item.total) ? item.total : 0)))
 }
 
 const maxTypeTotal = (items: AnalyticsEventTypeRow[]): number => {
-  return Math.max(1, ...items.map((item) => item.total))
+  return Math.max(1, ...items.map((item) => (Number.isFinite(item.total) ? item.total : 0)))
 }
 
 const maxNameTotal = (items: { total: number }[]): number => {
-  return Math.max(1, ...items.map((item) => item.total))
+  return Math.max(1, ...items.map((item) => (Number.isFinite(item.total) ? item.total : 0)))
 }
 
+const normalizedCustomRange = (): { from: string; to: string } | null => {
+  if (!customFrom.value || !customTo.value) return null
+
+  return customFrom.value <= customTo.value
+    ? { from: customFrom.value, to: customTo.value }
+    : { from: customTo.value, to: customFrom.value }
+}
+
+const hasCustomRange = computed(() => Boolean(customFrom.value && customTo.value))
+
 const applyCustomRange = async (): Promise<void> => {
+  const range = normalizedCustomRange()
+
+  if (!range) return
+
+  customFrom.value = range.from
+  customTo.value = range.to
+
   await analyticsStore.index({
     period: 'custom',
-    from: customFrom.value,
-    to: customTo.value,
+    from: range.from,
+    to: range.to,
     top_pages_page: 1,
     referrers_page: 1,
     top_ctas_page: 1,
@@ -194,13 +223,18 @@ const applyCustomRange = async (): Promise<void> => {
 }
 
 const saveCurrentRange = (): void => {
-  if (!customFrom.value || !customTo.value) return
+  const range = normalizedCustomRange()
 
-  const label = `${formatDisplayDate(customFrom.value)} - ${formatDisplayDate(customTo.value)}`
+  if (!range) return
+
+  customFrom.value = range.from
+  customTo.value = range.to
+
+  const label = `${formatDisplayDate(range.from)} - ${formatDisplayDate(range.to)}`
   const next = [
-    { label, from: customFrom.value, to: customTo.value },
+    { label, from: range.from, to: range.to },
     ...savedRanges.value.filter(
-      (range) => range.from !== customFrom.value || range.to !== customTo.value
+      (savedRange) => savedRange.from !== range.from || savedRange.to !== range.to
     ),
   ].slice(0, 5)
 
@@ -242,6 +276,8 @@ onMounted(() => {
     savedRanges.value = []
   }
 
+  customFrom.value = analyticsStore.params.from ?? ''
+  customTo.value = analyticsStore.params.to ?? ''
   analyticsStore.index()
 })
 </script>
@@ -295,8 +331,23 @@ onMounted(() => {
               class="h-9"
             />
           </div>
-          <Button type="button" size="sm" class="h-9" @click="applyCustomRange">Apply</Button>
-          <Button type="button" size="sm" variant="outline" class="h-9" @click="saveCurrentRange">
+          <Button
+            type="button"
+            size="sm"
+            class="h-9"
+            :disabled="!hasCustomRange || analyticsStore.loading"
+            @click="applyCustomRange"
+          >
+            Apply
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            class="h-9"
+            :disabled="!hasCustomRange || analyticsStore.loading"
+            @click="saveCurrentRange"
+          >
             <Save class="size-4" />
             Save Range
           </Button>
@@ -321,11 +372,19 @@ onMounted(() => {
           size="sm"
           variant="navigate"
           class="h-9 xl:ml-auto"
+          :disabled="analyticsStore.loading || !dashboard"
           @click="exportAnalytics"
         >
           <Download class="size-4" />
           Export CSV
         </Button>
+      </div>
+
+      <div
+        v-if="analyticsStore.loading"
+        class="mb-4 rounded border bg-muted/40 p-4 text-sm text-muted-foreground"
+      >
+        Loading analytics...
       </div>
 
       <div v-if="insights.length" class="mb-4 grid gap-4 md:grid-cols-2">
@@ -621,12 +680,7 @@ onMounted(() => {
                 </text>
                 <g v-for="item in chartLabels(dashboard?.daily_visits ?? [])" :key="item.date">
                   <text
-                    :x="
-                      20 +
-                      ((dashboard?.daily_visits ?? []).findIndex((row) => row.date === item.date) /
-                        Math.max(1, (dashboard?.daily_visits.length ?? 1) - 1)) *
-                        560
-                    "
+                    :x="chartLabelX(dashboard?.daily_visits ?? [], item.date)"
                     y="198"
                     text-anchor="middle"
                     class="fill-muted-foreground text-[11px]"
@@ -661,12 +715,7 @@ onMounted(() => {
                 </text>
                 <g v-for="item in chartLabels(dashboard?.daily_uniques ?? [])" :key="item.date">
                   <text
-                    :x="
-                      20 +
-                      ((dashboard?.daily_uniques ?? []).findIndex((row) => row.date === item.date) /
-                        Math.max(1, (dashboard?.daily_uniques.length ?? 1) - 1)) *
-                        560
-                    "
+                    :x="chartLabelX(dashboard?.daily_uniques ?? [], item.date)"
                     y="198"
                     text-anchor="middle"
                     class="fill-muted-foreground text-[11px]"
@@ -701,14 +750,7 @@ onMounted(() => {
                 </text>
                 <g v-for="item in chartLabels(dashboard?.daily_cta_events ?? [])" :key="item.date">
                   <text
-                    :x="
-                      20 +
-                      ((dashboard?.daily_cta_events ?? []).findIndex(
-                        (row) => row.date === item.date
-                      ) /
-                        Math.max(1, (dashboard?.daily_cta_events.length ?? 1) - 1)) *
-                        560
-                    "
+                    :x="chartLabelX(dashboard?.daily_cta_events ?? [], item.date)"
                     y="198"
                     text-anchor="middle"
                     class="fill-muted-foreground text-[11px]"
@@ -914,7 +956,7 @@ onMounted(() => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  <TableRow v-if="!(conversions?.per_cta.length ?? 0)">
+                  <TableRow v-if="!(conversions?.per_cta?.length ?? 0)">
                     <TableCell :colspan="3" class="h-24 text-center text-muted-foreground">
                       No CTA conversions found.
                     </TableCell>
@@ -956,7 +998,7 @@ onMounted(() => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  <TableRow v-if="!(conversions?.per_page.length ?? 0)">
+                  <TableRow v-if="!(conversions?.per_page?.length ?? 0)">
                     <TableCell :colspan="4" class="h-24 text-center text-muted-foreground">
                       No page conversions found.
                     </TableCell>

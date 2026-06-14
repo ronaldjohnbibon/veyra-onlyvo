@@ -11,6 +11,11 @@ use Illuminate\Validation\ValidationException;
 
 class AccountService
 {
+    private const TEAM_USER_TYPES = [
+        UserType::TENANT->value,
+        UserType::EMPLOYEE->value,
+    ];
+
     /**
      * @param  array<string, mixed>  $data
      */
@@ -42,18 +47,22 @@ class AccountService
     public function accountPayload(User $user): array
     {
         $user->loadMissing('tenant');
-        $tenant  = $user->tenant;
-        $ownerId = $tenant
+        $tenant                = $user->tenant;
+        $teamManagementAllowed = $this->isTeamUser($user);
+        $teamMemberQuery       = $tenant && $teamManagementAllowed
             ? User::query()
                 ->where('tenant_id', $tenant->id)
-                ->where('user_type', UserType::TENANT)
+                ->whereIn('user_type', self::TEAM_USER_TYPES)
+            : null;
+        $ownerId = $teamMemberQuery
+            ? (clone $teamMemberQuery)
+                ->where('user_type', UserType::TENANT->value)
                 ->orderBy('created_at')
                 ->orderBy('id')
                 ->value('id')
             : null;
-        $members = $tenant
-            ? User::query()
-                ->where('tenant_id', $tenant->id)
+        $members = $teamMemberQuery
+            ? (clone $teamMemberQuery)
                 ->orderBy('id')
                 ->get()
                 ->map(fn (User $member): array => [
@@ -73,17 +82,25 @@ class AccountService
         return [
             'user'      => new UserResource($user),
             'workspace' => [
-                'tenant'              => $tenant ? new TenantResource($tenant) : null,
-                'owner_user_id'       => $ownerId,
-                'current_user_owner'  => $ownerId !== null && (int) $ownerId === (int) $user->id,
-                'members'             => $members,
-                'member_count'        => $members->count(),
-                'invites_supported'   => false,
-                'roles_supported'     => false,
-                'billing_supported'   => false,
-                'permissions_summary' => 'Role and permission management is not configured for tenant workspaces yet.',
+                'tenant'                  => $tenant ? new TenantResource($tenant) : null,
+                'owner_user_id'           => $ownerId,
+                'current_user_owner'      => $ownerId !== null && (int) $ownerId === (int) $user->id,
+                'members'                 => $members,
+                'member_count'            => $members->count(),
+                'invites_supported'       => false,
+                'roles_supported'         => false,
+                'billing_supported'       => false,
+                'team_management_allowed' => $teamManagementAllowed,
+                'permissions_summary'     => 'Role and permission management is not configured for tenant workspaces yet.',
             ],
         ];
+    }
+
+    private function isTeamUser(User $user): bool
+    {
+        $userType = $user->user_type?->value ?? $user->user_type;
+
+        return in_array($userType, self::TEAM_USER_TYPES, true);
     }
 
     private function roleLabel(User $user): string
@@ -91,7 +108,6 @@ class AccountService
         return match ($user->user_type) {
             UserType::TENANT   => 'Tenant user',
             UserType::EMPLOYEE => 'Team member',
-            UserType::CUSTOMER => 'Customer',
             default            => 'User',
         };
     }
