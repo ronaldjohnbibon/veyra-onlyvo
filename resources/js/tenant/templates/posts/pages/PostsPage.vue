@@ -193,7 +193,7 @@ watch(selectedTemplateId, (templateId) => {
           <template #empty-actions>
             <div class="flex flex-col gap-2 sm:flex-row">
               <Button v-if="!selectedTemplateId" as-child variant="navigate" size="sm">
-                <RouterLink to="/templates">Choose Template</RouterLink>
+                <RouterLink to="/template-builder">Choose Template</RouterLink>
               </Button>
               <Button
                 v-else-if="postStore.params.search || postStore.params.status"

@@ -139,7 +139,7 @@ class TenantService
                             'description' => '',
                             'is_active'   => true,
                             'items'       => [
-                                ['title' => 'Templates', 'url' => 'templates', 'is_active' => true],
+                                ['title' => 'Template Builder', 'url' => 'template-builder', 'is_active' => true],
                                 ['title' => 'Posts', 'url' => 'posts', 'is_active' => true],
                             ],
                         ],

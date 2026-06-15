@@ -138,7 +138,7 @@ onMounted(() => {
               </a>
             </Button>
             <Button v-if="dashboard.module_status.templates" as-child variant="update" size="sm">
-              <RouterLink to="/templates">
+              <RouterLink to="/template-builder">
                 <Sparkles class="size-4" />
                 Edit Website
               </RouterLink>
@@ -214,7 +214,7 @@ onMounted(() => {
 
                     <div class="flex flex-wrap gap-2">
                       <Button as-child variant="update" size="sm">
-                        <RouterLink to="/templates">Edit Site</RouterLink>
+                        <RouterLink to="/template-builder">Edit Site</RouterLink>
                       </Button>
                       <Button
                         v-if="dashboard.default_template.public_url"
@@ -248,7 +248,7 @@ onMounted(() => {
                       Pick a design and publish it as your default website.
                     </p>
                     <Button as-child variant="create" size="sm" class="mt-4">
-                      <RouterLink to="/templates">Create Site</RouterLink>
+                      <RouterLink to="/template-builder">Create Site</RouterLink>
                     </Button>
                   </div>
                 </CardContent>

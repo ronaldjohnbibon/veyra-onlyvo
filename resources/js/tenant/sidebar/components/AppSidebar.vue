@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { SidebarProps } from '@/shared/components/ui/sidebar'
-import type { SidebarRecord } from '@/shared/types/sidebar'
+import type { SidebarNavChild, SidebarNavItem, SidebarRecord } from '@/shared/types/sidebar'
 import { computed, onMounted } from 'vue'
 import { useAuthStore } from '@/tenant/auth/auth-store'
 import { useSidebarStore } from '@/tenant/sidebar/sidebar-store'
@@ -47,15 +47,40 @@ const hiddenUrls = computed(() => {
       .map(([url]) => url)
   )
 })
+const normalizeLegacyTemplateLink = <T extends SidebarNavChild | SidebarNavItem>(item: T): T => {
+  if (item.url !== 'templates') return item
+
+  return {
+    ...item,
+    title: 'Template Builder',
+    url: 'template-builder',
+  }
+}
+const uniqueByUrl = <T extends SidebarNavChild | SidebarNavItem>(items: T[]): T[] => {
+  const seen = new Set<string>()
+
+  return items.filter((item) => {
+    if (seen.has(item.url)) return false
+
+    seen.add(item.url)
+
+    return true
+  })
+}
 const visibleNav = computed(() => {
   return (data.value?.data.main_nav ?? [])
     .filter((item) => item.is_active !== false)
-    .map((item) => ({
-      ...item,
-      items: item.items?.filter(
-        (child) => child.is_active !== false && !hiddenUrls.value.has(child.url)
-      ),
-    }))
+    .map(normalizeLegacyTemplateLink)
+    .map((item) => {
+      const items = item.items
+        ?.map(normalizeLegacyTemplateLink)
+        .filter((child) => child.is_active !== false && !hiddenUrls.value.has(child.url))
+
+      return {
+        ...item,
+        items: items ? uniqueByUrl(items) : items,
+      }
+    })
     .filter((item) => item.url !== '#' || item.items?.length)
     .filter((item) => item.url === '#' || !hiddenUrls.value.has(item.url))
 })

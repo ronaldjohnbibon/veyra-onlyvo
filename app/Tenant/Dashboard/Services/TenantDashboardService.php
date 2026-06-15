@@ -198,7 +198,7 @@ class TenantDashboardService
                 'label'       => 'Publish a default site',
                 'description' => 'Choose a website design and make it the default public site.',
                 'completed'   => (bool) ($template && $template->status === 'published' && $template->is_default),
-                'to'          => '/templates',
+                'to'          => '/template-builder',
             ],
             [
                 'key'         => 'site_live',

@@ -2,18 +2,6 @@ import type { RouteRecordRaw } from 'vue-router'
 
 const routes: RouteRecordRaw[] = [
   {
-    path: '/templates',
-    name: 'templates.index',
-    component: () => import('@/tenant/templates/pages/TemplateSelectionPage.vue'),
-    meta: {
-      requiresAuth: true,
-      layout: 'tenant',
-      title: 'Templates',
-      description: 'Select website types and publish tenant templates',
-      featureFlag: 'feature_flags.enable_templates_module',
-    },
-  },
-  {
     path: '/template-builder',
     name: 'templates.builder',
     component: () => import('@/tenant/templates/pages/TemplateSelectionPage.vue'),
@@ -26,7 +14,7 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
-    path: '/templates/:id/published',
+    path: '/template-builder/:id/published',
     name: 'templates.published',
     component: () => import('@/tenant/templates/pages/TemplatePublishedPage.vue'),
     meta: {

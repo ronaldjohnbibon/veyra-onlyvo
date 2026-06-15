@@ -49,7 +49,6 @@ class SidebarSeeder extends Seeder
                             'description' => '',
                             'is_active'   => true,
                             'items'       => [
-                                ['title' => 'Templates', 'url' => 'templates', 'is_active' => true],
                                 ['title' => 'Template Builder', 'url' => 'template-builder', 'is_active' => true],
                                 ['title' => 'Posts', 'url' => 'posts', 'is_active' => true],
                                 ['title' => 'Navigation Builder', 'url' => 'navigation-builder', 'is_active' => true],
