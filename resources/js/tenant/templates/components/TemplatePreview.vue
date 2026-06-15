@@ -8,12 +8,7 @@ import {
 } from '@/tenant/templates/composables/useTenantPublicSettings'
 import type { TemplateRecord } from '@/shared/types/templates'
 import { Maximize2, Monitor, Smartphone, Tablet } from 'lucide-vue-next'
-import { computed, ref, type CSSProperties } from 'vue'
-
-const props = defineProps<{
-  template: TemplateRecord
-  showControls?: boolean
-}>()
+import { computed, onMounted, onUnmounted, ref, watch, type CSSProperties } from 'vue'
 
 const previewSizes = [
   { key: 'mobile', label: 'Mobile', width: '390px', icon: Smartphone },
@@ -24,8 +19,24 @@ const previewSizes = [
 
 type PreviewSizeKey = (typeof previewSizes)[number]['key']
 
-const selectedPreviewSize = ref<PreviewSizeKey>('full')
+const props = withDefaults(
+  defineProps<{
+    template: TemplateRecord
+    showControls?: boolean
+    defaultPreviewSize?: PreviewSizeKey
+    fitToContainer?: boolean
+  }>(),
+  {
+    defaultPreviewSize: 'full',
+    fitToContainer: false,
+  }
+)
+
+const selectedPreviewSize = ref<PreviewSizeKey>(props.defaultPreviewSize)
+const previewViewport = ref<HTMLElement | null>(null)
+const previewViewportWidth = ref(0)
 const renderedTemplate = computed(() => effectiveTemplate(props.template))
+let resizeObserver: ResizeObserver | null = null
 
 const templateComponent = computed(() => {
   return getWebsiteTemplateComponent(
@@ -36,6 +47,22 @@ const templateComponent = computed(() => {
 
 const selectedPreview = computed(() => {
   return previewSizes.find((size) => size.key === selectedPreviewSize.value) ?? previewSizes[3]
+})
+
+const selectedPreviewPixelWidth = computed(() => {
+  const match = /^(\d+)px$/.exec(selectedPreview.value.width)
+
+  return match ? Number(match[1]) : null
+})
+
+const previewScale = computed(() => {
+  const width = selectedPreviewPixelWidth.value
+
+  if (!props.fitToContainer || !width || !previewViewportWidth.value) {
+    return 1
+  }
+
+  return Math.min(1, previewViewportWidth.value / width)
 })
 
 const previewStyle = computed<CSSProperties>(() => ({
@@ -51,7 +78,27 @@ const previewStyle = computed<CSSProperties>(() => ({
 
 const previewFrameStyle = computed<CSSProperties>(() => ({
   width: selectedPreview.value.width,
+  zoom: previewScale.value,
 }))
+
+onMounted(() => {
+  if (!previewViewport.value) return
+
+  previewViewportWidth.value = previewViewport.value.clientWidth
+  resizeObserver = new ResizeObserver(([entry]) => {
+    previewViewportWidth.value = entry.contentRect.width
+  })
+  resizeObserver.observe(previewViewport.value)
+})
+
+onUnmounted(() => resizeObserver?.disconnect())
+
+watch(
+  () => props.defaultPreviewSize,
+  (size) => {
+    selectedPreviewSize.value = size
+  }
+)
 </script>
 
 <template>
@@ -79,7 +126,7 @@ const previewFrameStyle = computed<CSSProperties>(() => ({
       </div>
     </div>
 
-    <div class="overflow-auto pb-2">
+    <div ref="previewViewport" class="overflow-auto pb-2">
       <article
         class="template-preview mx-auto min-h-full overflow-hidden rounded border bg-white transition-[width] duration-200"
         :style="[previewStyle, previewFrameStyle]"

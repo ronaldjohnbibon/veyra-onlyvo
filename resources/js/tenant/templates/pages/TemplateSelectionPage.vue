@@ -1043,7 +1043,11 @@ watch(
             </CardHeader>
             <CardContent class="px-4">
               <div class="max-h-[calc(100vh-12rem)] overflow-auto rounded border bg-muted/30 p-3">
-                <TemplatePreview :template="previewTemplate" />
+                <TemplatePreview
+                  :template="previewTemplate"
+                  default-preview-size="desktop"
+                  fit-to-container
+                />
               </div>
             </CardContent>
           </Card>
