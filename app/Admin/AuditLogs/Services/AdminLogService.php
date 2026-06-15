@@ -45,7 +45,7 @@ class AdminLogService
             'category'       => $this->categoryForAction($action),
             'entity_type'    => $entityType ?? $this->entityType($model),
             'entity_id'      => $model->getKey(),
-            'entity_label'   => $entityLabel ?? $this->entityLabel($model),
+            'entity_label'   => $entityLabel           ?? $this->entityLabel($model),
             'tenant_id'      => $metadata['tenant_id'] ?? data_get($model, 'tenant_id') ?? ($entityType === 'tenant' ? $model->getKey() : null),
             'action'         => $action,
             'previous_value' => $previousValue,

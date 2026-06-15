@@ -21,19 +21,23 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('app')->name('app.')->group(function (): void {
     Route::post('register', [AuthController::class, 'register'])
-        ->middleware('throttle:tenant-registration');
+        ->middleware('throttle:tenant-registration')
+        ->name('register');
 
     Route::tenanted(function (): void {
         Route::post('login', [AuthController::class, 'login'])
-            ->middleware('throttle:tenant-login');
+            ->middleware('throttle:tenant-login')
+            ->name('login');
         Route::post('forgot-password', [AuthController::class, 'forgotPassword'])
-            ->middleware('throttle:password-reset');
+            ->middleware('throttle:password-reset')
+            ->name('forgot-password');
         Route::post('reset-password', [AuthController::class, 'resetPassword'])
-            ->middleware('throttle:password-reset');
+            ->middleware('throttle:password-reset')
+            ->name('reset-password');
 
         Route::middleware(['api.auth', 'token.name:tenant_token'])->group(function (): void {
-            Route::get('me', [AuthController::class, 'me']);
-            Route::post('logout', [AuthController::class, 'logout']);
+            Route::get('me', [AuthController::class, 'me'])->name('me');
+            Route::post('logout', [AuthController::class, 'logout'])->name('logout');
             Route::get('account', [AccountController::class, 'show'])->name('account.show');
             Route::put('account/profile', [AccountController::class, 'updateProfile'])->name('account.profile.update');
             Route::put('account/password', [AccountController::class, 'updatePassword'])->name('account.password.update');

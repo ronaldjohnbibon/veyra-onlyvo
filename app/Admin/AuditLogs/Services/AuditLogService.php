@@ -2,6 +2,4 @@
 
 namespace App\Admin\AuditLogs\Services;
 
-class AuditLogService extends AdminLogService
-{
-}
+class AuditLogService extends AdminLogService {}

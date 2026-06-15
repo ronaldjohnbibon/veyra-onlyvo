@@ -2,12 +2,12 @@
 
 namespace App\Shared\Logging\Concerns;
 
+use BackedEnum;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
-use BackedEnum;
 use UnitEnum;
 
 trait NormalizesLogData
@@ -97,15 +97,15 @@ trait NormalizesLogData
     protected function categoryForAction(string $action): string
     {
         return match (true) {
-            Str::contains($action, ['login', 'logout', 'password', 'session']) => 'auth',
-            Str::contains($action, ['permission', 'security', 'blocked', 'unauthorized']) => 'permission',
-            Str::contains($action, ['error', 'failed', 'exception']) => 'error',
-            Str::contains($action, ['notification', 'email', 'notify']) => 'notification',
-            Str::contains($action, ['upload', 'file', 'image']) => 'file_upload',
-            Str::contains($action, ['setting', 'sidebar', 'system']) => 'system',
-            Str::contains($action, ['payment', 'transaction', 'billing']) => 'transaction',
+            Str::contains($action, ['login', 'logout', 'password', 'session'])                                                              => 'auth',
+            Str::contains($action, ['permission', 'security', 'blocked', 'unauthorized'])                                                   => 'permission',
+            Str::contains($action, ['error', 'failed', 'exception'])                                                                        => 'error',
+            Str::contains($action, ['notification', 'email', 'notify'])                                                                     => 'notification',
+            Str::contains($action, ['upload', 'file', 'image'])                                                                             => 'file_upload',
+            Str::contains($action, ['setting', 'sidebar', 'system'])                                                                        => 'system',
+            Str::contains($action, ['payment', 'transaction', 'billing'])                                                                   => 'transaction',
             Str::contains($action, ['created', 'updated', 'deleted', 'restored', 'published', 'unpublished', 'deactivated', 'reactivated']) => 'audit',
-            default => 'activity',
+            default                                                                                                                         => 'activity',
         };
     }
 
