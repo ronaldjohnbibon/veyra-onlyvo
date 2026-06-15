@@ -5,6 +5,7 @@ import {
   settingString,
   type TenantPublicSettings,
 } from '@/tenant/templates/composables/useTenantPublicSettings'
+import { safeHref } from '@/shared/utils/url'
 import { computed, ref } from 'vue'
 
 const props = defineProps<{
@@ -12,8 +13,12 @@ const props = defineProps<{
 }>()
 
 const accepted = ref(localStorage.getItem('tenant_cookie_notice_accepted') === 'true')
-const privacyUrl = computed(() => settingString(props.settings, 'compliance.privacy_policy_url'))
-const termsUrl = computed(() => settingString(props.settings, 'compliance.terms_of_service_url'))
+const privacyUrl = computed(() =>
+  safeHref(settingString(props.settings, 'compliance.privacy_policy_url'), '')
+)
+const termsUrl = computed(() =>
+  safeHref(settingString(props.settings, 'compliance.terms_of_service_url'), '')
+)
 const footerText = computed(() => settingString(props.settings, 'website.footer_text'))
 const cookieEnabled = computed(() =>
   settingBoolean(props.settings, 'compliance.cookie_notice_enabled', false)

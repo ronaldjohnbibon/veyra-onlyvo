@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { TemplateRecord } from '@/shared/types/templates'
+import { safeHref } from '@/shared/utils/url'
 import { computed } from 'vue'
 
 const props = defineProps<{
@@ -166,7 +167,7 @@ const socialLinks = computed(() => {
         <div class="flex flex-wrap gap-3">
           <a
             v-if="content.reservation_link"
-            :href="String(content.reservation_link)"
+            :href="safeHref(content.reservation_link)"
             class="rounded border border-white/30 px-4 py-2 text-sm"
           >
             Reservations
@@ -174,7 +175,7 @@ const socialLinks = computed(() => {
           <a
             v-for="[name, url] in socialLinks"
             :key="name"
-            :href="String(url)"
+            :href="safeHref(url)"
             class="rounded border border-white/30 px-4 py-2 text-sm"
           >
             {{ name }}

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { TemplateRecord } from '@/shared/types/templates'
+import { safeHref } from '@/shared/utils/url'
 import { computed } from 'vue'
 
 const props = defineProps<{
@@ -148,7 +149,7 @@ const socialLinks = computed(() => {
             <a
               v-for="[name, url] in socialLinks"
               :key="name"
-              :href="String(url)"
+              :href="safeHref(url)"
               class="text-sm underline"
             >
               {{ name }}

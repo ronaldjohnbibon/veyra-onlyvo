@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useTemplateCtaForm } from '@/tenant/templates/composables/useTemplateCtaForm'
+import { safeHref } from '@/shared/utils/url'
 import type { TemplateCtaConfig, TemplateCtaField } from '@/shared/types/templates'
 import { computed } from 'vue'
 
@@ -195,7 +196,7 @@ const {
         {{ props.cta.success_message }}
         <a
           v-if="props.cta.type === 'file_download' && props.cta.downloadable_file"
-          :href="props.cta.downloadable_file"
+          :href="safeHref(props.cta.downloadable_file)"
           class="underline"
         >
           Download file

@@ -35,6 +35,7 @@ class SystemSettingBulkRequest extends FormRequest
         return [
             function (Validator $validator): void {
                 $this->validateIpList($validator, 'security.allowed_admin_ips');
+                $this->validateAllowedFileTypes($validator);
                 $this->validateMaintenanceWindow($validator);
             },
         ];
@@ -137,6 +138,28 @@ class SystemSettingBulkRequest extends FormRequest
         }
 
         $validator->errors()->add('settings.maintenance.maintenance_end_time', 'Maintenance end time must be after the start time.');
+    }
+
+    private function validateAllowedFileTypes(Validator $validator): void
+    {
+        $allowed = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+        $types   = $this->listFromText((string) $this->input('settings.storage.allowed_file_types', ''));
+
+        if ($types === []) {
+            $validator->errors()->add('settings.storage.allowed_file_types', 'At least one image file type is required.');
+
+            return;
+        }
+
+        foreach ($types as $type) {
+            if (in_array(strtolower($type), $allowed, true)) {
+                continue;
+            }
+
+            $validator->errors()->add('settings.storage.allowed_file_types', 'Allowed file types are limited to JPG, PNG, WebP, and GIF images.');
+
+            return;
+        }
     }
 
     private function validIpOrCidr(string $value): bool

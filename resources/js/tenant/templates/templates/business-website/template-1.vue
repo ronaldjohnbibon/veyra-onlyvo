@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { TemplateRecord } from '@/shared/types/templates'
+import { safeHref } from '@/shared/utils/url'
 import { computed } from 'vue'
 
 const props = defineProps<{
@@ -93,7 +94,7 @@ const socialLinks = computed(() => {
           </p>
           <div class="mt-8 flex flex-wrap gap-3">
             <a
-              :href="String(content.primary_cta_url ?? '#contact')"
+              :href="safeHref(content.primary_cta_url, '#contact')"
               class="rounded bg-[var(--template-primary)] px-5 py-3 text-sm font-semibold text-white"
             >
               {{ content.primary_cta_label ?? 'Start a project' }}
@@ -174,7 +175,7 @@ const socialLinks = computed(() => {
             <a
               v-for="[name, url] in socialLinks"
               :key="name"
-              :href="String(url)"
+              :href="safeHref(url)"
               class="text-sm underline"
             >
               {{ name }}

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { defaultTemplateCta } from '@/shared/templates/cta-presets'
+import { safeHref } from '@/shared/utils/url'
 import TemplateCta from '@/tenant/templates/components/TemplateCta.vue'
 import { settingBoolean } from '@/tenant/templates/composables/useTenantPublicSettings'
 import type { TemplateCtaConfig, TemplateCtaField, TemplateRecord } from '@/shared/types/templates'
@@ -342,7 +343,7 @@ onBeforeUnmount(() => {
               <p class="tm-intro-text mt-5">{{ feature.description }}</p>
               <a
                 v-if="feature.cta_label"
-                :href="String(feature.cta_link ?? '#testimonials')"
+                :href="safeHref(feature.cta_link, '#testimonials')"
                 class="tm-btn-primary mt-5 inline-flex"
               >
                 {{ feature.cta_label }}
@@ -408,7 +409,7 @@ onBeforeUnmount(() => {
           <a
             v-for="(item, index) in galleryItems"
             :key="String(item.title ?? index)"
-            :href="String(item.full_image ?? item.image ?? '#gallery')"
+            :href="safeHref(item.full_image ?? item.image, '#gallery')"
             class="tm-gallery-item"
           >
             <img
@@ -527,11 +528,11 @@ onBeforeUnmount(() => {
           </TemplateCta>
 
           <div class="space-y-8">
-            <a :href="contact.chatUrl || '#contact'" class="contact-item">
+            <a :href="safeHref(contact.chatUrl, '#contact')" class="contact-item">
               <MessageSquare class="size-8" />
               <span>{{ contact.chatLabel }}</span>
             </a>
-            <a :href="`mailto:${contact.email}`" class="contact-item">
+            <a :href="safeHref(`mailto:${contact.email}`, '#contact')" class="contact-item">
               <Mail class="size-8" />
               <span>{{ contact.email }}</span>
             </a>
@@ -539,7 +540,7 @@ onBeforeUnmount(() => {
               <MapPin class="size-8" />
               <span>{{ contact.location }}</span>
             </a>
-            <a :href="`tel:${contact.phone}`" class="contact-item">
+            <a :href="safeHref(`tel:${contact.phone}`, '#contact')" class="contact-item">
               <Phone class="size-8" />
               <span>{{ contact.phone }}</span>
             </a>

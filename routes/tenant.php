@@ -20,12 +20,16 @@ use App\Tenant\TrackingLogs\Http\Controllers\TrackingLogController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('app')->name('app.')->group(function (): void {
-    Route::post('register', [AuthController::class, 'register']);
+    Route::post('register', [AuthController::class, 'register'])
+        ->middleware('throttle:tenant-registration');
 
     Route::tenanted(function (): void {
-        Route::post('login', [AuthController::class, 'login']);
-        Route::post('forgot-password', [AuthController::class, 'forgotPassword']);
-        Route::post('reset-password', [AuthController::class, 'resetPassword']);
+        Route::post('login', [AuthController::class, 'login'])
+            ->middleware('throttle:tenant-login');
+        Route::post('forgot-password', [AuthController::class, 'forgotPassword'])
+            ->middleware('throttle:password-reset');
+        Route::post('reset-password', [AuthController::class, 'resetPassword'])
+            ->middleware('throttle:password-reset');
 
         Route::middleware(['api.auth', 'token.name:tenant_token'])->group(function (): void {
             Route::get('me', [AuthController::class, 'me']);
@@ -83,14 +87,20 @@ Route::prefix('app')->name('app.')->group(function (): void {
 
 Route::prefix('public')->name('public.')->group(function (): void {
     Route::tenanted(function (): void {
-        Route::post('analytics/visits', [PublicVisitorTrackingController::class, 'store'])->name('analytics.visits.store');
-        Route::post('analytics/cta-events', [PublicCtaTrackingController::class, 'store'])->name('analytics.cta-events.store');
+        Route::post('analytics/visits', [PublicVisitorTrackingController::class, 'store'])
+            ->middleware('throttle:public-analytics')
+            ->name('analytics.visits.store');
+        Route::post('analytics/cta-events', [PublicCtaTrackingController::class, 'store'])
+            ->middleware('throttle:public-analytics')
+            ->name('analytics.cta-events.store');
 
         Route::get('sites/default', [PublicTemplateController::class, 'defaultSite'])->name('sites.default');
         Route::get('sites/{slug}', [PublicTemplateController::class, 'show'])
             ->where('slug', '[a-z0-9][a-z0-9-]*')
             ->name('sites.show');
-        Route::post('template-cta-submissions', [TemplateCtaSubmissionController::class, 'store'])->name('template-cta-submissions.store');
+        Route::post('template-cta-submissions', [TemplateCtaSubmissionController::class, 'store'])
+            ->middleware('throttle:public-forms')
+            ->name('template-cta-submissions.store');
 
         Route::get('sites/{siteSlug}/posts', [PublicPostController::class, 'index'])
             ->where('siteSlug', '[a-z0-9][a-z0-9-]*')

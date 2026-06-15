@@ -55,7 +55,7 @@ class TemplateCtaSubmissionRequest extends FormRequest
                 }),
             ],
             'cta_type' => ['required', 'string', Rule::in(self::CTA_TYPES)],
-            'payload'  => ['required', 'array'],
+            'payload'  => ['required', 'array', 'max:25'],
         ];
     }
 
@@ -85,10 +85,13 @@ class TemplateCtaSubmissionRequest extends FormRequest
             }
 
             $fields = $cta['fields'] ?? [];
+            $fields = is_array($fields) ? $fields : [];
+
+            $this->validatePayloadKeys($validator, $fields);
 
             $payloadValidator = Validator::make(
                 $this->input('payload', []),
-                $this->payloadRules(is_array($fields) ? $fields : [])
+                $this->payloadRules($fields)
             );
 
             if ($payloadValidator->fails()) {
@@ -99,6 +102,29 @@ class TemplateCtaSubmissionRequest extends FormRequest
                 }
             }
         });
+    }
+
+    /**
+     * @param  array<int, mixed>  $fields
+     */
+    private function validatePayloadKeys($validator, array $fields): void
+    {
+        $allowedKeys = collect($fields)
+            ->filter(fn (mixed $field): bool => is_array($field))
+            ->map(fn (array $field): string => (string) ($field['key'] ?? ''))
+            ->filter()
+            ->values()
+            ->all();
+
+        foreach (array_keys($this->input('payload', [])) as $key) {
+            if (in_array((string) $key, $allowedKeys, true)) {
+                continue;
+            }
+
+            $validator->errors()->add('payload', 'The submitted form contains fields that are not part of this template.');
+
+            return;
+        }
     }
 
     public function template(): ?Template

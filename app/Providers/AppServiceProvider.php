@@ -5,6 +5,9 @@ namespace App\Providers;
 use App\Admin\SystemSettings\Services\SystemSettingService;
 use FilesystemIterator;
 use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
@@ -40,6 +43,13 @@ class AppServiceProvider extends ServiceProvider
         $this->loadMigrationsFrom(app_path('Tenant/Users/Database/Migrations'));
 
         app(SystemSettingService::class)->applyRuntimeConfig();
+
+        RateLimiter::for('admin-login', fn (Request $request) => Limit::perMinute(30)->by($this->rateLimitKey($request, 'admin-login')));
+        RateLimiter::for('tenant-login', fn (Request $request) => Limit::perMinute(30)->by($this->rateLimitKey($request, 'tenant-login')));
+        RateLimiter::for('tenant-registration', fn (Request $request) => Limit::perHour(5)->by($this->rateLimitKey($request, 'tenant-registration')));
+        RateLimiter::for('password-reset', fn (Request $request) => Limit::perHour(5)->by($this->rateLimitKey($request, 'password-reset')));
+        RateLimiter::for('public-analytics', fn (Request $request) => Limit::perMinute(120)->by($this->rateLimitKey($request, 'public-analytics')));
+        RateLimiter::for('public-forms', fn (Request $request) => Limit::perMinute(10)->by($this->rateLimitKey($request, 'public-forms')));
 
         ResetPassword::createUrlUsing(function (object $notifiable, string $token): string {
             $tenant      = $notifiable->tenant;
@@ -82,5 +92,10 @@ class AppServiceProvider extends ServiceProvider
         }
 
         return $paths;
+    }
+
+    private function rateLimitKey(Request $request, string $bucket): string
+    {
+        return $bucket.'|'.$request->getHost().'|'.$request->ip();
     }
 }

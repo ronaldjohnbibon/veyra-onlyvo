@@ -1,6 +1,7 @@
 import { ctaPayloadFromForm, submittedEventTypeFor } from '@/tenant/dashboard/cta-tracking'
 import { useAnalyticsStore } from '@/tenant/dashboard/analytics-store'
 import { useTemplateStore } from '@/tenant/templates/template-store'
+import { safeRedirectUrl } from '@/shared/utils/url'
 import type { TemplateCtaConfig, TemplateCtaField } from '@/shared/types/templates'
 import { computed, ref, type Ref } from 'vue'
 import { useRoute } from 'vue-router'
@@ -74,8 +75,10 @@ export const useTemplateCtaForm = (
         )
       }
 
-      if (cta.value.redirect_url) {
-        window.location.href = cta.value.redirect_url
+      const redirectUrl = safeRedirectUrl(cta.value.redirect_url)
+
+      if (redirectUrl) {
+        window.location.href = redirectUrl
       }
     } catch {
       error.value = 'Please check the form and try again.'
