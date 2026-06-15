@@ -12,6 +12,16 @@ export const settingString = (
   return value === null || value === undefined ? fallback : String(value)
 }
 
+const settingStringOrFallback = (
+  settings: TenantPublicSettings | undefined,
+  key: string,
+  fallback = ''
+): string => {
+  const value = settingString(settings, key).trim()
+
+  return value === '' ? fallback : value
+}
+
 export const settingBoolean = (
   settings: TenantPublicSettings | undefined,
   key: string,
@@ -48,7 +58,7 @@ export const effectiveTemplate = (template: TemplateRecord): TemplateRecord => {
   return {
     ...template,
     business_name: settingString(settings, 'profile.business_name', template.business_name),
-    logo: settingString(settings, 'profile.logo', template.logo),
+    logo: settingStringOrFallback(settings, 'profile.logo', template.logo),
     contact_info: contactInfo,
     content,
     font_family: publicFontFamily(

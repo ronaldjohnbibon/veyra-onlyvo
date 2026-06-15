@@ -1037,7 +1037,7 @@ watch(
           <Card class="gap-3 py-4">
             <CardHeader class="px-4">
               <div class="flex items-center justify-between gap-3">
-                <CardTitle class="text-sm">Live Preview</CardTitle>
+                <CardTitle class="text-sm">Live Previews</CardTitle>
                 <Badge variant="outline">{{ selectedCatalogTemplate.name || 'No design' }}</Badge>
               </div>
             </CardHeader>
