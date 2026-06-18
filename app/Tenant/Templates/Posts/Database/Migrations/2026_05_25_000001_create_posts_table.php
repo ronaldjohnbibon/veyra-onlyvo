@@ -14,7 +14,11 @@ return new class extends Migration
             $table->string('title');
             $table->string('slug', 160);
             $table->longText('content');
+            $table->text('excerpt')->nullable();
             $table->text('featured_image')->nullable();
+            $table->string('seo_title', 180)->nullable();
+            $table->text('meta_description')->nullable();
+            $table->json('tags')->nullable();
             $table->string('status', 30)->default('draft');
             $table->timestamp('published_at')->nullable();
             $table->timestamps();

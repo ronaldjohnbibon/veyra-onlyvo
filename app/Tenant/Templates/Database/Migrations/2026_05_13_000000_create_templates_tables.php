@@ -84,11 +84,49 @@ return new class extends Migration
             $table->index(['website_type_id', 'is_active']);
         });
 
+        Schema::create('template_catalog_item_versions', function (Blueprint $table): void {
+            $table->uuid('id')->primary();
+            $table->foreignUuid('template_catalog_item_id');
+            $table->unsignedInteger('version');
+            $table->string('action', 40)->default('updated');
+            $table->text('changelog')->nullable();
+            $table->json('snapshot');
+            $table->foreignId('created_by_user_id')->nullable();
+            $table->string('created_by_name')->nullable();
+            $table->string('created_by_email')->nullable();
+            $table->timestamps();
+
+            $table->foreign('template_catalog_item_id', 'tciv_item_fk')
+                ->references('id')
+                ->on('template_catalog_items')
+                ->cascadeOnDelete();
+            $table->foreign('created_by_user_id', 'tciv_user_fk')
+                ->references('id')
+                ->on('users')
+                ->nullOnDelete();
+            $table->unique(['template_catalog_item_id', 'version'], 'tciv_item_version_unique');
+            $table->index(['template_catalog_item_id', 'created_at'], 'tciv_item_created_idx');
+        });
+
+        Schema::create('template_cta_submissions', function (Blueprint $table): void {
+            $table->uuid('id')->primary();
+            $table->foreignUuid('template_id')->constrained('templates')->cascadeOnDelete();
+            $table->string('cta_type', 60);
+            $table->json('payload');
+            $table->string('status', 30)->default('new');
+            $table->timestamps();
+
+            $table->index(['template_id', 'cta_type']);
+            $table->index(['template_id', 'status']);
+        });
+
         $this->seedWebsiteTypes();
     }
 
     public function down(): void
     {
+        Schema::dropIfExists('template_cta_submissions');
+        Schema::dropIfExists('template_catalog_item_versions');
         Schema::dropIfExists('template_catalog_items');
         Schema::dropIfExists('templates');
         Schema::dropIfExists('website_types');

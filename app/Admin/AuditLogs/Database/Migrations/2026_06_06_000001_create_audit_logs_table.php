@@ -34,6 +34,7 @@ return new class extends Migration
             $table->index(['occurred_at', 'action']);
             $table->index(['scope', 'category', 'severity']);
             $table->index(['tenant_id', 'occurred_at']);
+            $table->index(['tenant_id', 'occurred_at'], 'audit_logs_tenant_occurred_index');
         });
     }
 

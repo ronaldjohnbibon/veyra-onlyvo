@@ -10,10 +10,6 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (Schema::hasTable('tenant_system_settings')) {
-            return;
-        }
-
         Schema::create('tenant_system_settings', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('tenant_id')->constrained('tenants')->cascadeOnDelete();
@@ -28,11 +24,28 @@ return new class extends Migration
             $table->unique(['tenant_id', 'key']);
         });
 
+        Schema::create('tenant_system_setting_histories', function (Blueprint $table): void {
+            $table->uuid('id')->primary();
+            $table->foreignUuid('tenant_id')->constrained('tenants')->cascadeOnDelete();
+            $table->string('setting_key', 150)->index();
+            $table->string('action', 50)->default('updated')->index();
+            $table->json('previous_value')->nullable();
+            $table->json('new_value')->nullable();
+            $table->unsignedBigInteger('changed_by_user_id')->nullable()->index();
+            $table->string('changed_by_name')->nullable();
+            $table->string('changed_by_email')->nullable();
+            $table->timestamp('changed_at')->index();
+            $table->timestamp('created_at')->nullable();
+
+            $table->index(['tenant_id', 'changed_at']);
+        });
+
         $this->backfillFromTenantJson();
     }
 
     public function down(): void
     {
+        Schema::dropIfExists('tenant_system_setting_histories');
         Schema::dropIfExists('tenant_system_settings');
     }
 

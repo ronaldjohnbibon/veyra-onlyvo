@@ -29,8 +29,6 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->loadMigrationsFrom(app_path('Tenant/Dashboard/Database/Migrations'));
         $this->loadMigrationsFrom(app_path('Admin/AuditLogs/Database/Migrations'));
-        $this->loadMigrationsFrom(app_path('Admin/DesignRequests/Database/Migrations'));
-        $this->loadMigrationsFrom(app_path('Admin/Templates/Database/Migrations'));
         $this->loadMigrationsFrom(app_path('Tenant/Auth/Database/Migrations'));
         $this->loadMigrationsFrom(app_path('Tenant/AuditLogs/Database/Migrations'));
         $this->loadMigrationsFrom(app_path('Tenant/DesignRequests/Database/Migrations'));
@@ -38,7 +36,6 @@ class AppServiceProvider extends ServiceProvider
         $this->loadMigrationsFrom(app_path('Tenant/Sidebar/Database/Migrations'));
         $this->loadMigrationsFrom(app_path('Tenant/SystemSettings/Database/Migrations'));
         $this->loadMigrationsFrom($this->templateMigrationPaths());
-        $this->loadMigrationsFrom(app_path('Tenant/TrackingLogs/Database/Migrations'));
         $this->loadMigrationsFrom(app_path('Tenant/Tenants/Database/Migrations'));
         $this->loadMigrationsFrom(app_path('Tenant/Users/Database/Migrations'));
 
