@@ -104,12 +104,23 @@ export const useTemplateMaintenanceStore = defineStore('admin-template-maintenan
         ? await adminTemplateService.updateCatalogItem(id, payload)
         : await adminTemplateService.storeCatalogItem(payload)
 
-      await loadCatalogItems(payload.website_type_id)
-      await loadWebsiteTypes()
-
       return response.data
     } catch (err) {
       // Keep Laravel validation errors keyed by field for the form.
+      errors.value = validationErrorsFrom(err)
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const uploadCatalogPreviewImage = async (image: File): Promise<string> => {
+    try {
+      loading.value = true
+      errors.value = {}
+
+      return (await adminTemplateService.uploadCatalogPreviewImage(image)).data.url
+    } catch (err) {
       errors.value = validationErrorsFrom(err)
       throw err
     } finally {
@@ -245,6 +256,7 @@ export const useTemplateMaintenanceStore = defineStore('admin-template-maintenan
     saveCatalogItem,
     saveWebsiteType,
     schemaExport,
+    uploadCatalogPreviewImage,
     validateCatalogItem,
     validation,
     websiteTypes,

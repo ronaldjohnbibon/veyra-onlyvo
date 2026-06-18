@@ -75,6 +75,7 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
         Route::apiResource('system-settings', AdminSystemSettingController::class)
             ->parameters(['system-settings' => 'systemSetting']);
 
+        Route::post('template-catalog-items/preview-images', [AdminTemplateCatalogController::class, 'uploadPreviewImage'])->name('template-catalog-items.preview-images.store');
         Route::post('template-catalog-items/{templateCatalogItem}/clone', [AdminTemplateCatalogController::class, 'cloneItem'])->name('template-catalog-items.clone');
         Route::post('template-catalog-items/{templateCatalogItem}/publish', [AdminTemplateCatalogController::class, 'publish'])->name('template-catalog-items.publish');
         Route::post('template-catalog-items/{templateCatalogItem}/unpublish', [AdminTemplateCatalogController::class, 'unpublish'])->name('template-catalog-items.unpublish');

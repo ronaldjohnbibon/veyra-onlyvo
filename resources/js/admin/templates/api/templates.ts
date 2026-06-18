@@ -47,6 +47,13 @@ interface TemplateCatalogVersionResponse {
   data: NonNullable<TemplateCatalogItem['versions']>
 }
 
+interface TemplateCatalogPreviewImageUploadResponse {
+  data: {
+    url: string
+    path: string
+  }
+}
+
 export const adminTemplateService = {
   websiteTypes(params: TemplateParams = {}) {
     return http
@@ -85,6 +92,24 @@ export const adminTemplateService = {
   updateCatalogItem(id: string, payload: TemplateCatalogPayload) {
     return http
       .put<TemplateCatalogResponse>(`admin/template-catalog-items/${id}`, payload)
+      .then((response) => response.data)
+  },
+
+  uploadCatalogPreviewImage(image: File) {
+    const payload = new FormData()
+
+    payload.append('image', image)
+
+    return http
+      .post<TemplateCatalogPreviewImageUploadResponse>(
+        'admin/template-catalog-items/preview-images',
+        payload,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      )
       .then((response) => response.data)
   },
 

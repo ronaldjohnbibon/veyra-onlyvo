@@ -29,34 +29,34 @@ class AdminSidebarSeeder extends Seeder
                         [
                             'title'       => 'Home',
                             'url'         => '#',
-                            'icon'        => 'LayoutDashboard',
+                            'icon'        => 'Home',
                             'description' => '',
                             'is_active'   => true,
                             'items'       => [
-                                ['title' => 'Dashboard', 'url' => 'dashboard', 'is_active' => true],
+                                ['title' => 'Dashboard', 'url' => 'dashboard', 'icon' => 'LayoutDashboard', 'is_active' => true],
                             ],
                         ],
                         [
                             'title'       => 'Platform',
                             'url'         => '#',
-                            'icon'        => 'ShieldCheck',
+                            'icon'        => 'Building2',
                             'description' => '',
                             'is_active'   => true,
                             'items'       => [
-                                ['title' => 'Tenants', 'url' => 'tenants', 'is_active' => true],
-                                ['title' => 'Admin Users', 'url' => 'admin-users', 'is_active' => true],
+                                ['title' => 'Tenants', 'url' => 'tenants', 'icon' => 'Building2', 'is_active' => true],
+                                ['title' => 'Admin Users', 'url' => 'admin-users', 'icon' => 'UserCog', 'is_active' => true],
                                 ['title' => 'Operations', 'url' => 'operations', 'icon' => 'Wrench', 'is_active' => true],
-                                ['title' => 'Audit Logs', 'url' => 'logs', 'icon' => 'ShieldCheck', 'is_active' => true],
+                                ['title' => 'Audit Logs', 'url' => 'logs', 'icon' => 'ScrollText', 'is_active' => true],
                             ],
                         ],
                         [
                             'title'       => 'Website',
                             'url'         => '#',
-                            'icon'        => 'Package',
+                            'icon'        => 'Frame',
                             'description' => '',
                             'is_active'   => true,
                             'items'       => [
-                                ['title' => 'Template Library', 'url' => 'templates', 'is_active' => true],
+                                ['title' => 'Template Library', 'url' => 'templates', 'icon' => 'LayoutTemplate', 'is_active' => true],
                             ],
                         ],
                         [
@@ -66,7 +66,7 @@ class AdminSidebarSeeder extends Seeder
                             'description' => '',
                             'is_active'   => true,
                             'items'       => [
-                                ['title' => 'Design Requests', 'url' => 'design-requests', 'is_active' => true],
+                                ['title' => 'Design Requests', 'url' => 'design-requests', 'icon' => 'ClipboardList', 'is_active' => true],
                             ],
                         ],
                         [
@@ -76,7 +76,7 @@ class AdminSidebarSeeder extends Seeder
                             'description' => '',
                             'is_active'   => true,
                             'items'       => [
-                                ['title' => 'Leads / Submissions', 'url' => 'leads', 'is_active' => true],
+                                ['title' => 'Leads / Submissions', 'url' => 'leads', 'icon' => 'Inbox', 'is_active' => true],
                             ],
                         ],
                         [
@@ -86,13 +86,13 @@ class AdminSidebarSeeder extends Seeder
                             'description' => '',
                             'is_active'   => true,
                             'items'       => [
-                                ['title' => 'Navigation Builder', 'url' => 'navigation-builder', 'is_active' => true],
-                                ['title' => 'System Settings', 'url' => 'system-settings', 'is_active' => true],
+                                ['title' => 'Navigation Builder', 'url' => 'navigation-builder', 'icon' => 'PanelLeft', 'is_active' => true],
+                                ['title' => 'System Settings', 'url' => 'system-settings', 'icon' => 'SlidersHorizontal', 'is_active' => true],
                             ],
                         ],
                     ],
                     'projects' => [
-                        ['name' => 'Platform Ops', 'url' => '#', 'icon' => 'Frame'],
+                        ['name' => 'Platform Ops', 'url' => '#', 'icon' => 'Activity'],
                     ],
                 ],
             ],

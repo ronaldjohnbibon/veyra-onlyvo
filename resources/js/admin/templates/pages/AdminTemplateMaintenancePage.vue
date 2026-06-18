@@ -74,7 +74,7 @@ import {
   Trash2,
   Upload,
 } from 'lucide-vue-next'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 
 const maintenanceStore = useTemplateMaintenanceStore()
 const confirmStore = useConfirmStore()
@@ -92,6 +92,9 @@ const itemKeyTouched = ref(false)
 const schemaFields = ref<TemplateFieldSchema[]>([])
 const defaultContent = ref<TemplateContent>({})
 const openSchemaFieldSections = ref<string[]>([])
+const catalogPreviewUploading = ref(false)
+const catalogPreviewUploadError = ref('')
+const catalogPreviewFailed = ref(false)
 // Tracks which details card should show the active edit border.
 const activeFormSection = ref<'websiteType' | 'template'>('websiteType')
 
@@ -132,6 +135,9 @@ const selectedUsage = computed(() => selectedCatalogItem.value?.usage_summary)
 const selectedValidation = computed(() => selectedCatalogItem.value?.validation)
 const selectedQa = computed(() => selectedCatalogItem.value?.qa_checklists)
 const selectedVersions = computed(() => selectedCatalogItem.value?.versions ?? [])
+const hasCatalogPreviewImage = computed(() => {
+  return Boolean(catalogItemForm.value.preview_image) && !catalogPreviewFailed.value
+})
 const visibleDefaultContent = computed(() => {
   const entries = Object.entries(selectedCatalogItem.value?.default_content ?? {})
 
@@ -374,6 +380,8 @@ const selectWebsiteType = async (websiteType: WebsiteType): Promise<void> => {
   openSchemaFieldSections.value = []
   defaultContent.value = {}
   formError.value = ''
+  catalogPreviewUploadError.value = ''
+  catalogPreviewFailed.value = false
   maintenanceStore.errors = {}
 
   await maintenanceStore.loadCatalogItems(websiteType.id)
@@ -398,6 +406,8 @@ const selectCatalogItem = (item: TemplateCatalogItem): void => {
   openSchemaFieldSections.value = []
   defaultContent.value = contentForSchema(schemaFields.value, item.default_content ?? {})
   formError.value = ''
+  catalogPreviewUploadError.value = ''
+  catalogPreviewFailed.value = false
   maintenanceStore.errors = {}
 }
 
@@ -414,6 +424,8 @@ const newWebsiteType = (): void => {
   defaultContent.value = {}
   maintenanceStore.catalogItems = []
   formError.value = ''
+  catalogPreviewUploadError.value = ''
+  catalogPreviewFailed.value = false
   maintenanceStore.errors = {}
 }
 
@@ -426,6 +438,8 @@ const newCatalogItem = (): void => {
   openSchemaFieldSections.value = []
   defaultContent.value = {}
   formError.value = ''
+  catalogPreviewUploadError.value = ''
+  catalogPreviewFailed.value = false
   maintenanceStore.errors = {}
 }
 
@@ -510,10 +524,45 @@ const saveCatalogItem = async (): Promise<void> => {
       selectedCatalogItemId.value
     )
 
-    selectCatalogItem(saved)
     catalogDialogOpen.value = false
+    await nextTick()
+    await maintenanceStore.loadCatalogItems(saved.website_type_id)
+    await maintenanceStore.loadWebsiteTypes()
+
+    const refreshed = maintenanceStore.catalogItems.find((item) => item.id === saved.id)
+    selectCatalogItem(refreshed ?? saved)
   } catch {
     formError.value = 'Please check the template fields and try again.'
+  }
+}
+
+const markCatalogPreviewFailed = (): void => {
+  catalogPreviewFailed.value = true
+}
+
+const clearCatalogPreviewImage = (): void => {
+  catalogItemForm.value.preview_image = ''
+  catalogPreviewUploadError.value = ''
+  catalogPreviewFailed.value = false
+}
+
+const uploadCatalogPreviewImage = async (event: Event): Promise<void> => {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+
+  if (!file) return
+
+  try {
+    catalogPreviewUploading.value = true
+    catalogPreviewUploadError.value = ''
+    catalogPreviewFailed.value = false
+    catalogItemForm.value.preview_image = await maintenanceStore.uploadCatalogPreviewImage(file)
+  } catch {
+    catalogPreviewUploadError.value =
+      maintenanceStore.errors.image?.[0] || 'Upload failed. Please choose a valid image.'
+  } finally {
+    catalogPreviewUploading.value = false
+    input.value = ''
   }
 }
 
@@ -1020,18 +1069,80 @@ watch(
                               <Field>
                                 <FieldLabel for="catalog-preview">Preview Image</FieldLabel>
 
-                                <Input
-                                  v-field-help="'Enter the image URL shown in template selection.'"
-                                  id="catalog-preview"
-                                  v-model="catalogItemForm.preview_image"
-                                  :disabled="!selectedWebsiteType"
-                                />
+                                <div
+                                  class="grid gap-4 rounded border bg-muted/10 p-3 md:grid-cols-[18rem_minmax(0,1fr)]"
+                                >
+                                  <img
+                                    v-if="hasCatalogPreviewImage"
+                                    :src="catalogItemForm.preview_image"
+                                    :alt="`${catalogItemForm.name || 'Template'} preview`"
+                                    class="aspect-video w-full rounded border bg-background object-contain"
+                                    @error="markCatalogPreviewFailed"
+                                  />
+                                  <div
+                                    v-else
+                                    class="flex aspect-video items-center justify-center rounded border border-dashed bg-background text-sm text-muted-foreground"
+                                  >
+                                    No image uploaded
+                                  </div>
+
+                                  <div class="flex flex-col justify-center gap-3">
+                                    <p class="text-sm text-muted-foreground">
+                                      Upload the image shown in template selection.
+                                    </p>
+                                    <div class="flex flex-wrap items-center gap-2">
+                                      <Button
+                                        as-child
+                                        variant="outline_default"
+                                        size="sm"
+                                        :disabled="!selectedWebsiteType || catalogPreviewUploading"
+                                      >
+                                        <label
+                                          v-field-help="
+                                            'Upload the image shown in template selection.'
+                                          "
+                                          for="catalog-preview"
+                                          class="cursor-pointer"
+                                        >
+                                          <Upload class="size-4" />
+                                          {{ catalogPreviewUploading ? 'Uploading...' : 'Upload' }}
+                                        </label>
+                                      </Button>
+                                      <Button
+                                        v-if="catalogItemForm.preview_image"
+                                        type="button"
+                                        variant="cancel"
+                                        size="sm"
+                                        :disabled="!selectedWebsiteType || catalogPreviewUploading"
+                                        @click="clearCatalogPreviewImage"
+                                      >
+                                        <Trash2 class="size-4" />
+                                        Remove
+                                      </Button>
+                                    </div>
+                                    <Input
+                                      v-field-help="'Upload the image shown in template selection.'"
+                                      id="catalog-preview"
+                                      type="file"
+                                      accept="image/*"
+                                      class="sr-only"
+                                      :disabled="!selectedWebsiteType || catalogPreviewUploading"
+                                      @change="uploadCatalogPreviewImage"
+                                    />
+                                  </div>
+                                </div>
 
                                 <Label
                                   v-if="maintenanceStore.errors.preview_image"
                                   class="text-destructive text-xs"
                                 >
                                   {{ maintenanceStore.errors.preview_image[0] }}
+                                </Label>
+                                <Label
+                                  v-if="catalogPreviewUploadError"
+                                  class="text-destructive text-xs"
+                                >
+                                  {{ catalogPreviewUploadError }}
                                 </Label>
                               </Field>
 

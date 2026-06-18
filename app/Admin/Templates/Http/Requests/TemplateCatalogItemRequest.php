@@ -38,7 +38,7 @@ class TemplateCatalogItemRequest extends FormRequest
             ],
             'name'            => ['required', 'string', 'max:150'],
             'description'     => ['nullable', 'string'],
-            'preview_image'   => ['nullable', 'string'],
+            'preview_image'   => ['nullable', 'string', 'max:2048', 'not_regex:/^data:/i'],
             'field_schema'    => ['nullable', 'array'],
             'default_content' => ['nullable', 'array'],
             'is_active'       => ['required', 'boolean'],

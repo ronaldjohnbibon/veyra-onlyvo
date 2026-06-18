@@ -35,11 +35,11 @@ class SidebarSeeder extends Seeder
                         [
                             'title'       => 'Home',
                             'url'         => '#',
-                            'icon'        => 'LayoutDashboard',
+                            'icon'        => 'Home',
                             'description' => '',
                             'is_active'   => true,
                             'items'       => [
-                                ['title' => 'Dashboard', 'url' => 'dashboard', 'is_active' => true],
+                                ['title' => 'Dashboard', 'url' => 'dashboard', 'icon' => 'LayoutDashboard', 'is_active' => true],
                             ],
                         ],
                         [
@@ -49,9 +49,9 @@ class SidebarSeeder extends Seeder
                             'description' => '',
                             'is_active'   => true,
                             'items'       => [
-                                ['title' => 'Template Builder', 'url' => 'template-builder', 'is_active' => true],
-                                ['title' => 'Posts', 'url' => 'posts', 'is_active' => true],
-                                ['title' => 'Navigation Builder', 'url' => 'navigation-builder', 'is_active' => true],
+                                ['title' => 'Template Builder', 'url' => 'template-builder', 'icon' => 'LayoutTemplate', 'is_active' => true],
+                                ['title' => 'Posts', 'url' => 'posts', 'icon' => 'FileText', 'is_active' => true],
+                                ['title' => 'Navigation Builder', 'url' => 'navigation-builder', 'icon' => 'PanelLeft', 'is_active' => true],
                             ],
                         ],
                         [
@@ -61,9 +61,9 @@ class SidebarSeeder extends Seeder
                             'description' => '',
                             'is_active'   => true,
                             'items'       => [
-                                ['title' => 'Leads/Submissions', 'url' => 'leads', 'is_active' => true],
-                                ['title' => 'Analytics', 'url' => 'analytics', 'is_active' => true],
-                                ['title' => 'Tracking Activity', 'url' => 'tracking-logs', 'is_active' => true],
+                                ['title' => 'Leads/Submissions', 'url' => 'leads', 'icon' => 'Inbox', 'is_active' => true],
+                                ['title' => 'Analytics', 'url' => 'analytics', 'icon' => 'LineChart', 'is_active' => true],
+                                ['title' => 'Tracking Activity', 'url' => 'tracking-logs', 'icon' => 'MousePointerClick', 'is_active' => true],
                             ],
                         ],
                         [
@@ -73,7 +73,7 @@ class SidebarSeeder extends Seeder
                             'description' => '',
                             'is_active'   => true,
                             'items'       => [
-                                ['title' => 'Design Requests', 'url' => 'design-requests', 'is_active' => true],
+                                ['title' => 'Design Requests', 'url' => 'design-requests', 'icon' => 'ClipboardList', 'is_active' => true],
                             ],
                         ],
                         [
@@ -83,10 +83,10 @@ class SidebarSeeder extends Seeder
                             'description' => '',
                             'is_active'   => true,
                             'items'       => [
-                                ['title' => 'System Settings', 'url' => 'system-settings', 'is_active' => true],
-                                ['title' => 'Audit Logs', 'url' => 'logs', 'icon' => 'ShieldCheck', 'is_active' => true],
-                                ['title' => 'Account/Profile', 'url' => 'account', 'is_active' => true],
-                                ['title' => 'Team Management', 'url' => 'team-management', 'is_active' => true],
+                                ['title' => 'System Settings', 'url' => 'system-settings', 'icon' => 'SlidersHorizontal', 'is_active' => true],
+                                ['title' => 'Audit Logs', 'url' => 'logs', 'icon' => 'ScrollText', 'is_active' => true],
+                                ['title' => 'Account/Profile', 'url' => 'account', 'icon' => 'UserRound', 'is_active' => true],
+                                ['title' => 'Team Management', 'url' => 'team-management', 'icon' => 'Users', 'is_active' => true],
                             ],
                         ],
                     ],

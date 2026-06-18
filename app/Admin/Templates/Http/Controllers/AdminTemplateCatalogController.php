@@ -2,7 +2,9 @@
 
 namespace App\Admin\Templates\Http\Controllers;
 
+use App\Admin\AuditLogs\Services\AuditLogService;
 use App\Admin\Templates\Http\Requests\TemplateCatalogItemRequest;
+use App\Admin\Templates\Http\Requests\TemplateCatalogPreviewImageUploadRequest;
 use App\Admin\Templates\Http\Resources\TemplateCatalogItemResource;
 use App\Admin\Templates\Models\TemplateCatalogItem;
 use App\Admin\Templates\Models\TemplateCatalogItemVersion;
@@ -18,6 +20,7 @@ class AdminTemplateCatalogController extends Controller
 {
     public function __construct(
         private readonly TemplateCatalogMaintenanceService $service,
+        private readonly AuditLogService $auditLogs,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -76,6 +79,32 @@ class AdminTemplateCatalogController extends Controller
         $item = $this->service->update($item, $request->validated(), Auth::user());
 
         return $this->success(new TemplateCatalogItemResource($item), 'Template catalog item updated.');
+    }
+
+    public function uploadPreviewImage(TemplateCatalogPreviewImageUploadRequest $request): JsonResponse
+    {
+        $this->authorizeAdmin();
+
+        $image = $request->file('image');
+
+        abort_unless($image, 422);
+
+        $path = $image->storePublicly('template-catalog/preview-images', 'public');
+        $this->auditLogs->fileUpload('template_catalog.preview_image_uploaded', [
+            'entity_type'  => 'template_catalog_item',
+            'entity_label' => 'Template catalog preview image',
+            'metadata'     => [
+                'path'          => $path,
+                'original_name' => $image->getClientOriginalName(),
+                'size'          => $image->getSize(),
+                'mime_type'     => $image->getMimeType(),
+            ],
+        ], Auth::user(), $request);
+
+        return $this->success([
+            'url'  => '/storage/'.$path,
+            'path' => $path,
+        ], 'Preview image uploaded.', 201);
     }
 
     public function cloneItem(Request $request, string $templateCatalogItem): JsonResponse
