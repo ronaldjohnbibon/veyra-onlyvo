@@ -1,0 +1,115 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to DigitalOcean
+    runs-on: ubuntu-latest
+
+    env:
+      DO_HOST: ${{ secrets.DO_HOST }}
+      DO_USER: ${{ secrets.DO_USER }}
+      DO_SSH_PORT: ${{ secrets.DO_SSH_PORT || '22' }}
+      DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+      SSH_PRIVATE_KEY: ${{ secrets.DO_SSH_PRIVATE_KEY }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate deployment secrets
+        run: |
+          set -euo pipefail
+          test -n "$DO_HOST"
+          test -n "$DO_USER"
+          test -n "$DEPLOY_PATH"
+          test -n "$SSH_PRIVATE_KEY"
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: bcmath, ctype, curl, fileinfo, intl, mbstring, openssl, pdo_mysql, tokenizer, xml, zip
+          coverage: none
+
+      - name: Install PHP dependencies
+        run: composer install --no-dev --prefer-dist --no-interaction --no-progress --optimize-autoloader
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build frontend assets
+        run: npm run build
+
+      - name: Configure SSH
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          install -m 600 /dev/null ~/.ssh/deploy_key
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          ssh-keyscan -p "$DO_SSH_PORT" "$DO_HOST" >> ~/.ssh/known_hosts
+
+      - name: Put existing app in maintenance mode
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/deploy_key -p "$DO_SSH_PORT" "$DO_USER@$DO_HOST" \
+            "cd '$DEPLOY_PATH' 2>/dev/null && if [ -f artisan ]; then php artisan down --retry=60 || true; fi"
+
+      - name: Sync release to server
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/deploy_key -p "$DO_SSH_PORT" "$DO_USER@$DO_HOST" "mkdir -p '$DEPLOY_PATH'"
+          rsync -az --delete \
+            --exclude='.env' \
+            --exclude='.env.*' \
+            --exclude='.git/' \
+            --exclude='.github/' \
+            --exclude='node_modules/' \
+            --exclude='public/hot' \
+            --exclude='public/storage' \
+            --exclude='storage/app/' \
+            --exclude='storage/framework/cache/' \
+            --exclude='storage/framework/sessions/' \
+            --exclude='storage/framework/views/' \
+            --exclude='storage/logs/' \
+            --exclude='database/database.sqlite' \
+            -e "ssh -i ~/.ssh/deploy_key -p $DO_SSH_PORT" \
+            ./ "$DO_USER@$DO_HOST:$DEPLOY_PATH/"
+
+      - name: Run Laravel deployment tasks
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/deploy_key -p "$DO_SSH_PORT" "$DO_USER@$DO_HOST" "cd '$DEPLOY_PATH' && \
+            mkdir -p storage/app/public storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache && \
+            chmod -R ug+rw storage bootstrap/cache && \
+            php artisan migrate --force && \
+            php artisan storage:link || true && \
+            php artisan optimize:clear && \
+            php artisan config:cache && \
+            php artisan view:cache && \
+            php artisan queue:restart || true && \
+            php artisan up"
+
+      - name: Restore app after failed deployment
+        if: failure()
+        run: |
+          ssh -i ~/.ssh/deploy_key -p "$DO_SSH_PORT" "$DO_USER@$DO_HOST" \
+            "cd '$DEPLOY_PATH' 2>/dev/null && if [ -f artisan ]; then php artisan up || true; fi"
