@@ -347,8 +347,13 @@ const handleLogoUpload = (event: Event): void => {
   const reader = new FileReader()
   reader.onload = () => {
     form.value.logo = String(reader.result)
+    input.value = ''
   }
   reader.readAsDataURL(file)
+}
+
+const clearLogoImage = (): void => {
+  form.value.logo = ''
 }
 
 const openPreviewPage = (): void => {
@@ -785,6 +790,30 @@ watch(
                           class="cursor-pointer text-muted-foreground"
                           @change="handleLogoUpload"
                         />
+                        <div class="overflow-hidden rounded border bg-background">
+                          <img
+                            v-if="form.logo"
+                            :src="form.logo"
+                            alt="Logo preview"
+                            class="max-h-40 w-full object-contain"
+                          />
+                          <div
+                            v-else
+                            class="flex aspect-video items-center justify-center border border-dashed text-sm text-muted-foreground"
+                          >
+                            No logo selected
+                          </div>
+                        </div>
+                        <Button
+                          v-if="form.logo"
+                          type="button"
+                          variant="cancel"
+                          size="sm"
+                          @click="clearLogoImage"
+                        >
+                          <Trash2 class="size-4" />
+                          Remove logo
+                        </Button>
                       </Field>
 
                       <Field>

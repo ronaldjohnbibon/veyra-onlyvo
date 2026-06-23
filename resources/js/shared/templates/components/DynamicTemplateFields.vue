@@ -175,13 +175,25 @@ const updateNumberField = (field: TemplateFieldSchema, event: Event): void => {
 }
 
 const updateImageField = (field: TemplateFieldSchema, event: Event): void => {
-  const file = (event.target as HTMLInputElement).files?.[0]
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
 
   if (!file) return
 
   const reader = new FileReader()
-  reader.onload = () => updateField(field, String(reader.result))
+  reader.onload = () => {
+    updateField(field, String(reader.result))
+    input.value = ''
+  }
   reader.readAsDataURL(file)
+}
+
+const imageValueFor = (field: TemplateFieldSchema): string => {
+  return String(valueFor(field) ?? '')
+}
+
+const clearImageField = (field: TemplateFieldSchema): void => {
+  updateField(field, '')
 }
 
 const repeaterRows = (field: TemplateFieldSchema): TemplateContent[] => {
@@ -810,6 +822,20 @@ const removeCtaCustomField = (field: TemplateFieldSchema, index: number): void =
                     @input="updateNumberField(field, $event)"
                   />
                   <div v-else-if="field.type === 'image'" class="space-y-0.5">
+                    <div class="overflow-hidden rounded border bg-background">
+                      <img
+                        v-if="imageValueFor(field)"
+                        :src="imageValueFor(field)"
+                        :alt="`${field.label} preview`"
+                        class="max-h-56 w-full object-contain"
+                      />
+                      <div
+                        v-else
+                        class="flex aspect-video items-center justify-center border border-dashed text-sm text-muted-foreground"
+                      >
+                        No image selected
+                      </div>
+                    </div>
                     <Input
                       v-field-help="descriptionForField(field)"
                       :id="fieldId(field)"
@@ -826,6 +852,16 @@ const removeCtaCustomField = (field: TemplateFieldSchema, index: number): void =
                       class="cursor-pointer text-muted-foreground"
                       @change="updateImageField(field, $event)"
                     />
+                    <Button
+                      v-if="imageValueFor(field)"
+                      size="sm"
+                      variant="cancel"
+                      type="button"
+                      @click="clearImageField(field)"
+                    >
+                      <Trash2 class="size-4" />
+                      Remove image
+                    </Button>
                   </div>
                   <Input
                     v-field-help="descriptionForField(field)"

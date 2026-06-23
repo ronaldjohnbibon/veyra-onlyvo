@@ -16,8 +16,8 @@ import { Textarea } from '@/shared/components/ui/textarea'
 import { renderMarkdown } from '@/shared/utils/markdown'
 import { usePostStore } from '@/tenant/templates/posts/post-store'
 import type { PostPayload, PostRecord, PostStatus } from '@/shared/types/posts'
-import { CalendarClock, Eye, FileText, Save, Send } from 'lucide-vue-next'
-import { computed, ref, watch } from 'vue'
+import { CalendarClock, Eye, FileText, Save, Send, X } from 'lucide-vue-next'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
 const props = defineProps<{
   open: boolean
@@ -48,6 +48,7 @@ const formError = ref('')
 const editorMode = ref<EditorMode>('write')
 const tagInput = ref('')
 const slugTouched = ref(false)
+const featuredImageLocalUrl = ref('')
 const form = ref<PostFormState>({
   title: '',
   slug: '',
@@ -67,6 +68,9 @@ const previewHtml = computed(() => renderMarkdown(form.value.content || ''))
 const seoTitleLength = computed(() => form.value.seo_title?.length ?? 0)
 const metaDescriptionLength = computed(() => form.value.meta_description?.length ?? 0)
 const excerptLength = computed(() => form.value.excerpt?.length ?? 0)
+const featuredImagePreview = computed(
+  () => featuredImageLocalUrl.value || form.value.featured_image
+)
 
 const minScheduleDate = computed(() => toDateTimeLocal(new Date().toISOString()))
 
@@ -91,6 +95,7 @@ const toDateTimeLocal = (value?: string | null): string => {
 }
 
 const resetForm = (): void => {
+  revokeFeaturedImageLocalUrl()
   formError.value = ''
   postStore.errors = {}
   editorMode.value = 'write'
@@ -108,6 +113,18 @@ const resetForm = (): void => {
     status: props.post?.status ?? 'draft',
     published_at: toDateTimeLocal(props.post?.published_at),
   }
+}
+
+const revokeFeaturedImageLocalUrl = (): void => {
+  if (!featuredImageLocalUrl.value) return
+
+  URL.revokeObjectURL(featuredImageLocalUrl.value)
+  featuredImageLocalUrl.value = ''
+}
+
+const clearFeaturedImage = (): void => {
+  revokeFeaturedImageLocalUrl()
+  form.value.featured_image = ''
 }
 
 const tagsFromInput = (): string[] => {
@@ -168,10 +185,15 @@ const handleImageUpload = async (event: Event): Promise<void> => {
 
   if (!file || !props.templateId) return
 
+  revokeFeaturedImageLocalUrl()
+  featuredImageLocalUrl.value = URL.createObjectURL(file)
+
   try {
     form.value.featured_image = await postStore.uploadFeaturedImage(props.templateId, file)
+    revokeFeaturedImageLocalUrl()
     formError.value = ''
   } catch {
+    revokeFeaturedImageLocalUrl()
     formError.value = postStore.errors.image?.[0] || 'Featured image upload failed.'
   } finally {
     input.value = ''
@@ -193,6 +215,10 @@ watch(
     }
   }
 )
+
+onBeforeUnmount(() => {
+  revokeFeaturedImageLocalUrl()
+})
 </script>
 
 <template>
@@ -272,12 +298,31 @@ watch(
                 />
               </Field>
 
-              <Field v-if="form.featured_image">
-                <img
-                  :src="form.featured_image"
-                  alt=""
-                  class="max-h-72 w-full rounded border object-cover"
-                />
+              <Field>
+                <div class="overflow-hidden rounded border bg-background">
+                  <img
+                    v-if="featuredImagePreview"
+                    :src="featuredImagePreview"
+                    alt="Featured image preview"
+                    class="max-h-72 w-full object-cover"
+                  />
+                  <div
+                    v-else
+                    class="flex aspect-video items-center justify-center border border-dashed text-sm text-muted-foreground"
+                  >
+                    No featured image selected
+                  </div>
+                </div>
+                <Button
+                  v-if="featuredImagePreview"
+                  type="button"
+                  variant="cancel"
+                  size="sm"
+                  @click="clearFeaturedImage"
+                >
+                  <X class="size-4" />
+                  Remove image
+                </Button>
               </Field>
 
               <Field>

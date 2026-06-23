@@ -74,7 +74,7 @@ import {
   Trash2,
   Upload,
 } from 'lucide-vue-next'
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 const maintenanceStore = useTemplateMaintenanceStore()
 const confirmStore = useConfirmStore()
@@ -95,6 +95,7 @@ const openSchemaFieldSections = ref<string[]>([])
 const catalogPreviewUploading = ref(false)
 const catalogPreviewUploadError = ref('')
 const catalogPreviewFailed = ref(false)
+const catalogPreviewLocalUrl = ref('')
 // Tracks which details card should show the active edit border.
 const activeFormSection = ref<'websiteType' | 'template'>('websiteType')
 
@@ -136,7 +137,10 @@ const selectedValidation = computed(() => selectedCatalogItem.value?.validation)
 const selectedQa = computed(() => selectedCatalogItem.value?.qa_checklists)
 const selectedVersions = computed(() => selectedCatalogItem.value?.versions ?? [])
 const hasCatalogPreviewImage = computed(() => {
-  return Boolean(catalogItemForm.value.preview_image) && !catalogPreviewFailed.value
+  return Boolean(catalogPreviewSource.value) && !catalogPreviewFailed.value
+})
+const catalogPreviewSource = computed(() => {
+  return catalogPreviewLocalUrl.value || catalogItemForm.value.preview_image
 })
 const visibleDefaultContent = computed(() => {
   const entries = Object.entries(selectedCatalogItem.value?.default_content ?? {})
@@ -364,6 +368,7 @@ const updateSelectOptionValue = (option: TemplateFieldOption, value: string): vo
 }
 
 const selectWebsiteType = async (websiteType: WebsiteType): Promise<void> => {
+  revokeCatalogPreviewLocalUrl()
   selectedWebsiteTypeId.value = websiteType.id
   selectedCatalogItemId.value = null
   activeFormSection.value = 'websiteType'
@@ -388,6 +393,7 @@ const selectWebsiteType = async (websiteType: WebsiteType): Promise<void> => {
 }
 
 const selectCatalogItem = (item: TemplateCatalogItem): void => {
+  revokeCatalogPreviewLocalUrl()
   selectedCatalogItemId.value = item.id ?? null
   activeFormSection.value = 'template'
   itemKeyTouched.value = true
@@ -412,6 +418,7 @@ const selectCatalogItem = (item: TemplateCatalogItem): void => {
 }
 
 const newWebsiteType = (): void => {
+  revokeCatalogPreviewLocalUrl()
   selectedWebsiteTypeId.value = null
   selectedCatalogItemId.value = null
   activeFormSection.value = 'websiteType'
@@ -430,6 +437,7 @@ const newWebsiteType = (): void => {
 }
 
 const newCatalogItem = (): void => {
+  revokeCatalogPreviewLocalUrl()
   selectedCatalogItemId.value = null
   activeFormSection.value = 'template'
   itemKeyTouched.value = false
@@ -540,7 +548,15 @@ const markCatalogPreviewFailed = (): void => {
   catalogPreviewFailed.value = true
 }
 
+const revokeCatalogPreviewLocalUrl = (): void => {
+  if (!catalogPreviewLocalUrl.value) return
+
+  URL.revokeObjectURL(catalogPreviewLocalUrl.value)
+  catalogPreviewLocalUrl.value = ''
+}
+
 const clearCatalogPreviewImage = (): void => {
+  revokeCatalogPreviewLocalUrl()
   catalogItemForm.value.preview_image = ''
   catalogPreviewUploadError.value = ''
   catalogPreviewFailed.value = false
@@ -552,12 +568,17 @@ const uploadCatalogPreviewImage = async (event: Event): Promise<void> => {
 
   if (!file) return
 
+  revokeCatalogPreviewLocalUrl()
+  catalogPreviewLocalUrl.value = URL.createObjectURL(file)
+
   try {
     catalogPreviewUploading.value = true
     catalogPreviewUploadError.value = ''
     catalogPreviewFailed.value = false
     catalogItemForm.value.preview_image = await maintenanceStore.uploadCatalogPreviewImage(file)
+    revokeCatalogPreviewLocalUrl()
   } catch {
+    revokeCatalogPreviewLocalUrl()
     catalogPreviewUploadError.value =
       maintenanceStore.errors.image?.[0] || 'Upload failed. Please choose a valid image.'
   } finally {
@@ -667,6 +688,10 @@ onMounted(async () => {
   if (maintenanceStore.websiteTypes[0]) {
     await selectWebsiteType(maintenanceStore.websiteTypes[0])
   }
+})
+
+onBeforeUnmount(() => {
+  revokeCatalogPreviewLocalUrl()
 })
 
 watch(
@@ -1074,7 +1099,7 @@ watch(
                                 >
                                   <img
                                     v-if="hasCatalogPreviewImage"
-                                    :src="catalogItemForm.preview_image"
+                                    :src="catalogPreviewSource"
                                     :alt="`${catalogItemForm.name || 'Template'} preview`"
                                     class="aspect-video w-full rounded border bg-background object-contain"
                                     @error="markCatalogPreviewFailed"

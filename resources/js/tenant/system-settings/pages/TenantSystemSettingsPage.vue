@@ -35,7 +35,7 @@ import {
   X,
 } from 'lucide-vue-next'
 import type { Component } from 'vue'
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 
 const settingStore = useTenantSystemSettingStore()
 const form = reactive<SystemSettingsPayload>({})
@@ -46,6 +46,7 @@ const activeSection = ref('profile')
 const imageUploadErrors = reactive<Record<string, string>>({})
 const imageUploading = reactive<Record<string, boolean>>({})
 const imagePreviewFailed = reactive<Record<string, boolean>>({})
+const imageLocalPreviews = reactive<Record<string, string>>({})
 
 const iconMap: Record<string, Component> = {
   profile: IdCard,
@@ -341,12 +342,24 @@ const primaryColor = computed(() => stringForKey('branding.primary_color') || '#
 const accentColor = computed(() => stringForKey('branding.accent_color') || '#10b981')
 
 const hasImagePreview = (setting: SystemSettingItem): boolean => {
-  return Boolean(stringValue(setting)) && !imagePreviewFailed[setting.key]
+  return Boolean(imagePreviewSource(setting)) && !imagePreviewFailed[setting.key]
+}
+
+const imagePreviewSource = (setting: SystemSettingItem): string => {
+  return imageLocalPreviews[setting.key] || stringValue(setting)
+}
+
+const revokeImagePreview = (key: string): void => {
+  if (!imageLocalPreviews[key]) return
+
+  URL.revokeObjectURL(imageLocalPreviews[key])
+  delete imageLocalPreviews[key]
 }
 
 const clearImage = (setting: SystemSettingItem): void => {
   imageUploadErrors[setting.key] = ''
   imagePreviewFailed[setting.key] = false
+  revokeImagePreview(setting.key)
   setSettingValue(setting, '')
 }
 
@@ -360,12 +373,17 @@ const uploadSettingImage = async (setting: SystemSettingItem, event: Event): Pro
 
   if (!file) return
 
+  revokeImagePreview(setting.key)
+  imageLocalPreviews[setting.key] = URL.createObjectURL(file)
+
   try {
     imageUploading[setting.key] = true
     imageUploadErrors[setting.key] = ''
     imagePreviewFailed[setting.key] = false
     setSettingValue(setting, await settingStore.uploadImage(setting.key, file))
+    revokeImagePreview(setting.key)
   } catch {
+    revokeImagePreview(setting.key)
     imageUploadErrors[setting.key] =
       settingStore.errors.image?.[0] ||
       settingStore.errors.key?.[0] ||
@@ -412,6 +430,10 @@ onMounted(async () => {
   await settingStore.index()
   hydrateForm()
   syncSavedSnapshot()
+})
+
+onBeforeUnmount(() => {
+  Object.keys(imageLocalPreviews).forEach(revokeImagePreview)
 })
 </script>
 
@@ -645,7 +667,7 @@ onMounted(async () => {
                         >
                           <img
                             v-if="hasImagePreview(setting)"
-                            :src="stringValue(setting)"
+                            :src="imagePreviewSource(setting)"
                             :alt="`${setting.label} preview`"
                             class="aspect-video w-full rounded border bg-background object-contain"
                             @error="markImagePreviewFailed(setting)"

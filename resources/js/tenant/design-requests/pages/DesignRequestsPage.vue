@@ -22,8 +22,8 @@ import type {
   DesignRequestRecord,
   DesignRequestStatus,
 } from '@/shared/types/design-requests'
-import { CheckCircle2, Eye, FileText, Link2, MessageSquare, Send, Undo2 } from 'lucide-vue-next'
-import { computed, onMounted, reactive, ref } from 'vue'
+import { CheckCircle2, Eye, FileText, Link2, MessageSquare, Send, Undo2, X } from 'lucide-vue-next'
+import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 
 type SortDirection = 'asc' | 'desc' | ''
 
@@ -32,6 +32,7 @@ const createDialogOpen = ref(false)
 const detailsDialogOpen = ref(false)
 const selectedRequest = ref<DesignRequestRecord | null>(null)
 const selectedFiles = ref<File[]>([])
+const selectedFilePreviews = ref<{ file: File; url: string }[]>([])
 const referenceLinksText = ref('')
 const formError = ref('')
 const commentText = ref('')
@@ -95,6 +96,7 @@ const emptyDescription = computed(() =>
 const canTakeTenantAction = computed(() => selectedRequest.value?.status === 'under_review')
 
 const resetForm = (): void => {
+  revokeSelectedFilePreviews()
   form.title = ''
   form.description = ''
   form.notes = ''
@@ -105,6 +107,21 @@ const resetForm = (): void => {
   referenceLinksText.value = ''
   formError.value = ''
   designRequestStore.errors = {}
+}
+
+const revokeSelectedFilePreviews = (): void => {
+  selectedFilePreviews.value.forEach((preview) => URL.revokeObjectURL(preview.url))
+  selectedFilePreviews.value = []
+}
+
+const syncSelectedFilePreviews = (): void => {
+  revokeSelectedFilePreviews()
+  selectedFilePreviews.value = selectedFiles.value
+    .filter((file) => file.type.startsWith('image/'))
+    .map((file) => ({
+      file,
+      url: URL.createObjectURL(file),
+    }))
 }
 
 const openCreateDialog = (): void => {
@@ -139,6 +156,14 @@ const handleFiles = (event: Event): void => {
   const input = event.target as HTMLInputElement
   selectedFiles.value = Array.from(input.files ?? [])
   form.files = selectedFiles.value
+  syncSelectedFilePreviews()
+  input.value = ''
+}
+
+const removeSelectedFile = (index: number): void => {
+  selectedFiles.value = selectedFiles.value.filter((_, fileIndex) => fileIndex !== index)
+  form.files = selectedFiles.value
+  syncSelectedFilePreviews()
 }
 
 const submitRequest = async (): Promise<void> => {
@@ -148,6 +173,7 @@ const submitRequest = async (): Promise<void> => {
 
   try {
     await designRequestStore.store({ ...form })
+    resetForm()
     createDialogOpen.value = false
   } catch {
     formError.value = 'Please check the request details and try again.'
@@ -232,6 +258,10 @@ const runAction = async (action: 'approve' | 'request_changes'): Promise<void> =
 
 onMounted(() => {
   designRequestStore.index()
+})
+
+onBeforeUnmount(() => {
+  revokeSelectedFilePreviews()
 })
 </script>
 
@@ -450,14 +480,34 @@ onMounted(() => {
                   <FieldError v-if="filesError">
                     {{ filesError }}
                   </FieldError>
+                  <div v-if="selectedFilePreviews.length" class="grid gap-2 sm:grid-cols-2">
+                    <img
+                      v-for="preview in selectedFilePreviews"
+                      :key="`${preview.file.name}-${preview.file.size}`"
+                      :src="preview.url"
+                      :alt="`${preview.file.name} preview`"
+                      class="aspect-video w-full rounded border object-cover"
+                    />
+                  </div>
                   <div v-if="selectedFiles.length" class="space-y-1 text-sm text-muted-foreground">
                     <div
-                      v-for="file in selectedFiles"
+                      v-for="(file, fileIndex) in selectedFiles"
                       :key="`${file.name}-${file.size}`"
-                      class="flex items-center gap-2"
+                      class="flex items-center gap-2 rounded border bg-background px-2 py-1"
                     >
                       <FileText class="size-4" />
-                      <span>{{ file.name }} ({{ formatFileSize(file.size) }})</span>
+                      <span class="min-w-0 flex-1 truncate">
+                        {{ file.name }} ({{ formatFileSize(file.size) }})
+                      </span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        class="size-7"
+                        @click="removeSelectedFile(fileIndex)"
+                      >
+                        <X class="size-4" />
+                      </Button>
                     </div>
                   </div>
                 </Field>
