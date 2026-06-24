@@ -120,12 +120,34 @@ class TenantSystemSettingService
      */
     public function publicValues(Tenant $tenant): array
     {
+        return $this->templateValues($tenant, true);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function templateValues(Tenant $tenant, bool $publicOnly = false): array
+    {
         $values = $this->values($tenant);
+        $stored = $this->storedValues($tenant);
 
         return collect(self::DEFINITIONS)
-            ->filter(fn (array $definition): bool => (bool) $definition['public'])
-            ->mapWithKeys(fn (array $definition, string $key): array => [$key => array_key_exists($key, $values) ? $values[$key] : $definition['default']])
+            ->filter(function (array $definition, string $key) use ($publicOnly, $stored): bool {
+                if ($publicOnly && ! $definition['public']) {
+                    return false;
+                }
+
+                return $definition['group'] !== 'branding' || array_key_exists($key, $stored);
+            })
+            ->mapWithKeys(fn (array $definition, string $key): array => [$key => $values[$key] ?? $definition['default']])
             ->all();
+    }
+
+    public function brandingUsesTemplateDefaults(Tenant $tenant): bool
+    {
+        return collect($this->storedValues($tenant))
+            ->keys()
+            ->doesntContain(fn (string $key): bool => str_starts_with($key, 'branding.'));
     }
 
     public function get(Tenant $tenant, string $key, mixed $fallback = null): mixed
@@ -205,6 +227,32 @@ class TenantSystemSettingService
 
             $tenant->save();
             $this->recordHistory($tenant, $changedEntries, $actor);
+
+            return $tenant->refresh();
+        });
+    }
+
+    public function resetBranding(Tenant $tenant, ?Authenticatable $actor = null): Tenant
+    {
+        return DB::transaction(function () use ($tenant, $actor): Tenant {
+            $storedValues = $this->storedValues($tenant);
+            $entries      = collect($storedValues)
+                ->filter(fn (mixed $value, string $key): bool => str_starts_with($key, 'branding.'))
+                ->map(fn (mixed $value, string $key): array => [
+                    'key'            => $key,
+                    'previous_value' => $value,
+                    'new_value'      => null,
+                    'action'         => 'deleted',
+                ])
+                ->values()
+                ->all();
+
+            TenantSystemSetting::query()
+                ->where('tenant_id', $tenant->id)
+                ->where('key', 'like', 'branding.%')
+                ->delete();
+
+            $this->recordHistory($tenant, $entries, $actor);
 
             return $tenant->refresh();
         });

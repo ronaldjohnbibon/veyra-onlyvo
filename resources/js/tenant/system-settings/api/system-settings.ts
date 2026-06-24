@@ -12,6 +12,7 @@ interface TenantSystemSettingsResponse {
     groups: SystemSettingGroup[]
     history: SystemSettingHistoryPayload
     values: SystemSettingsValues
+    branding_uses_template_defaults: boolean
   }
 }
 
@@ -37,6 +38,12 @@ export const tenantSystemSettingService = {
   update(settings: SystemSettingsPayload) {
     return http
       .put<TenantSystemSettingsResponse>('system-settings', { settings })
+      .then((response) => response.data)
+  },
+
+  resetBranding() {
+    return http
+      .post<TenantSystemSettingsResponse>('system-settings/branding/reset-default')
       .then((response) => response.data)
   },
 

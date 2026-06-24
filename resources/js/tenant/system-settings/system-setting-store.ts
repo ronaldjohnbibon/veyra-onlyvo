@@ -24,6 +24,7 @@ export const useTenantSystemSettingStore = defineStore('tenant-system-settings',
     setting_key: '',
   })
   const values = ref<SystemSettingsValues>({})
+  const brandingUsesTemplateDefaults = ref(false)
   const loading = ref(false)
   const errors = ref<Record<string, string[]>>({})
 
@@ -42,6 +43,7 @@ export const useTenantSystemSettingStore = defineStore('tenant-system-settings',
       history.value = response.data.history.data
       historyTotal.value = response.data.history.pagination.total
       values.value = response.data.values
+      brandingUsesTemplateDefaults.value = response.data.branding_uses_template_defaults
     } finally {
       loading.value = false
     }
@@ -56,9 +58,25 @@ export const useTenantSystemSettingStore = defineStore('tenant-system-settings',
       history.value = response.data.history.data
       historyTotal.value = response.data.history.pagination.total
       values.value = response.data.values
+      brandingUsesTemplateDefaults.value = response.data.branding_uses_template_defaults
     } catch (err) {
       errors.value = validationErrorsFrom(err)
       throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const resetBranding = async (): Promise<void> => {
+    try {
+      loading.value = true
+      errors.value = {}
+      const response = await tenantSystemSettingService.resetBranding()
+      groups.value = response.data.groups
+      history.value = response.data.history.data
+      historyTotal.value = response.data.history.pagination.total
+      values.value = response.data.values
+      brandingUsesTemplateDefaults.value = response.data.branding_uses_template_defaults
     } finally {
       loading.value = false
     }
@@ -96,6 +114,7 @@ export const useTenantSystemSettingStore = defineStore('tenant-system-settings',
 
   return {
     errors,
+    brandingUsesTemplateDefaults,
     groups,
     history,
     historyParams,
@@ -103,6 +122,7 @@ export const useTenantSystemSettingStore = defineStore('tenant-system-settings',
     index,
     loadHistory,
     loading,
+    resetBranding,
     update,
     uploadImage,
     values,

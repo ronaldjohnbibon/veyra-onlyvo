@@ -51,7 +51,7 @@ class TemplateResource extends JsonResource
     {
         return str_starts_with((string) $request->route()?->getName(), 'public.')
             ? $settings->publicValues($tenant)
-            : $settings->values($tenant);
+            : $settings->templateValues($tenant);
     }
 
     private function publicUrl(Request $request): string

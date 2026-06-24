@@ -5,6 +5,8 @@ import { Checkbox } from '@/shared/components/ui/checkbox'
 import { Field, FieldError, FieldGroup, FieldLabel, FieldSet } from '@/shared/components/ui/field'
 import { Input } from '@/shared/components/ui/input'
 import { NativeSelect, NativeSelectOption } from '@/shared/components/ui/native-select'
+import { useConfirmStore } from '@/shared/stores/confirm-store'
+import { useToastStore } from '@/shared/stores/toast-store'
 import { Textarea } from '@/shared/components/ui/textarea'
 import TimezoneCombobox from '@/shared/components/TimezoneCombobox.vue'
 import SystemSettingHistoryTable from '@/tenant/system-settings/components/SystemSettingHistoryTable.vue'
@@ -28,6 +30,7 @@ import {
   History,
   IdCard,
   Info,
+  RotateCcw,
   Save,
   Search,
   ShieldCheck,
@@ -39,6 +42,8 @@ import type { Component } from 'vue'
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 
 const settingStore = useTenantSystemSettingStore()
+const confirmStore = useConfirmStore()
+const toastStore = useToastStore()
 const form = reactive<SystemSettingsPayload>({})
 const formError = ref('')
 const saveNotice = ref('')
@@ -399,6 +404,13 @@ const payloadForSave = (): SystemSettingsPayload => {
   const payload: SystemSettingsPayload = {}
 
   for (const group of settingStore.groups) {
+    const usesUnchangedTemplateDefaults =
+      group.key === 'branding' &&
+      settingStore.brandingUsesTemplateDefaults &&
+      group.settings.every((setting) => getSettingValue(setting) === setting.value)
+
+    if (usesUnchangedTemplateDefaults) continue
+
     payload[group.key] = {}
 
     for (const setting of group.settings) {
@@ -421,6 +433,30 @@ const saveSettings = async (): Promise<void> => {
   } catch {
     saveNotice.value = ''
     formError.value = 'Please check the highlighted settings and try again.'
+  }
+}
+
+const resetBranding = async (): Promise<void> => {
+  const confirmed = await confirmStore.confirm(
+    'Use the original branding from each template? Your tenant colors, typography, button style, and fallback image overrides will be removed.'
+  )
+
+  if (!confirmed) return
+
+  try {
+    formError.value = ''
+    saveNotice.value = ''
+    await settingStore.resetBranding()
+    hydrateForm()
+    syncSavedSnapshot()
+    saveNotice.value = 'Template defaults restored'
+    toastStore.addAlert(
+      'success',
+      'Template branding restored',
+      'Templates now use their original default design settings.'
+    )
+  } catch {
+    formError.value = 'Unable to restore the template branding defaults.'
   }
 }
 
@@ -568,9 +604,27 @@ onBeforeUnmount(() => {
                     </p>
                   </div>
                 </div>
-                <Badge v-if="currentGroup" variant="outline">
-                  {{ currentGroup.settings.length }} settings
-                </Badge>
+                <div v-if="currentGroup" class="flex flex-wrap items-center gap-2">
+                  <Badge v-if="activeSection === 'branding'" variant="outline">
+                    {{
+                      settingStore.brandingUsesTemplateDefaults
+                        ? 'Template defaults'
+                        : 'Custom branding'
+                    }}
+                  </Badge>
+                  <Badge variant="outline">{{ currentGroup.settings.length }} settings</Badge>
+                  <Button
+                    v-if="activeSection === 'branding'"
+                    variant="outline_default"
+                    size="sm"
+                    type="button"
+                    :disabled="settingStore.loading || settingStore.brandingUsesTemplateDefaults"
+                    @click="resetBranding"
+                  >
+                    <RotateCcw class="size-4" />
+                    Use Template Defaults
+                  </Button>
+                </div>
               </div>
 
               <div class="mt-4 rounded border bg-muted/30 p-3">

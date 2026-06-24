@@ -64,6 +64,7 @@ Route::prefix('app')->name('app.')->group(function (): void {
             Route::apiResource('sidebars', TenantSidebarController::class);
 
             Route::get('system-settings/history', [TenantSystemSettingController::class, 'history'])->name('system-settings.history');
+            Route::post('system-settings/branding/reset-default', [TenantSystemSettingController::class, 'resetBranding'])->name('system-settings.branding.reset-default');
             Route::put('system-settings', [TenantSystemSettingController::class, 'updateBulk'])->name('system-settings.update-bulk');
             Route::post('system-settings/images', [TenantSystemSettingController::class, 'uploadImage'])->name('system-settings.images.store');
             Route::get('system-settings', [TenantSystemSettingController::class, 'index'])->name('system-settings.index');

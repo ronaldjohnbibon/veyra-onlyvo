@@ -27,9 +27,10 @@ class TenantSystemSettingController extends Controller
         $history = $this->historyPayload($tenant);
 
         return $this->success([
-            'groups'  => $this->service->groups($tenant),
-            'values'  => $this->service->values($tenant),
-            'history' => $history,
+            'groups'                          => $this->service->groups($tenant),
+            'values'                          => $this->service->values($tenant),
+            'history'                         => $history,
+            'branding_uses_template_defaults' => $this->service->brandingUsesTemplateDefaults($tenant),
         ], 'Tenant system settings retrieved.');
     }
 
@@ -51,10 +52,30 @@ class TenantSystemSettingController extends Controller
         ], Auth::user(), $request);
 
         return $this->success([
-            'groups'  => $this->service->groups($tenant),
-            'values'  => $this->service->values($tenant),
-            'history' => $history,
+            'groups'                          => $this->service->groups($tenant),
+            'values'                          => $this->service->values($tenant),
+            'history'                         => $history,
+            'branding_uses_template_defaults' => $this->service->brandingUsesTemplateDefaults($tenant),
         ], 'Tenant system settings updated.');
+    }
+
+    public function resetBranding(CurrentTenant $currentTenant): JsonResponse
+    {
+        $tenant  = $this->service->resetBranding($this->tenant($currentTenant), Auth::user());
+        $history = $this->historyPayload($tenant);
+        $this->logs->system('tenant_system_settings.branding_reset_default', [
+            'tenant_id'    => $tenant->id,
+            'entity_type'  => 'tenant_system_setting',
+            'entity_id'    => $tenant->id,
+            'entity_label' => $tenant->name,
+        ], Auth::user(), request());
+
+        return $this->success([
+            'groups'                          => $this->service->groups($tenant),
+            'values'                          => $this->service->values($tenant),
+            'history'                         => $history,
+            'branding_uses_template_defaults' => true,
+        ], 'Template default branding restored.');
     }
 
     public function uploadImage(TenantSystemSettingImageUploadRequest $request, CurrentTenant $currentTenant): JsonResponse

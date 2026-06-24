@@ -47,7 +47,7 @@ class PostResource extends JsonResource
 
         return str_starts_with((string) $request->route()?->getName(), 'public.')
             ? $settings->publicValues($tenant)
-            : $settings->values($tenant);
+            : $settings->templateValues($tenant);
     }
 
     private function featuredImageUrl(Request $request): ?string

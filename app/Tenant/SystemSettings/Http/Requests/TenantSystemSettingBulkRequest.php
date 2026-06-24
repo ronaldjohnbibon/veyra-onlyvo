@@ -23,7 +23,13 @@ class TenantSystemSettingBulkRequest extends FormRequest
         ];
 
         foreach (app(TenantSystemSettingService::class)->definitions() as $key => $definition) {
-            $rules['settings.'.$key] = $this->rulesFor($key, $definition);
+            $settingRules = $this->rulesFor($key, $definition);
+
+            if (str_starts_with($key, 'branding.')) {
+                array_unshift($settingRules, 'sometimes');
+            }
+
+            $rules['settings.'.$key] = $settingRules;
         }
 
         return $rules;
