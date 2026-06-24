@@ -9,4 +9,4 @@ Requirements:
 
 Prompt:
 
-I want you to check all the image uploads inside the app if it has a preview.
+On system setting tenant side, The Live Preview is covering the History page. Same with admin side the History is getting covered by Platform Preview.

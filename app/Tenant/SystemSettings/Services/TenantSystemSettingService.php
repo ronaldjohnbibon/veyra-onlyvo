@@ -205,7 +205,7 @@ class TenantSystemSettingService
                     ],
                 );
 
-                if ($previousValue !== $newValue) {
+                if (! $this->valuesAreEqual($definition['type'], $previousValue, $newValue)) {
                     $changedEntries[] = [
                         'key'            => $key,
                         'previous_value' => $previousValue,
@@ -350,6 +350,16 @@ class TenantSystemSettingService
             'integer' => (int) $value,
             default   => is_string($value) ? trim($value) : $value,
         };
+    }
+
+    private function valuesAreEqual(string $type, mixed $previousValue, mixed $newValue): bool
+    {
+        if (! in_array($type, ['boolean', 'integer'], true)) {
+            $previousValue ??= '';
+            $newValue ??= '';
+        }
+
+        return $previousValue === $newValue;
     }
 
     /**

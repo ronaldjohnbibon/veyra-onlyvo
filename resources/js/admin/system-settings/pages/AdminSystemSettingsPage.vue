@@ -736,7 +736,10 @@ onBeforeUnmount(() => {
             </div>
           </aside>
 
-          <main class="rounded border bg-background">
+          <main
+            class="min-w-0 rounded border bg-background"
+            :class="{ 'xl:col-span-2': activeSection === 'history' }"
+          >
             <div class="border-b px-4 py-4">
               <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                 <div class="flex gap-3">
@@ -1179,7 +1182,10 @@ onBeforeUnmount(() => {
             </FieldSet>
           </main>
 
-          <aside class="space-y-4 xl:sticky xl:top-24 xl:self-start">
+          <aside
+            v-if="activeSection !== 'history'"
+            class="space-y-4 xl:sticky xl:top-24 xl:self-start"
+          >
             <section class="rounded border bg-background">
               <div class="border-b px-4 py-3">
                 <h3 class="text-base font-semibold">Platform Preview</h3>

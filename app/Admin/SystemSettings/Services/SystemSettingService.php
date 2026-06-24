@@ -300,6 +300,7 @@ class SystemSettingService
         $newValue   = $this->isMaskedPlaceholder($key, $value)
             ? ($existing?->value ?? $definition['default'])
             : $this->castValue($definition['type'], $value);
+        $previousValue = $existing?->value ?? $definition['default'];
 
         $setting = SystemSetting::query()->updateOrCreate(
             ['key' => $key],
@@ -312,7 +313,7 @@ class SystemSettingService
             ],
         );
 
-        if (! $existing || $existing->value !== $newValue) {
+        if (! $this->valuesAreEqual($definition['type'], $previousValue, $newValue)) {
             $this->recordHistory($key, $existing?->value, $newValue, $actor, $existing ? 'updated' : 'created');
         }
 
@@ -790,6 +791,16 @@ class SystemSettingService
             'integer' => $value === null || $value === '' ? null : (int) $value,
             default   => is_string($value) ? trim($value) : $value,
         };
+    }
+
+    private function valuesAreEqual(string $type, mixed $previousValue, mixed $newValue): bool
+    {
+        if (! in_array($type, ['boolean', 'integer'], true)) {
+            $previousValue ??= '';
+            $newValue ??= '';
+        }
+
+        return $previousValue === $newValue;
     }
 
     /**
