@@ -6,6 +6,7 @@ import { Field, FieldError, FieldGroup, FieldLabel, FieldSet } from '@/shared/co
 import { Input } from '@/shared/components/ui/input'
 import { NativeSelect, NativeSelectOption } from '@/shared/components/ui/native-select'
 import { Textarea } from '@/shared/components/ui/textarea'
+import TimezoneCombobox from '@/shared/components/TimezoneCombobox.vue'
 import SystemSettingHistoryTable from '@/tenant/system-settings/components/SystemSettingHistoryTable.vue'
 import { useTenantSystemSettingStore } from '@/tenant/system-settings/system-setting-store'
 import type {
@@ -750,9 +751,16 @@ onBeforeUnmount(() => {
                             {{ settingDescription(setting) }}
                           </p>
 
+                          <TimezoneCombobox
+                            v-if="setting.key === 'profile.timezone'"
+                            :id="fieldId(setting)"
+                            :model-value="stringValue(setting)"
+                            :help="settingHelp(setting)"
+                            @update:model-value="setSettingValue(setting, $event)"
+                          />
                           <NativeSelect
                             v-field-help="settingHelp(setting)"
-                            v-if="setting.type === 'select'"
+                            v-else-if="setting.type === 'select'"
                             :id="fieldId(setting)"
                             class="min-w-48"
                             :model-value="stringValue(setting)"

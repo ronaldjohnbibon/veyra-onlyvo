@@ -9,4 +9,4 @@ Requirements:
 
 Prompt:
 
-I want you to apply the same UI/implementation of tenant navigation-builder to admin navigation-builder.
+I want you to check all the image uploads inside the app if it has a preview.
