@@ -64,14 +64,20 @@ const ctaLabel = computed(
 )
 
 const descriptionForField = (field: TemplateCtaField): string => {
-  if (field.type === 'select') return 'Choose one option from the list.'
-  if (field.type === 'checkbox') return 'Check this box if it applies to you.'
-  if (field.type === 'file') return 'Choose a file to include with your submission.'
-  if (field.type === 'email') return 'Enter a valid email address.'
-  if (field.type === 'phone') return 'Enter a phone number where you can be reached.'
-  if (field.type === 'textarea') return 'Enter the details you want to send.'
+  const label = field.label.trim() || field.key
 
-  return 'Enter the requested information for this field.'
+  if (field.type === 'select') return `Choose the response submitted for “${label}”.`
+  if (field.type === 'checkbox') return `Use “${label}” to confirm whether it applies.`
+  if (field.type === 'file') return `Attach the file requested by “${label}”.`
+  if (field.type === 'email') return `Provide the email address requested by “${label}”.`
+  if (field.type === 'phone') return `Provide the phone number requested by “${label}”.`
+  if (field.type === 'textarea') return `Provide the details requested by “${label}”.`
+  if (field.type === 'number') return `Provide the number requested by “${label}”.`
+  if (field.type === 'date') return `Choose the date requested by “${label}”.`
+  if (field.type === 'time') return `Choose the time requested by “${label}”.`
+  if (field.type === 'url') return `Provide the web address requested by “${label}”.`
+
+  return `Provide the information requested by “${label}”.`
 }
 
 const {

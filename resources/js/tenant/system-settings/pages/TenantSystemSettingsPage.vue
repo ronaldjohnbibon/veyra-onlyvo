@@ -212,7 +212,11 @@ const settingHelp = (setting: SystemSettingItem): string => {
 }
 
 const settingDescription = (setting: SystemSettingItem): string => {
-  return fieldCopy[setting.key] ?? setting.description ?? 'Enter the value for this setting.'
+  return (
+    fieldCopy[setting.key] ??
+    setting.description ??
+    `Controls how “${setting.label}” is used for this tenant site.`
+  )
 }
 
 const getGroupName = (setting: SystemSettingItem): string => setting.key.split('.')[0] ?? ''

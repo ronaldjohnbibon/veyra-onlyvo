@@ -123,14 +123,17 @@ const fieldId = (field: TemplateFieldSchema): string => `template-content-${fiel
 
 const descriptionForField = (field: TemplateFieldSchema): string => {
   if (field.description) return field.description
-  if (field.type === 'image') return 'Enter an image URL or upload an image file.'
-  if (field.type === 'repeater') return 'Add and manage repeatable content items.'
-  if (field.type === 'select') return 'Choose one option for this template field.'
-  if (field.type === 'boolean') return 'Turn this template option on or off.'
-  if (field.type === 'number') return 'Enter a numeric value for this template field.'
-  if (field.type === 'cta') return 'Configure the call-to-action shown on the public site.'
 
-  return 'Enter the content shown in this part of the template.'
+  const label = field.label.trim() || field.key
+
+  if (field.type === 'image') return `Set “${label}” with an image URL or uploaded file.`
+  if (field.type === 'repeater') return `Add and manage the items shown in “${label}”.`
+  if (field.type === 'select') return `Choose the option used for “${label}”.`
+  if (field.type === 'boolean') return `Turn “${label}” on or off in this template.`
+  if (field.type === 'number') return `Set the numeric value used for “${label}”.`
+  if (field.type === 'cta') return `Configure the call-to-action shown in “${label}”.`
+
+  return `Set the content shown for “${label}”.`
 }
 
 const asRecord = (value: unknown): TemplateContent => {

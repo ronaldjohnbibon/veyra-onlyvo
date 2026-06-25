@@ -350,7 +350,11 @@ const stringForKey = (key: string): string => {
 const booleanForKey = (key: string): boolean => Boolean(valueForKey(key))
 
 const settingDescription = (setting: SystemSettingItem): string => {
-  return fieldCopy[setting.key] ?? setting.description ?? 'Enter the value for this setting.'
+  return (
+    fieldCopy[setting.key] ??
+    setting.description ??
+    `Controls how “${setting.label}” is used across the platform.`
+  )
 }
 
 const settingHelp = (setting: SystemSettingItem): string => settingDescription(setting)
