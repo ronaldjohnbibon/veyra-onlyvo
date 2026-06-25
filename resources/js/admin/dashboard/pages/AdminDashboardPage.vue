@@ -316,25 +316,25 @@ onMounted(() => {
                 <div class="space-y-3">
                   <div class="rounded border bg-muted/20 p-4">
                     <p class="text-sm font-medium text-muted-foreground">Pending design requests</p>
-                    <p class="mt-2 text-3xl font-semibold">
+                    <p class="mt-2 text-2xl font-semibold">
                       {{ dashboard.pending_work.pending_design_requests }}
                     </p>
                   </div>
                   <div class="rounded border bg-muted/20 p-4">
                     <p class="text-sm font-medium text-muted-foreground">Under review</p>
-                    <p class="mt-2 text-3xl font-semibold">
+                    <p class="mt-2 text-2xl font-semibold">
                       {{ dashboard.pending_work.under_review_requests }}
                     </p>
                   </div>
                   <div class="rounded border bg-muted/20 p-4">
                     <p class="text-sm font-medium text-muted-foreground">Changes requested</p>
-                    <p class="mt-2 text-3xl font-semibold">
+                    <p class="mt-2 text-2xl font-semibold">
                       {{ dashboard.pending_work.changes_requested }}
                     </p>
                   </div>
                   <div class="rounded border bg-muted/20 p-4">
                     <p class="text-sm font-medium text-muted-foreground">New submissions</p>
-                    <p class="mt-2 text-3xl font-semibold">
+                    <p class="mt-2 text-2xl font-semibold">
                       {{ dashboard.pending_work.new_leads }}
                     </p>
                   </div>

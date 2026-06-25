@@ -115,9 +115,9 @@ const taskSections: TaskSection[] = [
   {
     key: 'notifications',
     label: 'Notifications',
-    title: 'Email Delivery',
-    description: 'Configure the mail driver and sender identity used for platform email.',
-    task: 'Make sure transactional emails have a valid sender and delivery provider.',
+    title: 'Shared Email Delivery',
+    description: 'Configure the provider and verified sender used by every Admin and Tenant email.',
+    task: 'Keep one verified sender for the platform and route replies through support or tenant Reply-To addresses.',
     icon: Bell,
     groupKeys: ['email'],
   },
@@ -158,7 +158,8 @@ const fieldCopy: Record<string, string> = {
   'general.logo':
     'The main app logo. Use a clear PNG, SVG, or WebP that works on light backgrounds.',
   'general.favicon': 'The browser tab icon. Square images or ICO files work best.',
-  'general.support_email': 'The support inbox shown to tenants when they need platform help.',
+  'general.support_email':
+    'The support inbox shown to tenants and used as Reply-To for Admin emails.',
   'general.support_phone': 'Optional support phone number shown in public or tenant-facing areas.',
   'general.company_address': 'Company address used in public compliance and support surfaces.',
   'general.show_field_descriptions':
@@ -194,13 +195,15 @@ const fieldCopy: Record<string, string> = {
   'feature_flags.enable_tracking_logs': 'Shows or hides raw tracking log tooling.',
   'feature_flags.controlled_rollout_percentage':
     'Optional rollout guardrail for staged feature availability. Use 100 for full availability.',
-  'email.mail_driver': 'The mail provider used to send platform email.',
+  'email.mail_driver': 'The shared provider used to send every Admin and Tenant email.',
   'email.smtp_host': 'SMTP server host name, when SMTP delivery is selected.',
   'email.smtp_port': 'SMTP server port. Common values are 587 or 465.',
   'email.smtp_username': 'SMTP username, if your provider requires one.',
-  'email.smtp_password': 'SMTP password or provider token. Leave blank if not required.',
-  'email.sender_name': 'Name recipients see in the From field.',
-  'email.sender_email': 'Email address recipients see in the From field.',
+  'email.smtp_password': 'SMTP password. This is used only when SMTP delivery is selected.',
+  'email.sender_name':
+    'Default From display name for Admin emails. Tenant emails may use the tenant business name.',
+  'email.sender_email':
+    'Verified From address shared by all Admin and Tenant emails. Tenants cannot override it.',
   'analytics.enable_visitor_tracking': 'Records public website visits for tenant analytics.',
   'analytics.enable_cta_tracking':
     'Records CTA views, clicks, and submissions for conversion analytics.',
@@ -242,8 +245,18 @@ const currentSectionGroups = computed<SystemSettingGroup[]>(() => {
     .filter((group): group is SystemSettingGroup => Boolean(group))
 })
 
+const selectedMailDriver = (): string => String(form.email?.mail_driver || 'smtp')
+
+const visibleSettings = (group: SystemSettingGroup): SystemSettingItem[] => {
+  if (group.key !== 'email' || selectedMailDriver() === 'smtp') {
+    return group.settings
+  }
+
+  return group.settings.filter((setting) => !setting.name.startsWith('smtp_'))
+}
+
 const currentSettings = computed<SystemSettingItem[]>(() => {
-  return currentSectionGroups.value.flatMap((group) => group.settings)
+  return currentSectionGroups.value.flatMap(visibleSettings)
 })
 
 const ensureGroup = (group: string): void => {
@@ -778,11 +791,12 @@ onBeforeUnmount(() => {
                       Email Delivery Tests
                     </h4>
                     <p class="mt-1 text-sm text-muted-foreground">
-                      Validate the configured mail transport before relying on password resets or
-                      tenant notifications.
+                      Send a real test through the shared provider before relying on password resets
+                      or tenant notifications.
                     </p>
                   </div>
                   <Button
+                    v-if="selectedMailDriver() === 'smtp'"
                     type="button"
                     variant="navigate"
                     size="sm"
@@ -792,6 +806,47 @@ onBeforeUnmount(() => {
                     <Wrench class="size-4" />
                     SMTP Test
                   </Button>
+                </div>
+
+                <div class="mt-4 grid gap-3 md:grid-cols-2">
+                  <div class="rounded border bg-muted/20 p-3 text-sm">
+                    <p class="font-medium">Shared From address</p>
+                    <p class="mt-1 text-muted-foreground">
+                      {{ stringForKey('email.sender_name') || 'App name' }}
+                      &lt;{{ stringForKey('email.sender_email') || 'Not configured' }}&gt;
+                    </p>
+                  </div>
+                  <div class="rounded border bg-muted/20 p-3 text-sm">
+                    <p class="font-medium">Admin Reply-To</p>
+                    <p class="mt-1 text-muted-foreground">
+                      {{
+                        stringForKey('general.support_email') ||
+                        'Falls back to the shared From address'
+                      }}
+                    </p>
+                    <button
+                      type="button"
+                      class="mt-2 text-xs font-medium text-primary hover:underline"
+                      @click="activeSection = 'profile'"
+                    >
+                      Edit support email
+                    </button>
+                  </div>
+                </div>
+
+                <div
+                  v-if="selectedMailDriver() === 'resend'"
+                  class="mt-3 rounded border border-primary/20 bg-primary/5 p-3 text-sm text-muted-foreground"
+                >
+                  Resend uses the shared verified sender above. Its API key is configured in the
+                  server environment with <code>RESEND_API_KEY</code>, not saved in this page.
+                </div>
+                <div
+                  v-else-if="selectedMailDriver() !== 'smtp'"
+                  class="mt-3 rounded border bg-muted/20 p-3 text-sm text-muted-foreground"
+                >
+                  Provider-specific configuration is read from the server environment. SMTP fields
+                  are hidden because they are not used by the selected driver.
                 </div>
 
                 <div class="mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
@@ -931,7 +986,7 @@ onBeforeUnmount(() => {
                       </div>
 
                       <div class="grid gap-4">
-                        <template v-for="setting in group.settings" :key="setting.key">
+                        <template v-for="setting in visibleSettings(group)" :key="setting.key">
                           <label
                             v-if="setting.type === 'boolean'"
                             :for="fieldId(setting)"

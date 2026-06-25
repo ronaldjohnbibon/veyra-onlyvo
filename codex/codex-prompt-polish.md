@@ -9,4 +9,4 @@ Requirements:
 
 Prompt:
 
-On system setting tenant side, The Live Preview is covering the History page. Same with admin side the History is getting covered by Platform Preview.
+On System settings History page, both admin and tenant even thought you did not update anything on that field/settings it will be on History and marked as empty, means it's not updated. I want you to fix it and put only on History what's data that's been changed.

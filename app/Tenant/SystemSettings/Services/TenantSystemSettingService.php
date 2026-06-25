@@ -51,9 +51,9 @@ class TenantSystemSettingService
         'analytics.retention_days'          => ['group' => 'analytics', 'label' => 'Retention Days', 'type' => 'integer', 'default' => 365, 'public' => false, 'description' => 'Enter how many days analytics data should be retained for this tenant.'],
 
         'notifications.cta_submission_email'     => ['group' => 'notifications', 'label' => 'CTA Submission Email', 'type' => 'email', 'default' => '', 'public' => false, 'description' => 'Enter where CTA submission notifications should be sent.'],
-        'notifications.design_request_email'     => ['group' => 'notifications', 'label' => 'Design Request Email', 'type' => 'email', 'default' => '', 'public' => false, 'description' => 'Enter where design request notifications should be sent.'],
-        'notifications.reply_to_email'           => ['group' => 'notifications', 'label' => 'Reply-To Email', 'type' => 'email', 'default' => '', 'public' => false, 'description' => 'Enter the reply-to address for tenant notifications.'],
-        'notifications.weekly_analytics_summary' => ['group' => 'notifications', 'label' => 'Weekly Analytics Summary', 'type' => 'boolean', 'default' => false, 'public' => false, 'description' => 'Send a weekly analytics summary when notification jobs support it.'],
+        'notifications.design_request_email'     => ['group' => 'notifications', 'label' => 'Design Request Email', 'type' => 'email', 'default' => '', 'public' => false, 'description' => 'Enter the inbox notified when a new design request is submitted.'],
+        'notifications.reply_to_email'           => ['group' => 'notifications', 'label' => 'Reply-To Email', 'type' => 'email', 'default' => '', 'public' => false, 'description' => 'Enter where replies to tenant-branded email should go. This does not change the verified From address.'],
+        'notifications.weekly_analytics_summary' => ['group' => 'notifications', 'label' => 'Weekly Analytics Summary', 'type' => 'boolean', 'default' => false, 'public' => false, 'description' => 'Send a weekly analytics summary through the platform email provider.'],
 
         'compliance.privacy_policy_url'    => ['group' => 'compliance', 'label' => 'Privacy Policy URL', 'type' => 'url', 'default' => '', 'public' => true, 'description' => 'Enter the tenant privacy policy URL.'],
         'compliance.terms_of_service_url'  => ['group' => 'compliance', 'label' => 'Terms of Service URL', 'type' => 'url', 'default' => '', 'public' => true, 'description' => 'Enter the tenant terms of service URL.'],

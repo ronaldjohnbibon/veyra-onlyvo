@@ -100,9 +100,10 @@ const sectionMeta: Record<
   },
   notifications: {
     label: 'Notifications',
-    title: 'Notification Routing',
-    description: 'Choose where lead and design request emails should go.',
-    task: 'Send follow-up alerts to the right inboxes.',
+    title: 'Email Notification Routing',
+    description:
+      'Choose notification inboxes and where replies to tenant-branded emails should go.',
+    task: 'The platform controls the verified From address; you control notification destinations and Reply-To.',
   },
   compliance: {
     label: 'Compliance',
@@ -166,12 +167,11 @@ const fieldCopy: Record<string, string> = {
     'Records CTA views, clicks, and submissions for conversion insights.',
   'analytics.retention_days': 'How long tenant analytics records should be kept.',
   'notifications.cta_submission_email': 'Inbox for new form submission and lead alerts.',
-  'notifications.design_request_email':
-    'Inbox for design request updates and collaboration alerts.',
+  'notifications.design_request_email': 'Inbox notified when a new design request is submitted.',
   'notifications.reply_to_email':
-    'Address used when recipients reply to tenant notification emails.',
+    "Replies to emails sent on your behalf go here. This does not change the platform's verified From address.",
   'notifications.weekly_analytics_summary':
-    'Send a weekly performance summary when scheduled email jobs are enabled.',
+    'Send a weekly performance summary through the platform email provider.',
   'compliance.privacy_policy_url': 'Link to the privacy policy visitors should be able to access.',
   'compliance.terms_of_service_url':
     'Link to terms or service rules visitors should be able to access.',
@@ -635,6 +635,18 @@ onBeforeUnmount(() => {
                   <Info class="mt-0.5 size-4 shrink-0 text-primary" />
                   <span>{{ currentSectionMeta.task }}</span>
                 </div>
+              </div>
+
+              <div
+                v-if="activeSection === 'notifications'"
+                class="mt-4 rounded border bg-background p-4 text-sm"
+              >
+                <p class="font-semibold">How tenant email identity works</p>
+                <p class="mt-1 text-muted-foreground">
+                  Emails use the platform’s shared verified sender address and your business name
+                  when available. Reply-To uses the address below, then falls back to your Business
+                  Profile contact email and tenant owner email.
+                </p>
               </div>
             </div>
 
