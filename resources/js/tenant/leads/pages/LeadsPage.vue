@@ -27,11 +27,13 @@ import { useLeadStore } from '@/tenant/leads/lead-store'
 import type { LeadEditableStatus, LeadParams, LeadRecord, LeadStatus } from '@/tenant/leads/types'
 import { Archive, CheckCircle2, Download, ExternalLink, Inbox, RotateCcw } from 'lucide-vue-next'
 import { computed, onMounted, ref } from 'vue'
+import { useRoute } from 'vue-router'
 
 type SortDirection = 'asc' | 'desc' | ''
 type LeadSort = NonNullable<LeadParams['sort']>
 
 const leadStore = useLeadStore()
+const route = useRoute()
 const detailsOpen = ref(false)
 const selectedLead = computed(() => leadStore.lead)
 
@@ -198,8 +200,15 @@ const exportLeads = async (): Promise<void> => {
   URL.revokeObjectURL(url)
 }
 
-onMounted(() => {
-  leadStore.index()
+onMounted(async () => {
+  await leadStore.index()
+
+  const leadId = typeof route.query.lead === 'string' ? route.query.lead : ''
+
+  if (leadId) {
+    await leadStore.show(leadId)
+    detailsOpen.value = true
+  }
 })
 </script>
 

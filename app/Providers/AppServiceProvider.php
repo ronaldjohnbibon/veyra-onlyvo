@@ -3,10 +3,14 @@
 namespace App\Providers;
 
 use App\Admin\SystemSettings\Services\SystemSettingService;
+use App\Shared\Mail\SharedEmailSender;
+use App\Shared\Routing\FrontendUrlGenerator;
 use FilesystemIterator;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Notifications\Messages\MailMessage;
+use Illuminate\Support\Facades\Lang;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use RecursiveDirectoryIterator;
@@ -48,18 +52,33 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('public-analytics', fn (Request $request) => Limit::perMinute(120)->by($this->rateLimitKey($request, 'public-analytics')));
         RateLimiter::for('public-forms', fn (Request $request) => Limit::perMinute(10)->by($this->rateLimitKey($request, 'public-forms')));
 
-        ResetPassword::createUrlUsing(function (object $notifiable, string $token): string {
-            $tenant      = $notifiable->tenant;
-            $host        = request()->getHost();
-            $scheme      = request()->getScheme();
-            $port        = request()->getPort();
-            $portSegment = in_array($port, [80, 443], true) ? '' : ':'.$port;
+        $resetUrl = function (object $notifiable, string $token): string {
+            return app(FrontendUrlGenerator::class)->tenant(
+                'web.tenant.password.reset',
+                $notifiable->tenant->subdomain,
+                [
+                    'token' => $token,
+                    'email' => $notifiable->getEmailForPasswordReset(),
+                ],
+            );
+        };
 
-            if ($tenant && ! str_starts_with($host, $tenant->subdomain.'.')) {
-                $host = $tenant->subdomain.'.'.$host;
-            }
+        ResetPassword::createUrlUsing($resetUrl);
+        ResetPassword::toMailUsing(function (object $notifiable, string $token) use ($resetUrl): MailMessage {
+            $settings = app(SystemSettingService::class);
+            $replyTo  = app(SharedEmailSender::class)->replyToAddress(
+                $settings->string('general.support_email'),
+            );
 
-            return $scheme.'://'.$host.$portSegment.'/reset-password?token='.$token.'&email='.urlencode($notifiable->getEmailForPasswordReset());
+            return (new MailMessage)
+                ->replyTo($replyTo)
+                ->subject(Lang::get('Reset Password Notification'))
+                ->line(Lang::get('You are receiving this email because we received a password reset request for your account.'))
+                ->action(Lang::get('Reset Password'), $resetUrl($notifiable, $token))
+                ->line(Lang::get('This password reset link will expire in :count minutes.', [
+                    'count' => config('auth.passwords.'.config('auth.defaults.passwords').'.expire'),
+                ]))
+                ->line(Lang::get('If you did not request a password reset, no further action is required.'));
         });
     }
 

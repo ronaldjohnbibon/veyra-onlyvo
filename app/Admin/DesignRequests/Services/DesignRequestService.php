@@ -4,8 +4,11 @@ namespace App\Admin\DesignRequests\Services;
 
 use App\Admin\AuditLogs\Services\AuditLogService;
 use App\Admin\DesignRequests\Models\DesignRequest;
+use App\Admin\SystemSettings\Services\SystemSettingService;
 use App\Admin\Templates\Models\Template;
 use App\Admin\Users\Models\User;
+use App\Shared\Mail\SharedEmailSender;
+use App\Shared\Routing\FrontendUrlGenerator;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -13,6 +16,12 @@ use Illuminate\Validation\ValidationException;
 
 class DesignRequestService
 {
+    public function __construct(
+        private readonly SystemSettingService $settings,
+        private readonly SharedEmailSender $emails,
+        private readonly FrontendUrlGenerator $urls,
+    ) {}
+
     /**
      * @param  array<string, mixed>  $data
      */
@@ -181,13 +190,45 @@ class DesignRequestService
     public function markNotification(DesignRequest $request, int|string|null $adminId): DesignRequest
     {
         $previous = $request->only(['notification_requested', 'notification_sent_at']);
+        $request->loadMissing(['tenant.owner', 'requester']);
+        $recipient = $request->requester?->email ?: $request->tenant?->owner?->email;
+        $subdomain = trim((string) $request->tenant?->subdomain);
+
+        if (! filter_var($recipient, FILTER_VALIDATE_EMAIL) || $subdomain === '') {
+            throw ValidationException::withMessages([
+                'notification' => ['The tenant must have a valid email recipient and subdomain.'],
+            ]);
+        }
+
+        $body = collect([
+            'Request'       => $request->title,
+            'Status'        => str((string) $request->status)->replace('_', ' ')->title()->toString(),
+            'Admin Remarks' => $request->admin_remarks,
+            'Linked Site'   => $request->linked_site_url,
+        ])
+            ->filter(fn (mixed $value): bool => filled($value))
+            ->map(fn (mixed $value, string $label): string => $label.': '.$value)
+            ->implode("\n");
+
+        $this->emails->sendAdminEmail(
+            (string) $recipient,
+            'Design request update: '.$request->title,
+            $body,
+            $this->settings->string('general.support_email'),
+            'View Design Request',
+            $this->urls->tenant(
+                'web.tenant.design-requests',
+                $subdomain,
+                ['design_request' => $request->id],
+            ),
+        );
 
         $request->update([
             'notification_requested' => true,
             'notification_sent_at'   => now(),
         ]);
 
-        $this->recordEvent($request, 'admin', $this->actorName($adminId), $adminId, 'notification_marked', null, null, 'Notification marked for tenant follow-up.');
+        $this->recordEvent($request, 'admin', $this->actorName($adminId), $adminId, 'notification_marked', null, null, 'Notification emailed to the tenant.');
         $this->audit('design_request.notification_marked', $request->fresh(), $adminId, $previous, $request->fresh()?->only(['notification_requested', 'notification_sent_at']));
 
         return $request->fresh(['files', 'events', 'tenant', 'requester', 'assignee', 'linkedTemplate']);

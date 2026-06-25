@@ -2,27 +2,30 @@
 
 namespace App\Tenant\SystemSettings\Services;
 
+use App\Shared\Mail\SharedEmailSender;
+use App\Shared\Routing\FrontendUrlGenerator;
 use App\Tenant\DesignRequests\Models\DesignRequest;
 use App\Tenant\Templates\Models\TemplateCtaSubmission;
 use App\Tenant\Tenants\Models\Tenant;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 use Throwable;
 
 class TenantNotificationService
 {
     public function __construct(
         private readonly TenantSystemSettingService $settings,
+        private readonly SharedEmailSender $emails,
+        private readonly FrontendUrlGenerator $urls,
     ) {}
 
     public function sendCtaSubmission(TemplateCtaSubmission $submission, Tenant $tenant): void
     {
         $recipient = $submission->template?->content['cta_recipient_email'] ?? null;
-        $recipient = is_string($recipient) && $recipient !== ''
+        $recipient = is_string($recipient) && filter_var($recipient, FILTER_VALIDATE_EMAIL)
             ? $recipient
             : $this->settings->string($tenant, 'notifications.cta_submission_email');
 
-        if ($recipient === '') {
+        if (! filter_var($recipient, FILTER_VALIDATE_EMAIL)) {
             return;
         }
 
@@ -35,14 +38,21 @@ class TenantNotificationService
             'Payload'  => $submission->payload,
         ]);
 
-        $this->sendRaw($tenant, $recipient, $subject, $body);
+        $this->sendRaw(
+            $tenant,
+            $recipient,
+            $subject,
+            $body,
+            'View Submission',
+            $this->urls->tenant('web.tenant.leads', $tenant->subdomain, ['lead' => $submission->id]),
+        );
     }
 
     public function sendDesignRequest(DesignRequest $request, Tenant $tenant): void
     {
         $recipient = $this->settings->string($tenant, 'notifications.design_request_email');
 
-        if ($recipient === '') {
+        if (! filter_var($recipient, FILTER_VALIDATE_EMAIL)) {
             return;
         }
 
@@ -55,7 +65,14 @@ class TenantNotificationService
             'Requester'   => $request->requester?->email,
         ]);
 
-        $this->sendRaw($tenant, $recipient, $subject, $body);
+        $this->sendRaw(
+            $tenant,
+            $recipient,
+            $subject,
+            $body,
+            'View Design Request',
+            $this->urls->tenant('web.tenant.design-requests', $tenant->subdomain, ['design_request' => $request->id]),
+        );
     }
 
     /**
@@ -66,7 +83,7 @@ class TenantNotificationService
         $recipient = $this->settings->string($tenant, 'notifications.cta_submission_email')
             ?: $this->settings->string($tenant, 'notifications.design_request_email');
 
-        if ($recipient === '') {
+        if (! filter_var($recipient, FILTER_VALIDATE_EMAIL)) {
             return;
         }
 
@@ -83,7 +100,14 @@ class TenantNotificationService
             'Today CTA Events'       => $summary['today_cta_events']       ?? 0,
         ]);
 
-        $this->sendRaw($tenant, $recipient, $subject, $body);
+        $this->sendRaw(
+            $tenant,
+            $recipient,
+            $subject,
+            $body,
+            'View Analytics',
+            $this->urls->tenant('web.tenant.analytics', $tenant->subdomain),
+        );
     }
 
     /**
@@ -102,18 +126,24 @@ class TenantNotificationService
             ->implode("\n");
     }
 
-    private function sendRaw(Tenant $tenant, string $recipient, string $subject, string $body): void
-    {
+    private function sendRaw(
+        Tenant $tenant,
+        string $recipient,
+        string $subject,
+        string $body,
+        string $actionLabel,
+        string $actionUrl,
+    ): void {
         try {
-            Mail::raw($body, function ($message) use ($tenant, $recipient, $subject): void {
-                $message->to($recipient)->subject($subject);
-
-                $replyTo = $this->settings->string($tenant, 'notifications.reply_to_email');
-
-                if ($replyTo !== '') {
-                    $message->replyTo($replyTo);
-                }
-            });
+            $this->emails->sendTenantEmail(
+                $recipient,
+                $subject,
+                $body,
+                $this->settings->string($tenant, 'profile.business_name', $tenant->name),
+                $this->tenantReplyTo($tenant),
+                $actionLabel,
+                $actionUrl,
+            );
         } catch (Throwable $exception) {
             Log::warning('Tenant notification email failed.', [
                 'tenant_id' => $tenant->id,
@@ -122,5 +152,22 @@ class TenantNotificationService
                 'error'     => $exception->getMessage(),
             ]);
         }
+    }
+
+    private function tenantReplyTo(Tenant $tenant): ?string
+    {
+        $addresses = [
+            $this->settings->string($tenant, 'notifications.reply_to_email'),
+            $this->settings->string($tenant, 'profile.contact_email'),
+            $tenant->owner?->email,
+        ];
+
+        foreach ($addresses as $address) {
+            if (filter_var($address, FILTER_VALIDATE_EMAIL)) {
+                return (string) $address;
+            }
+        }
+
+        return null;
     }
 }

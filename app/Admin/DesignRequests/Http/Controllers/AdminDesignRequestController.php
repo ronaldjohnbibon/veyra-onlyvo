@@ -207,7 +207,7 @@ class AdminDesignRequestController extends Controller
             return $this->error('Design request not found.', 404);
         }
 
-        return $this->success(new DesignRequestResource($this->service->markNotification($record, Auth::id())), 'Notification marked.');
+        return $this->success(new DesignRequestResource($this->service->markNotification($record, Auth::id())), 'Notification sent.');
     }
 
     private function findRequest(string $id): ?DesignRequest

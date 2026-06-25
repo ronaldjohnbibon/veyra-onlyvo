@@ -24,10 +24,12 @@ import type {
 } from '@/shared/types/design-requests'
 import { CheckCircle2, Eye, FileText, Link2, MessageSquare, Send, Undo2, X } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+import { useRoute } from 'vue-router'
 
 type SortDirection = 'asc' | 'desc' | ''
 
 const designRequestStore = useDesignRequestStore()
+const route = useRoute()
 const createDialogOpen = ref(false)
 const detailsDialogOpen = ref(false)
 const selectedRequest = ref<DesignRequestRecord | null>(null)
@@ -256,8 +258,16 @@ const runAction = async (action: 'approve' | 'request_changes'): Promise<void> =
   }
 }
 
-onMounted(() => {
-  designRequestStore.index()
+onMounted(async () => {
+  await designRequestStore.index()
+
+  const requestId = typeof route.query.design_request === 'string' ? route.query.design_request : ''
+
+  if (requestId) {
+    await designRequestStore.show(requestId)
+    selectedRequest.value = designRequestStore.request
+    detailsDialogOpen.value = true
+  }
 })
 
 onBeforeUnmount(() => {

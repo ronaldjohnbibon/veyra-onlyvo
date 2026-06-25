@@ -5,13 +5,12 @@ namespace App\Admin\SystemSettings\Services;
 use App\Admin\AuditLogs\Services\AuditLogService;
 use App\Admin\SystemSettings\Models\SystemSetting;
 use App\Admin\SystemSettings\Models\SystemSettingHistory;
+use App\Shared\Mail\SharedEmailSender;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Mail\Message;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\IpUtils;
@@ -21,6 +20,10 @@ class SystemSettingService
     public const CACHE_KEY = 'system_settings.values';
 
     public const MASK_VALUE = '********';
+
+    public function __construct(
+        private readonly SharedEmailSender $emails,
+    ) {}
 
     /**
      * @var array<string, array{group: string, label: string, type: string, default: mixed, public: bool, description?: string, options?: array<string, string>}>
@@ -59,7 +62,7 @@ class SystemSettingService
         'feature_flags.enable_tracking_logs'          => ['group' => 'feature_flags', 'label' => 'Enable Tracking Logs', 'type' => 'boolean', 'default' => true, 'public' => true, 'description' => 'Show or hide raw tracking log features.'],
         'feature_flags.controlled_rollout_percentage' => ['group' => 'feature_flags', 'label' => 'Controlled Rollout Percentage', 'type' => 'integer', 'default' => 100, 'public' => true, 'description' => 'Limit feature availability to a percentage of tenants when rollout logic is enabled.'],
 
-        'email.mail_driver'   => ['group' => 'email', 'label' => 'Mail Driver', 'type' => 'select', 'default' => 'smtp', 'public' => false, 'description' => 'Choose the mail service used to send platform email.', 'options' => ['smtp' => 'SMTP', 'sendmail' => 'Sendmail', 'mailgun' => 'Mailgun', 'ses' => 'Amazon SES', 'ses-v2' => 'Amazon SES v2', 'postmark' => 'Postmark', 'log' => 'Log', 'array' => 'Array']],
+        'email.mail_driver'   => ['group' => 'email', 'label' => 'Mail Driver', 'type' => 'select', 'default' => 'smtp', 'public' => false, 'description' => 'Choose the mail service used to send platform email.', 'options' => ['smtp' => 'SMTP', 'resend' => 'Resend', 'sendmail' => 'Sendmail', 'mailgun' => 'Mailgun', 'ses' => 'Amazon SES', 'ses-v2' => 'Amazon SES v2', 'postmark' => 'Postmark', 'log' => 'Log', 'array' => 'Array']],
         'email.smtp_host'     => ['group' => 'email', 'label' => 'SMTP Host', 'type' => 'string', 'default' => '', 'public' => false, 'description' => 'Enter the SMTP server host name.'],
         'email.smtp_port'     => ['group' => 'email', 'label' => 'SMTP Port', 'type' => 'integer', 'default' => 587, 'public' => false, 'description' => 'Enter the SMTP server port number.'],
         'email.smtp_username' => ['group' => 'email', 'label' => 'SMTP Username', 'type' => 'string', 'default' => '', 'public' => false, 'description' => 'Enter the SMTP username if required.'],
@@ -524,13 +527,11 @@ class SystemSettingService
         $this->applyRuntimeConfig();
         app('mail.manager')->forgetMailers();
 
-        Mail::raw(
+        $this->emails->sendAdminEmail(
+            $recipient,
+            'Onlyvo test email',
             'This is a test email from the Onlyvo admin System Settings console.',
-            function (Message $message) use ($recipient): void {
-                $message
-                    ->to($recipient)
-                    ->subject('Onlyvo test email');
-            },
+            $this->string('general.support_email'),
         );
 
         $this->recordHistory('email.test_delivery', null, ['recipient' => $recipient], $actor, 'tested');

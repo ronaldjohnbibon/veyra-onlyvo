@@ -256,7 +256,7 @@ const notifyTenant = async (): Promise<void> => {
     actionError.value = ''
     selectedRequest.value = await designRequestStore.notify(selectedRequest.value.id)
   } catch {
-    actionError.value = 'Could not mark notification.'
+    actionError.value = 'Could not send notification.'
   }
 }
 
@@ -281,7 +281,7 @@ const eventTitle = (event: DesignRequestEventRecord): string => {
     return 'Converted to template improvement'
   if (event.event_type === 'converted_to_catalog_change') return 'Converted to catalog change'
   if (event.event_type === 'linked_completed_work') return 'Linked completed work'
-  if (event.event_type === 'notification_marked') return 'Notification marked'
+  if (event.event_type === 'notification_marked') return 'Notification sent'
   if (event.event_type === 'created') return 'Request submitted'
 
   return event.event_type.replace(/_/g, ' ')
@@ -819,7 +819,7 @@ onMounted(() => {
 
                   <Button type="button" variant="secondary" class="w-full" @click="notifyTenant">
                     <Bell class="size-4" />
-                    Mark Tenant Notification
+                    Send Tenant Notification
                   </Button>
 
                   <p v-if="selectedRequest.conversion_type" class="text-xs text-muted-foreground">
@@ -833,7 +833,7 @@ onMounted(() => {
                     v-if="selectedRequest.notification_sent_at"
                     class="text-xs text-muted-foreground"
                   >
-                    Notification marked
+                    Notification sent
                     {{ formatDisplayDate(selectedRequest.notification_sent_at) }}.
                   </p>
                   <p
