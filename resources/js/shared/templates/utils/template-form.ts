@@ -82,7 +82,6 @@ export const createBlankTemplate = (websiteType?: WebsiteType | null): TemplateP
     slug: slugify(templateName),
     template_key: '',
     business_name: 'Onlyvo Studio',
-    logo: 'https://dummyimage.com/120x120/14b8a6/ffffff.png&text=OV',
     contact_info: {
       email: 'hello@example.com',
       phone: '+1 555 0100',
@@ -110,7 +109,22 @@ export const applyCatalogStyleDefaults = (
   websiteType: WebsiteType | null,
   catalogTemplate: TemplateCatalogItem
 ): TemplatePayload => {
-  if (websiteType?.slug !== 'landing-page' || catalogTemplate.key !== 'template-1') {
+  if (websiteType?.slug !== 'landing-page') {
+    return payload
+  }
+
+  if (catalogTemplate.key === 'template-2') {
+    return {
+      ...payload,
+      font_family: 'Inter',
+      primary_color: '#d4ff00',
+      secondary_color: '#111111',
+      background_color: '#fafafa',
+      text_color: '#111111',
+    }
+  }
+
+  if (catalogTemplate.key !== 'template-1') {
     return payload
   }
 
@@ -158,7 +172,6 @@ export const templateToPayload = (
     slug: template.slug,
     template_key: template.template_key,
     business_name: template.business_name,
-    logo: template.logo,
     contact_info: {
       email: template.contact_info?.email ?? '',
       phone: template.contact_info?.phone ?? '',

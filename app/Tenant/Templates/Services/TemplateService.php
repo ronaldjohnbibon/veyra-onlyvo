@@ -91,7 +91,7 @@ class TemplateService
      */
     private function normalizeTemplate(array $data): array
     {
-        foreach (['name', 'slug', 'template_key', 'business_name', 'logo', 'font_family'] as $field) {
+        foreach (['name', 'slug', 'template_key', 'business_name', 'font_family'] as $field) {
             if (isset($data[$field])) {
                 $data[$field] = trim((string) $data[$field]);
             }
@@ -123,10 +123,6 @@ class TemplateService
     private function storeUploadedImages(array $data, ?Template $template = null): array
     {
         $folder = 'templates/'.(string) $data['tenant_id'].'/'.($template?->id ?? 'shared').'/images';
-
-        if (isset($data['logo'])) {
-            $data['logo'] = $this->storeDataUrlImage((string) $data['logo'], $folder);
-        }
 
         $catalogItem = TemplateCatalogItem::query()
             ->where('website_type_id', $data['website_type_id'] ?? null)
@@ -276,7 +272,6 @@ class TemplateService
 
         $payload = [
             'business_name' => $this->stringContent($content, ['business_name', 'display_name'], 'Onlyvo Studio'),
-            'logo'          => 'https://dummyimage.com/120x120/14b8a6/ffffff.png&text=OV',
             'contact_info'  => [
                 'email'   => $this->stringContent($content, ['contact_email', 'email'], 'hello@example.com'),
                 'phone'   => $this->stringContent($content, ['contact_phone', 'phone'], '+1 555 0100'),
@@ -296,14 +291,26 @@ class TemplateService
             'text_color'       => '#111827',
         ];
 
-        if ($catalogItem->websiteType?->slug === 'landing-page' && $catalogItem->key === 'template-1') {
-            $payload = array_merge($payload, [
-                'font_family'      => 'Arial',
-                'primary_color'    => '#3377aa',
-                'secondary_color'  => '#336699',
-                'background_color' => '#ffffff',
-                'text_color'       => '#707070',
-            ]);
+        if ($catalogItem->websiteType?->slug === 'landing-page') {
+            if ($catalogItem->key === 'template-2') {
+                $payload = array_merge($payload, [
+                    'font_family'      => 'Inter',
+                    'primary_color'    => '#d4ff00',
+                    'secondary_color'  => '#111111',
+                    'background_color' => '#fafafa',
+                    'text_color'       => '#111111',
+                ]);
+            }
+
+            if ($catalogItem->key === 'template-1') {
+                $payload = array_merge($payload, [
+                    'font_family'      => 'Arial',
+                    'primary_color'    => '#3377aa',
+                    'secondary_color'  => '#336699',
+                    'background_color' => '#ffffff',
+                    'text_color'       => '#707070',
+                ]);
+            }
         }
 
         return $payload;

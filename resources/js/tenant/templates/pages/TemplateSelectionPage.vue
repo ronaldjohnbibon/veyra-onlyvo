@@ -133,7 +133,6 @@ const publicUrl = computed(() => {
 const linkIssues = computed<BuilderIssue[]>(() => {
   const issues: BuilderIssue[] = []
   const linkValues: [string, string][] = [
-    ['Logo URL', form.value.logo],
     ['Website', form.value.social_links.website],
     ['LinkedIn', form.value.social_links.linkedin],
     ['Instagram', form.value.social_links.instagram],
@@ -142,7 +141,7 @@ const linkIssues = computed<BuilderIssue[]>(() => {
 
   for (const [label, value] of linkValues) {
     if (value && !isValidUrl(value) && !isDataImage(value)) {
-      issues.push({ label, value, type: label === 'Logo URL' ? 'image' : 'link' })
+      issues.push({ label, value, type: 'link' })
     }
   }
 
@@ -338,24 +337,6 @@ const resetTemplateDefault = async (): Promise<void> => {
   }
 }
 
-const handleLogoUpload = (event: Event): void => {
-  const input = event.target as HTMLInputElement
-  const file = input.files?.[0]
-
-  if (!file) return
-
-  const reader = new FileReader()
-  reader.onload = () => {
-    form.value.logo = String(reader.result)
-    input.value = ''
-  }
-  reader.readAsDataURL(file)
-}
-
-const clearLogoImage = (): void => {
-  form.value.logo = ''
-}
-
 const openPreviewPage = (): void => {
   if (!selectedTemplateId.value || form.value.status !== 'published') return
 
@@ -385,8 +366,7 @@ const collectContentIssues = (record: Record<string, unknown>, issues: BuilderIs
     if (typeof value === 'string') {
       const looksLikeUrl =
         value.startsWith('http') || value.startsWith('/') || value.startsWith('data:image/')
-      const looksLikeImage =
-        key.toLowerCase().includes('image') || key.toLowerCase().includes('logo')
+      const looksLikeImage = key.toLowerCase().includes('image')
 
       if (looksLikeUrl && !isValidUrl(value) && !isDataImage(value)) {
         issues.push({ label: key, value, type: looksLikeImage ? 'image' : 'link' })
@@ -701,7 +681,7 @@ watch(
                 <div>
                   <h3 class="text-base font-semibold">Site details</h3>
                   <p class="mt-1 text-sm text-muted-foreground">
-                    Set the name, public slug, default site flag, logo, and contact information.
+                    Set the name, public slug, default site flag, and contact information.
                   </p>
                 </div>
 
@@ -771,49 +751,6 @@ watch(
                         >
                           {{ templateStore.errors.is_default[0] }}
                         </Label>
-                      </Field>
-
-                      <Field class="md:col-span-2">
-                        <FieldLabel for="logo-url">Logo URL</FieldLabel>
-                        <Input
-                          v-field-help="'Enter the logo image URL shown on the site.'"
-                          id="logo-url"
-                          v-model="form.logo"
-                        />
-                        <Label v-if="templateStore.errors.logo" class="text-destructive text-xs">
-                          {{ templateStore.errors.logo[0] }}
-                        </Label>
-                        <Input
-                          v-field-help="'Upload a logo image to fill the URL automatically.'"
-                          type="file"
-                          accept="image/*"
-                          class="cursor-pointer text-muted-foreground"
-                          @change="handleLogoUpload"
-                        />
-                        <div class="overflow-hidden rounded border bg-background">
-                          <img
-                            v-if="form.logo"
-                            :src="form.logo"
-                            alt="Logo preview"
-                            class="max-h-40 w-full object-contain"
-                          />
-                          <div
-                            v-else
-                            class="flex aspect-video items-center justify-center border border-dashed text-sm text-muted-foreground"
-                          >
-                            No logo selected
-                          </div>
-                        </div>
-                        <Button
-                          v-if="form.logo"
-                          type="button"
-                          variant="cancel"
-                          size="sm"
-                          @click="clearLogoImage"
-                        >
-                          <Trash2 class="size-4" />
-                          Remove logo
-                        </Button>
                       </Field>
 
                       <Field>

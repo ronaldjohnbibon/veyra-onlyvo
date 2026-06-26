@@ -27,7 +27,6 @@ class TemplateResource extends JsonResource
             'public_url'       => $this->publicUrl($request),
             'template_key'     => $this->template_key,
             'business_name'    => $this->business_name,
-            'logo'             => $this->logo,
             'contact_info'     => $this->contact_info ?? [],
             'social_links'     => $this->social_links ?? [],
             'content'          => $this->content      ?? [],

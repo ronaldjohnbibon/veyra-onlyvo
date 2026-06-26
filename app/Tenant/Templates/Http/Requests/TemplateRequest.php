@@ -54,7 +54,6 @@ class TemplateRequest extends FormRequest
             ],
             'template_key'           => ['required', 'string', 'max:80', Rule::in($templateKeys)],
             'business_name'          => ['required', 'string', 'max:150'],
-            'logo'                   => ['required', 'string'],
             'contact_info'           => ['required', 'array'],
             'contact_info.email'     => ['nullable', 'string', 'max:150'],
             'contact_info.phone'     => ['nullable', 'string', 'max:50'],
@@ -100,8 +99,6 @@ class TemplateRequest extends FormRequest
             'business_name.required'        => 'Enter the business name.',
             'business_name.string'          => 'The business name must be text.',
             'business_name.max'             => 'The business name may not exceed :max characters.',
-            'logo.required'                 => 'Provide a logo for the template.',
-            'logo.string'                   => 'The logo path must be text.',
             'contact_info.required'         => 'Provide the template contact information.',
             'contact_info.array'            => 'The template contact information must be a valid object.',
             'contact_info.email.string'     => 'The contact email must be text.',
@@ -180,7 +177,7 @@ class TemplateRequest extends FormRequest
             $this->merge(['tenant_id' => $tenantId]);
         }
 
-        foreach (['name', 'template_key', 'business_name', 'logo', 'font_family'] as $field) {
+        foreach (['name', 'template_key', 'business_name', 'font_family'] as $field) {
             if ($this->has($field)) {
                 $this->merge([$field => trim((string) $this->input($field))]);
             }

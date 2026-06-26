@@ -20,7 +20,6 @@ class Template extends Model
         'slug',
         'template_key',
         'business_name',
-        'logo',
         'contact_info',
         'social_links',
         'content',

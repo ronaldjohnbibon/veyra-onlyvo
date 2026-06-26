@@ -80,7 +80,7 @@ const sectionMeta: Record<
     label: 'Profile',
     title: 'Business Profile',
     description: 'Tell visitors who you are and where they can reach you.',
-    task: 'Complete your public business name, logo, and contact details.',
+    task: 'Complete your public business name and contact details.',
   },
   website: {
     label: 'Launch',
@@ -131,8 +131,7 @@ const fieldCopy: Record<string, string> = {
   'profile.business_name':
     'Shown as your public business name and used as a fallback in page titles.',
   'profile.description': 'A plain-language summary visitors and search engines can understand.',
-  'profile.logo':
-    'Used in templates that support a logo. A transparent PNG or SVG usually works best.',
+  'profile.logo': 'Optional workspace identity image. A transparent PNG or SVG usually works best.',
   'profile.favicon': 'The small icon shown in browser tabs. Square images work best.',
   'profile.timezone': 'Used for reports, analytics windows, and date-based activity.',
   'profile.contact_email':

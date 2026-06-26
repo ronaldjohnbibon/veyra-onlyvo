@@ -210,7 +210,7 @@ class TenantDashboardService
             [
                 'key'         => 'brand_profile',
                 'label'       => 'Complete brand basics',
-                'description' => 'Add business name, logo, and public contact details.',
+                'description' => 'Add business name and public contact details.',
                 'completed'   => $this->hasBrandProfile($values, $template),
                 'to'          => '/system-settings',
             ],
@@ -244,7 +244,6 @@ class TenantDashboardService
     private function hasBrandProfile(array $values, ?Template $template): bool
     {
         return (filled($values['profile.business_name'] ?? null) || filled($template?->business_name))
-            && (filled($values['profile.logo'] ?? null) || filled($template?->logo))
             && (
                 filled($values['profile.contact_email'] ?? null)
                 || filled($template?->contact_info['email'] ?? null)

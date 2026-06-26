@@ -13,6 +13,8 @@ const businessName = computed(() => {
   return String(content.value.business_name ?? props.template.business_name)
 })
 
+const brandInitial = computed(() => businessName.value.trim().charAt(0).toUpperCase() || 'O')
+
 const projects = computed(() => {
   const values = content.value.projects
 
@@ -57,7 +59,11 @@ const socialLinks = computed(() => {
     <header class="px-6 py-6">
       <div class="mx-auto flex max-w-5xl items-center justify-between gap-4">
         <a href="#top" class="flex items-center gap-3">
-          <img :src="template.logo" :alt="businessName" class="size-11 rounded-full object-cover" />
+          <span
+            class="flex size-11 items-center justify-center rounded-full bg-[var(--template-primary)] text-sm font-bold text-white"
+          >
+            {{ brandInitial }}
+          </span>
           <span class="font-semibold">{{ businessName }}</span>
         </a>
         <nav class="hidden items-center gap-5 text-sm md:flex">

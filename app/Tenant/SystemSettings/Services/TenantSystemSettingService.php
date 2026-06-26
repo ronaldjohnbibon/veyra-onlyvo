@@ -20,7 +20,7 @@ class TenantSystemSettingService
     private const DEFINITIONS = [
         'profile.business_name'   => ['group' => 'profile', 'label' => 'Business Name', 'type' => 'string', 'default' => '', 'public' => true, 'description' => 'Enter the business or public site name.'],
         'profile.description'     => ['group' => 'profile', 'label' => 'Description', 'type' => 'text', 'default' => '', 'public' => true, 'description' => 'Enter a short description for public profile and metadata defaults.'],
-        'profile.logo'            => ['group' => 'profile', 'label' => 'Logo', 'type' => 'image', 'default' => '', 'public' => true, 'description' => 'Upload the logo used on the tenant public site.'],
+        'profile.logo'            => ['group' => 'profile', 'label' => 'Logo', 'type' => 'image', 'default' => '', 'public' => true, 'description' => 'Upload an optional profile logo for workspace identity.'],
         'profile.favicon'         => ['group' => 'profile', 'label' => 'Favicon', 'type' => 'image', 'default' => '', 'public' => true, 'description' => 'Upload the browser tab icon for the tenant public site.'],
         'profile.timezone'        => ['group' => 'profile', 'label' => 'Timezone', 'type' => 'string', 'default' => 'UTC', 'public' => false, 'description' => 'Enter the timezone used for tenant reports and dates.'],
         'profile.contact_email'   => ['group' => 'profile', 'label' => 'Contact Email', 'type' => 'email', 'default' => '', 'public' => true, 'description' => 'Enter the public contact email address.'],

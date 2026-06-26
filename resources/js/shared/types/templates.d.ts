@@ -230,7 +230,6 @@ export interface TemplateRecord {
   public_url?: string
   template_key: string
   business_name: string
-  logo: string
   contact_info: TemplateContactInfo
   social_links: TemplateSocialLinks
   content: TemplateContent
@@ -252,7 +251,6 @@ export interface TemplatePayload {
   website_type_id: string
   template_key: string
   business_name: string
-  logo: string
   contact_info: TemplateContactInfo
   social_links: TemplateSocialLinks
   content: TemplateContent
