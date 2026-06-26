@@ -34,19 +34,9 @@ export const settingBoolean = (
 
 export const effectiveTemplate = (template: TemplateRecord): TemplateRecord => {
   const settings = template.tenant_settings
-  const primaryCtaLabel = settingString(settings, 'website.primary_cta_label')
-  const primaryCtaUrl = settingString(settings, 'website.primary_cta_url')
   const footerText = settingString(settings, 'website.footer_text')
   const content = {
     ...template.content,
-    ...(primaryCtaLabel ? { primary_cta_label: primaryCtaLabel } : {}),
-    ...(primaryCtaUrl
-      ? {
-          primary_cta_url: primaryCtaUrl,
-          reservation_link: primaryCtaUrl,
-          chat_url: primaryCtaUrl,
-        }
-      : {}),
     ...(footerText ? { footer_text: footerText } : {}),
   }
   const contactInfo: TemplateContactInfo = {

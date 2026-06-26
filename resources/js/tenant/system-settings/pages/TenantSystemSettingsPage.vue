@@ -24,7 +24,6 @@ import {
   CheckCircle2,
   CircleAlert,
   Clock,
-  ExternalLink,
   FileText,
   Globe2,
   History,
@@ -84,7 +83,7 @@ const sectionMeta: Record<
     label: 'Launch',
     title: 'Launch Controls',
     description: 'Control whether the public site is live and how visitors take action.',
-    task: 'Confirm the site status, homepage slug, CTA, forms, and footer copy.',
+    task: 'Confirm the site status, homepage slug, forms, and footer copy.',
   },
   seo: {
     label: 'SEO',
@@ -141,8 +140,6 @@ const fieldCopy: Record<string, string> = {
     'Draft keeps the public site unavailable; Live makes published content reachable.',
   'website.homepage_slug':
     'Leave blank to use the default published template, or enter a custom slug.',
-  'website.primary_cta_label': 'The default button text templates can use for primary actions.',
-  'website.primary_cta_url': 'Where the default call-to-action button should send visitors.',
   'website.contact_form_enabled':
     'Turn this on when visitors should be able to submit contact forms.',
   'website.footer_text': 'Small footer or copyright text shown on public pages where supported.',
@@ -981,7 +978,7 @@ onBeforeUnmount(() => {
                       size="sm"
                       :style="{ backgroundColor: primaryColor, color: '#ffffff' }"
                     >
-                      {{ stringForKey('website.primary_cta_label') || 'Primary CTA' }}
+                      Primary CTA
                     </Button>
                   </div>
                 </div>
@@ -1042,17 +1039,6 @@ onBeforeUnmount(() => {
                   </Badge>
                 </div>
               </div>
-
-              <a
-                v-if="stringForKey('website.primary_cta_url')"
-                :href="stringForKey('website.primary_cta_url')"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="mt-4 inline-flex items-center gap-2 text-sm font-medium text-primary"
-              >
-                Test primary CTA
-                <ExternalLink class="size-3.5" />
-              </a>
             </section>
           </aside>
         </div>

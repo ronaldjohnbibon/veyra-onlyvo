@@ -43,6 +43,13 @@ class TenantSystemSettingBulkRequest extends FormRequest
             return;
         }
 
+        if (isset($settings['website']) && is_array($settings['website'])) {
+            unset(
+                $settings['website']['primary_cta_label'],
+                $settings['website']['primary_cta_url'],
+            );
+        }
+
         array_walk_recursive($settings, function (&$value): void {
             if (is_string($value)) {
                 $value = trim($value);
@@ -78,7 +85,6 @@ class TenantSystemSettingBulkRequest extends FormRequest
             'profile.contact_phone'         => ['nullable', 'string', 'max:50'],
             'profile.contact_address'       => ['nullable', 'string', 'max:1000'],
             'website.homepage_slug'         => ['nullable', 'string', 'max:100', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/'],
-            'website.primary_cta_label'     => ['nullable', 'string', 'max:80'],
             'website.footer_text'           => ['nullable', 'string', 'max:1000'],
             'seo.default_meta_title'        => ['nullable', 'string', 'max:150'],
             'seo.default_meta_description'  => ['nullable', 'string', 'max:500'],

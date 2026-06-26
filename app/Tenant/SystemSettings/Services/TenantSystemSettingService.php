@@ -29,8 +29,6 @@ class TenantSystemSettingService
 
         'website.site_status'          => ['group' => 'website', 'label' => 'Site Status', 'type' => 'select', 'default' => 'live', 'public' => true, 'description' => 'Choose whether the public website should be treated as draft or live.', 'options' => ['draft' => 'Draft', 'live' => 'Live']],
         'website.homepage_slug'        => ['group' => 'website', 'label' => 'Homepage Slug', 'type' => 'string', 'default' => '', 'public' => true, 'description' => 'Enter the default public site slug, or leave blank to use the default template.'],
-        'website.primary_cta_label'    => ['group' => 'website', 'label' => 'Primary CTA Label', 'type' => 'string', 'default' => '', 'public' => true, 'description' => 'Enter the default call-to-action button label.'],
-        'website.primary_cta_url'      => ['group' => 'website', 'label' => 'Primary CTA URL', 'type' => 'url', 'default' => '', 'public' => true, 'description' => 'Enter the default call-to-action destination URL.'],
         'website.contact_form_enabled' => ['group' => 'website', 'label' => 'Contact Form Enabled', 'type' => 'boolean', 'default' => true, 'public' => true, 'description' => 'Allow the public site to show tenant contact forms where templates support them.'],
         'website.footer_text'          => ['group' => 'website', 'label' => 'Footer Text', 'type' => 'text', 'default' => '', 'public' => true, 'description' => 'Enter footer or copyright text for public pages.'],
 
