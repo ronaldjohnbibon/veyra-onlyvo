@@ -12,6 +12,7 @@ import {
 } from '@/shared/components/ui/card'
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/shared/components/ui/field'
 import { Input } from '@/shared/components/ui/input'
+import AuthLegalLinks from '@/tenant/auth/components/AuthLegalLinks.vue'
 import { useAuthStore } from '../auth-store'
 
 const props = defineProps<{
@@ -74,6 +75,7 @@ onMounted(() => {
             </form>
           </CardContent>
         </Card>
+        <AuthLegalLinks />
       </div>
     </div>
   </div>

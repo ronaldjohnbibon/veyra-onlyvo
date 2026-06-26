@@ -43,8 +43,24 @@ const acceptCookies = (): void => {
     <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4">
       <p v-if="footerText">{{ footerText }}</p>
       <div class="flex flex-wrap items-center gap-4">
-        <a v-if="privacyUrl" :href="privacyUrl" class="hover:text-foreground">Privacy Policy</a>
-        <a v-if="termsUrl" :href="termsUrl" class="hover:text-foreground">Terms of Service</a>
+        <a
+          v-if="privacyUrl"
+          :href="privacyUrl"
+          target="_blank"
+          rel="noreferrer"
+          class="hover:text-foreground"
+        >
+          Privacy Policy
+        </a>
+        <a
+          v-if="termsUrl"
+          :href="termsUrl"
+          target="_blank"
+          rel="noreferrer"
+          class="hover:text-foreground"
+        >
+          Terms of Service
+        </a>
       </div>
     </div>
   </footer>

@@ -61,6 +61,8 @@ interface TaskSection {
   groupKeys: string[]
 }
 
+type PolicyBadgeVariant = 'success' | 'warning' | 'outline'
+
 const settingStore = useAdminSystemSettingStore()
 const form = reactive<SystemSettingsPayload>({})
 const formError = ref('')
@@ -348,6 +350,20 @@ const stringForKey = (key: string): string => {
 }
 
 const booleanForKey = (key: string): boolean => Boolean(valueForKey(key))
+const privacyPolicyUrl = computed(() => stringForKey('compliance.privacy_policy_url').trim())
+const termsOfServiceUrl = computed(() => stringForKey('compliance.terms_of_service_url').trim())
+const policyStatus = computed(() => {
+  if (privacyPolicyUrl.value && termsOfServiceUrl.value) return 'Linked'
+  if (privacyPolicyUrl.value || termsOfServiceUrl.value) return 'Partial'
+
+  return 'Missing'
+})
+const policyBadgeVariant = computed<PolicyBadgeVariant>(() => {
+  if (policyStatus.value === 'Linked') return 'success'
+  if (policyStatus.value === 'Partial') return 'warning'
+
+  return 'outline'
+})
 
 const settingDescription = (setting: SystemSettingItem): string => {
   return (
@@ -1348,34 +1364,34 @@ onBeforeUnmount(() => {
                 </div>
                 <div class="flex items-center justify-between gap-3">
                   <span class="text-muted-foreground">Policies</span>
-                  <Badge
-                    :variant="
-                      stringForKey('compliance.privacy_policy_url') &&
-                      stringForKey('compliance.terms_of_service_url')
-                        ? 'success'
-                        : 'outline'
-                    "
-                  >
-                    {{
-                      stringForKey('compliance.privacy_policy_url') &&
-                      stringForKey('compliance.terms_of_service_url')
-                        ? 'Linked'
-                        : 'Missing'
-                    }}
+                  <Badge :variant="policyBadgeVariant">
+                    {{ policyStatus }}
                   </Badge>
                 </div>
               </div>
 
-              <a
-                v-if="stringForKey('compliance.privacy_policy_url')"
-                :href="stringForKey('compliance.privacy_policy_url')"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="mt-4 inline-flex items-center gap-2 text-sm font-medium text-primary"
-              >
-                Open privacy policy
-                <ExternalLink class="size-3.5" />
-              </a>
+              <div v-if="privacyPolicyUrl || termsOfServiceUrl" class="mt-4 flex flex-wrap gap-3">
+                <a
+                  v-if="privacyPolicyUrl"
+                  :href="privacyPolicyUrl"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="inline-flex items-center gap-2 text-sm font-medium text-primary"
+                >
+                  Open privacy policy
+                  <ExternalLink class="size-3.5" />
+                </a>
+                <a
+                  v-if="termsOfServiceUrl"
+                  :href="termsOfServiceUrl"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="inline-flex items-center gap-2 text-sm font-medium text-primary"
+                >
+                  Open terms of service
+                  <ExternalLink class="size-3.5" />
+                </a>
+              </div>
             </section>
 
             <section class="rounded border bg-background p-4">

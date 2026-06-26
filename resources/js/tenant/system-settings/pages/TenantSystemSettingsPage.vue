@@ -24,6 +24,7 @@ import {
   CheckCircle2,
   CircleAlert,
   Clock,
+  ExternalLink,
   FileText,
   Globe2,
   History,
@@ -39,6 +40,8 @@ import {
 } from 'lucide-vue-next'
 import type { Component } from 'vue'
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+
+type PolicyBadgeVariant = 'success' | 'warning' | 'outline'
 
 const settingStore = useTenantSystemSettingStore()
 const confirmStore = useConfirmStore()
@@ -289,6 +292,20 @@ const stringForKey = (key: string): string => {
 }
 
 const booleanForKey = (key: string): boolean => Boolean(valueForKey(key))
+const privacyPolicyUrl = computed(() => stringForKey('compliance.privacy_policy_url').trim())
+const termsOfServiceUrl = computed(() => stringForKey('compliance.terms_of_service_url').trim())
+const policyStatus = computed(() => {
+  if (privacyPolicyUrl.value && termsOfServiceUrl.value) return 'Linked'
+  if (privacyPolicyUrl.value || termsOfServiceUrl.value) return 'Partial'
+
+  return 'Missing'
+})
+const policyBadgeVariant = computed<PolicyBadgeVariant>(() => {
+  if (policyStatus.value === 'Linked') return 'success'
+  if (policyStatus.value === 'Partial') return 'warning'
+
+  return 'outline'
+})
 
 const hasUnsavedChanges = computed(() => {
   if (!savedSnapshot.value || !settingStore.groups.length) return false
@@ -1022,22 +1039,33 @@ onBeforeUnmount(() => {
                 </div>
                 <div class="flex items-center justify-between gap-3">
                   <span class="text-muted-foreground">Policies</span>
-                  <Badge
-                    :variant="
-                      stringForKey('compliance.privacy_policy_url') &&
-                      stringForKey('compliance.terms_of_service_url')
-                        ? 'success'
-                        : 'outline'
-                    "
-                  >
-                    {{
-                      stringForKey('compliance.privacy_policy_url') &&
-                      stringForKey('compliance.terms_of_service_url')
-                        ? 'Linked'
-                        : 'Missing'
-                    }}
+                  <Badge :variant="policyBadgeVariant">
+                    {{ policyStatus }}
                   </Badge>
                 </div>
+              </div>
+
+              <div v-if="privacyPolicyUrl || termsOfServiceUrl" class="mt-4 flex flex-wrap gap-3">
+                <a
+                  v-if="privacyPolicyUrl"
+                  :href="privacyPolicyUrl"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="inline-flex items-center gap-2 text-sm font-medium text-primary"
+                >
+                  Open privacy policy
+                  <ExternalLink class="size-3.5" />
+                </a>
+                <a
+                  v-if="termsOfServiceUrl"
+                  :href="termsOfServiceUrl"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="inline-flex items-center gap-2 text-sm font-medium text-primary"
+                >
+                  Open terms of service
+                  <ExternalLink class="size-3.5" />
+                </a>
               </div>
             </section>
           </aside>
