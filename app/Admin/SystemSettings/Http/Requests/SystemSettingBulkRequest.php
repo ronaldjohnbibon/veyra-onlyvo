@@ -30,6 +30,38 @@ class SystemSettingBulkRequest extends FormRequest
         return $rules;
     }
 
+    public function messages(): array
+    {
+        $messages = [
+            'settings.required' => 'System settings are required.',
+            'settings.array'    => 'System settings must be provided as a valid settings object.',
+        ];
+
+        foreach (app(SystemSettingService::class)->definitions() as $key => $definition) {
+            $field = 'settings.'.$key;
+            $label = strtolower((string) ($definition['label'] ?? str_replace(['.', '_'], ' ', $key)));
+
+            $messages[$field.'.required'] = "Enter the {$label}.";
+            $messages[$field.'.string']   = "The {$label} must be text.";
+            $messages[$field.'.boolean']  = "The {$label} setting must be true or false.";
+            $messages[$field.'.integer']  = "The {$label} must be a whole number.";
+            $messages[$field.'.email']    = "Enter a valid {$label}.";
+            $messages[$field.'.url']      = "Enter a valid URL for the {$label}.";
+            $messages[$field.'.date']     = "Enter a valid {$label}.";
+            $messages[$field.'.min']      = "The {$label} must be at least :min.";
+            $messages[$field.'.max']      = "The {$label} may not exceed :max.";
+            $messages[$field.'.regex']    = "Enter a valid {$label}.";
+            $messages[$field.'.timezone'] = "Select a valid {$label}.";
+            $messages[$field.'.in']       = "Select a valid {$label}.";
+        }
+
+        $messages['settings.tenant_defaults.default_tenant_template_key.regex'] = 'The default tenant template key may contain only lowercase letters, numbers, and single hyphens.';
+        $messages['settings.storage.allowed_file_types.regex']                  = 'Allowed file types may contain only letters, spaces, and commas.';
+        $messages['settings.seo.canonical_domain.regex']                        = 'Enter a valid canonical domain, such as example.com or https://example.com.';
+
+        return $messages;
+    }
+
     public function after(): array
     {
         return [
@@ -122,7 +154,7 @@ class SystemSettingBulkRequest extends FormRequest
                 continue;
             }
 
-            $validator->errors()->add('settings.'.$key, 'This field must contain valid IP addresses or CIDR ranges.');
+            $validator->errors()->add('settings.'.$key, 'Allowed admin IPs must contain valid IP addresses or CIDR ranges.');
 
             return;
         }

@@ -37,6 +37,32 @@ class DesignRequestRequest extends FormRequest
         ];
     }
 
+    public function messages(): array
+    {
+        return [
+            'title.required'             => 'Enter a title for the design request.',
+            'title.string'               => 'The design request title must be text.',
+            'title.max'                  => 'The design request title may not exceed :max characters.',
+            'description.required'       => 'Describe the design work you need.',
+            'description.string'         => 'The design request description must be text.',
+            'description.max'            => 'The design request description may not exceed :max characters.',
+            'notes.string'               => 'The design request notes must be text.',
+            'notes.max'                  => 'The design request notes may not exceed :max characters.',
+            'reference_links.array'      => 'Reference links must be provided as a list.',
+            'reference_links.max'        => 'You may add up to :max reference links.',
+            'reference_links.*.required' => 'Each reference link must contain a URL.',
+            'reference_links.*.url'      => 'Each reference link must be a valid URL.',
+            'reference_links.*.max'      => 'Each reference link may not exceed :max characters.',
+            'mockup_concept.string'      => 'The mockup concept must be text.',
+            'mockup_concept.max'         => 'The mockup concept may not exceed :max characters.',
+            'files.array'                => 'Design request files must be provided as a list.',
+            'files.max'                  => 'You may upload up to :max design request files.',
+            'files.*.image'              => 'Each design request file must be an image.',
+            'files.*.mimes'              => 'Each design request image must be one of these file types: :values.',
+            'files.*.max'                => 'Each design request image may not be larger than :max kilobytes.',
+        ];
+    }
+
     public function prepareForValidation(): void
     {
         $links = $this->input('reference_links', []);

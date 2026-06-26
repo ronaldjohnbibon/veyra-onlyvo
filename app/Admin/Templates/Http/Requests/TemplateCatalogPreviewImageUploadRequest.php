@@ -30,6 +30,16 @@ class TemplateCatalogPreviewImageUploadRequest extends FormRequest
         ];
     }
 
+    public function messages(): array
+    {
+        return [
+            'image.required' => 'Choose a template preview image to upload.',
+            'image.image'    => 'The template preview file must be an image.',
+            'image.mimes'    => 'The template preview image must be one of these file types: :values.',
+            'image.max'      => 'The template preview image may not be larger than :max kilobytes.',
+        ];
+    }
+
     private function safeImageMimes(string $configured): string
     {
         return collect(explode(',', $configured))

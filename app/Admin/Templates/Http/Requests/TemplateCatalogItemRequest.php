@@ -46,6 +46,33 @@ class TemplateCatalogItemRequest extends FormRequest
         ];
     }
 
+    public function messages(): array
+    {
+        return [
+            'website_type_id.required' => 'Select a website type.',
+            'website_type_id.uuid'     => 'The website type identifier is invalid.',
+            'website_type_id.exists'   => 'The selected website type does not exist.',
+            'key.required'             => 'Enter the template catalog key.',
+            'key.string'               => 'The template catalog key must be text.',
+            'key.max'                  => 'The template catalog key may not exceed :max characters.',
+            'key.regex'                => 'The template catalog key may contain only lowercase letters, numbers, and single hyphens.',
+            'key.unique'               => 'This template catalog key is already in use for the selected website type.',
+            'name.required'            => 'Enter the template catalog name.',
+            'name.string'              => 'The template catalog name must be text.',
+            'name.max'                 => 'The template catalog name may not exceed :max characters.',
+            'description.string'       => 'The template catalog description must be text.',
+            'preview_image.string'     => 'The preview image path must be text.',
+            'preview_image.max'        => 'The preview image path may not exceed :max characters.',
+            'preview_image.not_regex'  => 'Upload the preview image instead of using embedded image data.',
+            'field_schema.array'       => 'The field schema must be a valid array.',
+            'default_content.array'    => 'The default content must be a valid object.',
+            'is_active.required'       => 'Choose whether the template catalog item is active.',
+            'is_active.boolean'        => 'The active setting must be true or false.',
+            'changelog.string'         => 'The changelog must be text.',
+            'changelog.max'            => 'The changelog may not exceed :max characters.',
+        ];
+    }
+
     public function prepareForValidation(): void
     {
         foreach (['name', 'description', 'preview_image'] as $field) {

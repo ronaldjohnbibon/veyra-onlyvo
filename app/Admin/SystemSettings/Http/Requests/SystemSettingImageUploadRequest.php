@@ -36,6 +36,19 @@ class SystemSettingImageUploadRequest extends FormRequest
         ];
     }
 
+    public function messages(): array
+    {
+        return [
+            'key.required'   => 'Select the system setting image to update.',
+            'key.string'     => 'The system setting image key must be text.',
+            'key.in'         => 'Select a valid system setting image.',
+            'image.required' => 'Choose an image to upload.',
+            'image.image'    => 'The uploaded file must be an image.',
+            'image.mimes'    => 'The image must be one of these file types: :values.',
+            'image.max'      => 'The image may not be larger than :max kilobytes.',
+        ];
+    }
+
     private function safeImageMimes(string $configured): string
     {
         return collect(explode(',', $configured))

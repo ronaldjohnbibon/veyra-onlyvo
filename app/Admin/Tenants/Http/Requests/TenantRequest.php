@@ -43,6 +43,47 @@ class TenantRequest extends FormRequest
         ];
     }
 
+    public function messages(): array
+    {
+        return [
+            'name.required'                        => 'Enter the tenant name.',
+            'name.string'                          => 'The tenant name must be text.',
+            'name.max'                             => 'The tenant name may not exceed :max characters.',
+            'subdomain.required'                   => 'Enter the tenant subdomain.',
+            'subdomain.string'                     => 'The tenant subdomain must be text.',
+            'subdomain.max'                        => 'The tenant subdomain may not exceed :max characters.',
+            'subdomain.regex'                      => 'The tenant subdomain may contain only lowercase letters, numbers, and single hyphens.',
+            'subdomain.unique'                     => 'This tenant subdomain is already in use.',
+            'timezone.required'                    => 'Select the tenant timezone.',
+            'timezone.string'                      => 'The tenant timezone must be text.',
+            'timezone.max'                         => 'The tenant timezone may not exceed :max characters.',
+            'timezone.timezone'                    => 'Select a valid tenant timezone.',
+            'status.required'                      => 'Select the tenant status.',
+            'status.in'                            => 'Select a valid tenant status.',
+            'settings.array'                       => 'Tenant settings must be provided as a valid settings object.',
+            'owner_name.required'                  => 'Enter the tenant owner name.',
+            'owner_name.string'                    => 'The tenant owner name must be text.',
+            'owner_name.max'                       => 'The tenant owner name may not exceed :max characters.',
+            'owner_first_name.string'              => 'The owner first name must be text.',
+            'owner_first_name.max'                 => 'The owner first name may not exceed :max characters.',
+            'owner_last_name.string'               => 'The owner last name must be text.',
+            'owner_last_name.max'                  => 'The owner last name may not exceed :max characters.',
+            'owner_email.required'                 => 'Enter the tenant owner email address.',
+            'owner_email.email'                    => 'Enter a valid tenant owner email address.',
+            'owner_email.max'                      => 'The tenant owner email address may not exceed :max characters.',
+            'owner_email.unique'                   => 'This owner email address is already in use.',
+            'owner_phone.string'                   => 'The owner phone number must be text.',
+            'owner_phone.max'                      => 'The owner phone number may not exceed :max characters.',
+            'owner_password.required'              => 'Enter a password for the tenant owner.',
+            'owner_password.string'                => 'The owner password must be text.',
+            'owner_password.min'                   => 'The owner password must be at least :min characters.',
+            'owner_password.confirmed'             => 'The owner password confirmation does not match.',
+            'owner_password.regex'                 => 'The owner password must include uppercase and lowercase letters, a number, and a special character.',
+            'owner_password_confirmation.required' => 'Confirm the tenant owner password.',
+            'owner_password_confirmation.string'   => 'The owner password confirmation must be text.',
+        ];
+    }
+
     public function after(): array
     {
         return [
@@ -50,7 +91,7 @@ class TenantRequest extends FormRequest
                 $tenantId = $this->routeTenantId();
 
                 if ($this->isMethod('put') && ! $this->ownerId($tenantId) && ! $this->filled('owner_password')) {
-                    $validator->errors()->add('owner_password', 'The owner password field is required.');
+                    $validator->errors()->add('owner_password', 'Enter a password for the tenant owner.');
                 }
             },
         ];

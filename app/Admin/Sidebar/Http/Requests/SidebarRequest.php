@@ -66,6 +66,63 @@ class SidebarRequest extends FormRequest
         ];
     }
 
+    public function messages(): array
+    {
+        return [
+            'tenant_id.uuid'                              => 'The tenant identifier is invalid.',
+            'tenant_id.exists'                            => 'The selected tenant does not exist.',
+            'name.required'                               => 'Enter a sidebar name.',
+            'name.string'                                 => 'The sidebar name must be text.',
+            'name.max'                                    => 'The sidebar name may not exceed :max characters.',
+            'name.unique'                                 => 'A sidebar with this name already exists.',
+            'description.string'                          => 'The sidebar description must be text.',
+            'is_admin.boolean'                            => 'The admin sidebar setting must be true or false.',
+            'data.required'                               => 'Sidebar navigation data is required.',
+            'data.array'                                  => 'Sidebar navigation data must be a valid object.',
+            'data.teams.array'                            => 'Sidebar teams must be provided as a list.',
+            'data.teams.*.name.required_with'             => 'Enter a name for each sidebar team.',
+            'data.teams.*.name.string'                    => 'Each sidebar team name must be text.',
+            'data.teams.*.name.max'                       => 'Each sidebar team name may not exceed :max characters.',
+            'data.teams.*.logo.string'                    => 'Each sidebar team logo must be text.',
+            'data.teams.*.logo.max'                       => 'Each sidebar team logo may not exceed :max characters.',
+            'data.teams.*.plan.string'                    => 'Each sidebar team plan must be text.',
+            'data.teams.*.plan.max'                       => 'Each sidebar team plan may not exceed :max characters.',
+            'data.main_nav.required'                      => 'Add at least one main navigation group.',
+            'data.main_nav.array'                         => 'Main navigation must be provided as a list.',
+            'data.main_nav.min'                           => 'Add at least :min main navigation group.',
+            'data.main_nav.*.title.required'              => 'Enter a title for each main navigation group.',
+            'data.main_nav.*.title.string'                => 'Each main navigation title must be text.',
+            'data.main_nav.*.title.max'                   => 'Each main navigation title may not exceed :max characters.',
+            'data.main_nav.*.url.required'                => 'Enter a URL for each main navigation group.',
+            'data.main_nav.*.url.string'                  => 'Each main navigation URL must be text.',
+            'data.main_nav.*.url.max'                     => 'Each main navigation URL may not exceed :max characters.',
+            'data.main_nav.*.icon.string'                 => 'Each main navigation icon must be text.',
+            'data.main_nav.*.icon.max'                    => 'Each main navigation icon may not exceed :max characters.',
+            'data.main_nav.*.description.string'          => 'Each main navigation description must be text.',
+            'data.main_nav.*.is_active.boolean'           => 'Each main navigation active setting must be true or false.',
+            'data.main_nav.*.items.array'                 => 'Main navigation items must be provided as a list.',
+            'data.main_nav.*.items.*.title.required_with' => 'Enter a title for each navigation item.',
+            'data.main_nav.*.items.*.title.string'        => 'Each navigation item title must be text.',
+            'data.main_nav.*.items.*.title.max'           => 'Each navigation item title may not exceed :max characters.',
+            'data.main_nav.*.items.*.url.required_with'   => 'Enter a URL for each navigation item.',
+            'data.main_nav.*.items.*.url.string'          => 'Each navigation item URL must be text.',
+            'data.main_nav.*.items.*.url.max'             => 'Each navigation item URL may not exceed :max characters.',
+            'data.main_nav.*.items.*.icon.string'         => 'Each navigation item icon must be text.',
+            'data.main_nav.*.items.*.icon.max'            => 'Each navigation item icon may not exceed :max characters.',
+            'data.main_nav.*.items.*.description.string'  => 'Each navigation item description must be text.',
+            'data.main_nav.*.items.*.is_active.boolean'   => 'Each navigation item active setting must be true or false.',
+            'data.projects.array'                         => 'Sidebar projects must be provided as a list.',
+            'data.projects.*.name.required_with'          => 'Enter a name for each sidebar project.',
+            'data.projects.*.name.string'                 => 'Each sidebar project name must be text.',
+            'data.projects.*.name.max'                    => 'Each sidebar project name may not exceed :max characters.',
+            'data.projects.*.url.required_with'           => 'Enter a URL for each sidebar project.',
+            'data.projects.*.url.string'                  => 'Each sidebar project URL must be text.',
+            'data.projects.*.url.max'                     => 'Each sidebar project URL may not exceed :max characters.',
+            'data.projects.*.icon.string'                 => 'Each sidebar project icon must be text.',
+            'data.projects.*.icon.max'                    => 'Each sidebar project icon may not exceed :max characters.',
+        ];
+    }
+
     public function after(): array
     {
         return [

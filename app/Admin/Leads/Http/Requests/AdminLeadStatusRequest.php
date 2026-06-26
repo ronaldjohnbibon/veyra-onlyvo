@@ -22,4 +22,12 @@ class AdminLeadStatusRequest extends FormRequest
             'status' => ['required', Rule::in(TemplateCtaSubmission::STATUSES)],
         ];
     }
+
+    public function messages(): array
+    {
+        return [
+            'status.required' => 'Select a lead status.',
+            'status.in'       => 'Select a valid lead status.',
+        ];
+    }
 }

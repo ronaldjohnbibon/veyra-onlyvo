@@ -29,6 +29,23 @@ class AdminDesignRequestStatusRequest extends FormRequest
         ];
     }
 
+    public function messages(): array
+    {
+        return [
+            'status.required'       => 'Select a design request status.',
+            'status.in'             => 'Select a valid design request status.',
+            'assigned_to.exists'    => 'Select a valid admin assignee.',
+            'priority.required'     => 'Select a design request priority.',
+            'priority.in'           => 'Select a valid design request priority.',
+            'due_at.date'           => 'Enter a valid due date.',
+            'sla_due_at.date'       => 'Enter a valid SLA due date.',
+            'admin_remarks.string'  => 'Admin remarks must be text.',
+            'admin_remarks.max'     => 'Admin remarks may not exceed :max characters.',
+            'internal_notes.string' => 'Internal notes must be text.',
+            'internal_notes.max'    => 'Internal notes may not exceed :max characters.',
+        ];
+    }
+
     public function prepareForValidation(): void
     {
         $this->merge([

@@ -21,6 +21,15 @@ class DesignRequestCommentRequest extends FormRequest
         ];
     }
 
+    public function messages(): array
+    {
+        return [
+            'message.required' => 'Enter a comment.',
+            'message.string'   => 'The comment must be text.',
+            'message.max'      => 'The comment may not exceed :max characters.',
+        ];
+    }
+
     public function prepareForValidation(): void
     {
         $this->merge([

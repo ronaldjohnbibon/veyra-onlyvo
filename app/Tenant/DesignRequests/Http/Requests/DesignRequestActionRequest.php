@@ -23,6 +23,16 @@ class DesignRequestActionRequest extends FormRequest
         ];
     }
 
+    public function messages(): array
+    {
+        return [
+            'action.required' => 'Select an action for this design request.',
+            'action.in'       => 'Select a valid design request action.',
+            'message.string'  => 'The action message must be text.',
+            'message.max'     => 'The action message may not exceed :max characters.',
+        ];
+    }
+
     public function prepareForValidation(): void
     {
         $this->merge([

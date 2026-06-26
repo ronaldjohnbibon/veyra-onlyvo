@@ -21,4 +21,13 @@ class SystemSettingMaintenancePreviewRequest extends FormRequest
             'settings' => ['nullable', 'array'],
         ];
     }
+
+    public function messages(): array
+    {
+        return [
+            'path.string'    => 'The maintenance preview path must be text.',
+            'path.max'       => 'The maintenance preview path may not exceed :max characters.',
+            'settings.array' => 'Maintenance preview settings must be provided as a valid settings object.',
+        ];
+    }
 }

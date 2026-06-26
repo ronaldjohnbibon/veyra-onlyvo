@@ -29,6 +29,23 @@ class WebsiteTypeRequest extends FormRequest
         ];
     }
 
+    public function messages(): array
+    {
+        return [
+            'name.required'      => 'Enter the website type name.',
+            'name.string'        => 'The website type name must be text.',
+            'name.max'           => 'The website type name may not exceed :max characters.',
+            'slug.required'      => 'Enter the website type slug.',
+            'slug.string'        => 'The website type slug must be text.',
+            'slug.max'           => 'The website type slug may not exceed :max characters.',
+            'slug.regex'         => 'The website type slug may contain only lowercase letters, numbers, and single hyphens.',
+            'slug.unique'        => 'This website type slug is already in use.',
+            'description.string' => 'The website type description must be text.',
+            'is_active.required' => 'Choose whether the website type is active.',
+            'is_active.boolean'  => 'The active setting must be true or false.',
+        ];
+    }
+
     public function prepareForValidation(): void
     {
         foreach (['name', 'description'] as $field) {

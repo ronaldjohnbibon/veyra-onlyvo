@@ -18,4 +18,14 @@ class LoginRequest extends FormRequest
             'password' => ['required', 'string'],
         ];
     }
+
+    public function messages(): array
+    {
+        return [
+            'email.required'    => 'Enter your admin email address.',
+            'email.email'       => 'Enter a valid admin email address.',
+            'password.required' => 'Enter your admin password.',
+            'password.string'   => 'The admin password must be text.',
+        ];
+    }
 }

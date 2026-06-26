@@ -46,4 +46,28 @@ class CtaEventTrackingRequest extends FormRequest
             'referrer'       => ['nullable', 'string', 'max:2000'],
         ];
     }
+
+    public function messages(): array
+    {
+        return [
+            'template_id.required'    => 'The template identifier is required to record this event.',
+            'template_id.uuid'        => 'The template identifier is invalid.',
+            'cta_identifier.required' => 'The CTA identifier is required.',
+            'cta_identifier.string'   => 'The CTA identifier must be text.',
+            'cta_identifier.max'      => 'The CTA identifier may not exceed :max characters.',
+            'cta_label.string'        => 'The CTA label must be text.',
+            'cta_label.max'           => 'The CTA label may not exceed :max characters.',
+            'cta_type.required'       => 'The CTA type is required.',
+            'cta_type.string'         => 'The CTA type must be text.',
+            'cta_type.max'            => 'The CTA type may not exceed :max characters.',
+            'event_type.required'     => 'The event type is required.',
+            'event_type.string'       => 'The event type must be text.',
+            'event_type.in'           => 'Select a valid CTA event type.',
+            'url.required'            => 'The event URL is required.',
+            'url.string'              => 'The event URL must be text.',
+            'url.max'                 => 'The event URL may not exceed :max characters.',
+            'referrer.string'         => 'The referring URL must be text.',
+            'referrer.max'            => 'The referring URL may not exceed :max characters.',
+        ];
+    }
 }

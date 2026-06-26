@@ -18,6 +18,15 @@ class ForgotPasswordRequest extends FormRequest
         ];
     }
 
+    public function messages(): array
+    {
+        return [
+            'email.required' => 'Enter your email address.',
+            'email.email'    => 'Enter a valid email address.',
+            'email.max'      => 'The email address may not exceed :max characters.',
+        ];
+    }
+
     public function prepareForValidation(): void
     {
         if ($this->has('email')) {

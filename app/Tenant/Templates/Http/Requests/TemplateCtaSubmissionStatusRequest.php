@@ -22,4 +22,13 @@ class TemplateCtaSubmissionStatusRequest extends FormRequest
             'status' => ['required', 'string', Rule::in(TemplateCtaSubmission::TENANT_EDITABLE_STATUSES)],
         ];
     }
+
+    public function messages(): array
+    {
+        return [
+            'status.required' => 'Select a submission status.',
+            'status.string'   => 'The submission status must be text.',
+            'status.in'       => 'Select a valid submission status.',
+        ];
+    }
 }

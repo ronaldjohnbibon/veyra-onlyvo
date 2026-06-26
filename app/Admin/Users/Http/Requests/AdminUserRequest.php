@@ -36,6 +36,36 @@ class AdminUserRequest extends FormRequest
         ];
     }
 
+    public function messages(): array
+    {
+        return [
+            'name.required'                  => 'Enter the admin user name.',
+            'name.string'                    => 'The admin user name must be text.',
+            'name.max'                       => 'The admin user name may not exceed :max characters.',
+            'first_name.string'              => 'The first name must be text.',
+            'first_name.max'                 => 'The first name may not exceed :max characters.',
+            'last_name.string'               => 'The last name must be text.',
+            'last_name.max'                  => 'The last name may not exceed :max characters.',
+            'email.required'                 => 'Enter the admin user email address.',
+            'email.email'                    => 'Enter a valid admin user email address.',
+            'email.max'                      => 'The admin user email address may not exceed :max characters.',
+            'email.unique'                   => 'This email address is already in use.',
+            'phone.string'                   => 'The phone number must be text.',
+            'phone.max'                      => 'The phone number may not exceed :max characters.',
+            'is_active.required'             => 'Choose whether the admin user is active.',
+            'is_active.boolean'              => 'The active setting must be true or false.',
+            'email_verified.required'        => 'Choose whether the admin user email is verified.',
+            'email_verified.boolean'         => 'The email verified setting must be true or false.',
+            'password.required'              => 'Enter a password for the admin user.',
+            'password.string'                => 'The password must be text.',
+            'password.min'                   => 'The password must be at least :min characters.',
+            'password.confirmed'             => 'The password confirmation does not match.',
+            'password.regex'                 => 'The password must include uppercase and lowercase letters, a number, and a special character.',
+            'password_confirmation.required' => 'Confirm the admin user password.',
+            'password_confirmation.string'   => 'The password confirmation must be text.',
+        ];
+    }
+
     public function prepareForValidation(): void
     {
         foreach (['name', 'first_name', 'last_name', 'email', 'phone'] as $field) {

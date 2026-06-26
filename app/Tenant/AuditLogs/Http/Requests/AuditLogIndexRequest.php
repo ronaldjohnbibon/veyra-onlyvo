@@ -35,6 +35,40 @@ class AuditLogIndexRequest extends FormRequest
         ];
     }
 
+    public function messages(): array
+    {
+        return [
+            'search.string'          => 'The audit log search must be text.',
+            'search.max'             => 'The audit log search may not exceed :max characters.',
+            'category.string'        => 'The audit category filter must be text.',
+            'category.in'            => 'Select a valid audit category.',
+            'action.string'          => 'The audit action filter must be text.',
+            'action.max'             => 'The audit action filter may not exceed :max characters.',
+            'severity.string'        => 'The audit severity filter must be text.',
+            'severity.in'            => 'Select a valid audit severity.',
+            'actor.string'           => 'The audit actor filter must be text.',
+            'actor.max'              => 'The audit actor filter may not exceed :max characters.',
+            'entity_type.string'     => 'The entity type filter must be text.',
+            'entity_type.max'        => 'The entity type filter may not exceed :max characters.',
+            'entity_id.string'       => 'The entity identifier filter must be text.',
+            'entity_id.max'          => 'The entity identifier filter may not exceed :max characters.',
+            'ip_address.string'      => 'The IP address filter must be text.',
+            'ip_address.max'         => 'The IP address filter may not exceed :max characters.',
+            'date_from.date'         => 'Enter a valid audit start date.',
+            'date_to.date'           => 'Enter a valid audit end date.',
+            'date_to.after_or_equal' => 'The audit end date must be on or after the start date.',
+            'page.integer'           => 'The page must be a whole number.',
+            'page.min'               => 'The page must be at least :min.',
+            'pageSize.integer'       => 'The page size must be a whole number.',
+            'pageSize.min'           => 'The page size must be at least :min.',
+            'pageSize.max'           => 'The page size may not exceed :max.',
+            'sort.string'            => 'The audit log sort field must be text.',
+            'sort.in'                => 'Select a valid audit log sort field.',
+            'direction.string'       => 'The sort direction must be text.',
+            'direction.in'           => 'Select a valid sort direction.',
+        ];
+    }
+
     public function prepareForValidation(): void
     {
         $filters = $this->all();

@@ -38,4 +38,23 @@ class AccountProfileRequest extends FormRequest
             'phone'      => ['nullable', 'string', 'max:50'],
         ];
     }
+
+    public function messages(): array
+    {
+        return [
+            'name.required'     => 'Enter your name.',
+            'name.string'       => 'Your name must be text.',
+            'name.max'          => 'Your name may not exceed :max characters.',
+            'first_name.string' => 'Your first name must be text.',
+            'first_name.max'    => 'Your first name may not exceed :max characters.',
+            'last_name.string'  => 'Your last name must be text.',
+            'last_name.max'     => 'Your last name may not exceed :max characters.',
+            'email.required'    => 'Enter your email address.',
+            'email.email'       => 'Enter a valid email address.',
+            'email.max'         => 'Your email address may not exceed :max characters.',
+            'email.unique'      => 'This email address is already in use.',
+            'phone.string'      => 'Your phone number must be text.',
+            'phone.max'         => 'Your phone number may not exceed :max characters.',
+        ];
+    }
 }

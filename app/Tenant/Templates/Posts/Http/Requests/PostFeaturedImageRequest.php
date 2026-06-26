@@ -30,6 +30,16 @@ class PostFeaturedImageRequest extends FormRequest
         ];
     }
 
+    public function messages(): array
+    {
+        return [
+            'image.required' => 'Choose a featured image to upload.',
+            'image.image'    => 'The featured image file must be an image.',
+            'image.mimes'    => 'The featured image must be one of these file types: :values.',
+            'image.max'      => 'The featured image may not be larger than :max kilobytes.',
+        ];
+    }
+
     private function safeImageMimes(string $configured): string
     {
         return collect(explode(',', $configured))

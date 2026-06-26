@@ -59,6 +59,21 @@ class TemplateCtaSubmissionRequest extends FormRequest
         ];
     }
 
+    public function messages(): array
+    {
+        return [
+            'template_id.required' => 'The template identifier is required.',
+            'template_id.uuid'     => 'The template identifier is invalid.',
+            'template_id.exists'   => 'The selected published template does not exist.',
+            'cta_type.required'    => 'The CTA type is required.',
+            'cta_type.string'      => 'The CTA type must be text.',
+            'cta_type.in'          => 'Select a valid CTA type.',
+            'payload.required'     => 'Complete the form before submitting it.',
+            'payload.array'        => 'The submitted form data must be a valid object.',
+            'payload.max'          => 'The submitted form may not contain more than :max fields.',
+        ];
+    }
+
     public function withValidator($validator): void
     {
         $validator->after(function ($validator): void {
@@ -91,7 +106,8 @@ class TemplateCtaSubmissionRequest extends FormRequest
 
             $payloadValidator = Validator::make(
                 $this->input('payload', []),
-                $this->payloadRules($fields)
+                $this->payloadRules($fields),
+                $this->payloadMessages($fields),
             );
 
             if ($payloadValidator->fails()) {
@@ -161,6 +177,40 @@ class TemplateCtaSubmissionRequest extends FormRequest
         }
 
         return $rules;
+    }
+
+    /**
+     * @param  array<int, mixed>  $fields
+     * @return array<string, string>
+     */
+    private function payloadMessages(array $fields): array
+    {
+        $messages = [];
+
+        foreach ($fields as $field) {
+            if (! is_array($field)) {
+                continue;
+            }
+
+            $key = (string) ($field['key'] ?? '');
+
+            if ($key === '') {
+                continue;
+            }
+
+            $label = strtolower((string) ($field['label'] ?? str_replace(['_', '-'], ' ', $key)));
+
+            $messages[$key.'.required'] = "Enter the {$label}.";
+            $messages[$key.'.string']   = "The {$label} must be text.";
+            $messages[$key.'.email']    = "Enter a valid {$label}.";
+            $messages[$key.'.url']      = "Enter a valid URL for the {$label}.";
+            $messages[$key.'.numeric']  = "The {$label} must be a number.";
+            $messages[$key.'.date']     = "Enter a valid {$label}.";
+            $messages[$key.'.boolean']  = "The {$label} selection must be true or false.";
+            $messages[$key.'.max']      = "The {$label} may not exceed :max characters.";
+        }
+
+        return $messages;
     }
 
     /**

@@ -35,7 +35,24 @@ class RegisterRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'email.required'     => 'Enter your email address.',
+            'email.email'        => 'Enter a valid email address.',
+            'email.max'          => 'The email address may not exceed :max characters.',
+            'email.unique'       => 'An account with this email address already exists.',
+            'phone.required'     => 'Enter your phone number.',
+            'phone.regex'        => 'Enter a valid Philippine mobile number beginning with 09.',
+            'password.required'  => 'Enter a password.',
+            'password.string'    => 'The password must be text.',
+            'password.min'       => 'The password must be at least :min characters.',
+            'password.confirmed' => 'The password confirmation does not match.',
+            'password.regex'     => 'The password must include uppercase and lowercase letters, a number, and a special character.',
+            'name.required'      => 'Enter your company name.',
+            'name.string'        => 'The company name must be text.',
+            'name.max'           => 'The company name may not exceed :max characters.',
+            'name.unique'        => 'A company with this name already exists.',
             'subdomain.required' => 'The company name must contain letters or numbers that can be used for the workspace subdomain.',
+            'subdomain.string'   => 'The workspace subdomain must be text.',
+            'subdomain.max'      => 'The workspace subdomain may not exceed :max characters.',
             'subdomain.regex'    => 'The company name must create a valid workspace subdomain.',
             'subdomain.unique'   => 'A workspace with a matching company subdomain already exists.',
         ];

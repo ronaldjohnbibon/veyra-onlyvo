@@ -126,6 +126,15 @@ class AdminTemplateCatalogController extends Controller
             'key'         => ['nullable', 'string', 'max:80', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/'],
             'description' => ['nullable', 'string'],
             'changelog'   => ['nullable', 'string', 'max:1000'],
+        ], [
+            'name.string'        => 'The cloned template name must be text.',
+            'name.max'           => 'The cloned template name may not exceed :max characters.',
+            'key.string'         => 'The cloned template key must be text.',
+            'key.max'            => 'The cloned template key may not exceed :max characters.',
+            'key.regex'          => 'The cloned template key may contain only lowercase letters, numbers, and single hyphens.',
+            'description.string' => 'The cloned template description must be text.',
+            'changelog.string'   => 'The clone changelog must be text.',
+            'changelog.max'      => 'The clone changelog may not exceed :max characters.',
         ]);
 
         return $this->success(new TemplateCatalogItemResource($this->service->cloneItem($item, $payload, Auth::user())), 'Template cloned.', 201);
@@ -216,6 +225,12 @@ class AdminTemplateCatalogController extends Controller
             'field_schema'    => ['required', 'array'],
             'default_content' => ['nullable', 'array'],
             'changelog'       => ['nullable', 'string', 'max:1000'],
+        ], [
+            'field_schema.required' => 'Provide a field schema to import.',
+            'field_schema.array'    => 'The imported field schema must be a valid array.',
+            'default_content.array' => 'The imported default content must be a valid object.',
+            'changelog.string'      => 'The import changelog must be text.',
+            'changelog.max'         => 'The import changelog may not exceed :max characters.',
         ]);
 
         return $this->success(new TemplateCatalogItemResource($this->service->importSchema($item, $payload, Auth::user())), 'Template schema imported.');

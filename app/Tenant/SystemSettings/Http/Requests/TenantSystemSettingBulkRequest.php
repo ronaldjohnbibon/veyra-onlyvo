@@ -35,6 +35,36 @@ class TenantSystemSettingBulkRequest extends FormRequest
         return $rules;
     }
 
+    public function messages(): array
+    {
+        $messages = [
+            'settings.required' => 'Tenant settings are required.',
+            'settings.array'    => 'Tenant settings must be provided as a valid settings object.',
+        ];
+
+        foreach (app(TenantSystemSettingService::class)->definitions() as $key => $definition) {
+            $field = 'settings.'.$key;
+            $label = strtolower((string) ($definition['label'] ?? str_replace(['.', '_'], ' ', $key)));
+
+            $messages[$field.'.required'] = "Enter the {$label}.";
+            $messages[$field.'.string']   = "The {$label} must be text.";
+            $messages[$field.'.boolean']  = "The {$label} setting must be true or false.";
+            $messages[$field.'.integer']  = "The {$label} must be a whole number.";
+            $messages[$field.'.email']    = "Enter a valid {$label}.";
+            $messages[$field.'.url']      = "Enter a valid URL for the {$label}.";
+            $messages[$field.'.min']      = "The {$label} must be at least :min.";
+            $messages[$field.'.max']      = "The {$label} may not exceed :max.";
+            $messages[$field.'.regex']    = "Enter a valid {$label}.";
+            $messages[$field.'.timezone'] = "Select a valid {$label}.";
+            $messages[$field.'.in']       = "Select a valid {$label}.";
+        }
+
+        $messages['settings.website.homepage_slug.regex'] = 'The homepage slug may contain only lowercase letters, numbers, and single hyphens.';
+        $messages['settings.seo.canonical_domain.regex']  = 'Enter a valid canonical domain, such as example.com or https://example.com.';
+
+        return $messages;
+    }
+
     public function prepareForValidation(): void
     {
         $settings = $this->input('settings', []);

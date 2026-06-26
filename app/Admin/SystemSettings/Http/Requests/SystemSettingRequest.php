@@ -32,4 +32,15 @@ class SystemSettingRequest extends FormRequest
             'value' => ['present', 'nullable'],
         ];
     }
+
+    public function messages(): array
+    {
+        return [
+            'key.required'  => 'Select a system setting.',
+            'key.string'    => 'The system setting key must be text.',
+            'key.in'        => 'Select a valid system setting.',
+            'key.unique'    => 'This system setting already exists.',
+            'value.present' => 'Include a value for the system setting.',
+        ];
+    }
 }

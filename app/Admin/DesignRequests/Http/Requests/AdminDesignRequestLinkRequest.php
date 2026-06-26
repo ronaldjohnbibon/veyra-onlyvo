@@ -23,6 +23,16 @@ class AdminDesignRequestLinkRequest extends FormRequest
         ];
     }
 
+    public function messages(): array
+    {
+        return [
+            'linked_template_id.uuid'   => 'The linked template identifier is invalid.',
+            'linked_template_id.exists' => 'The selected linked template does not exist.',
+            'linked_site_url.url'       => 'Enter a valid completed site URL.',
+            'linked_site_url.max'       => 'The completed site URL may not exceed :max characters.',
+        ];
+    }
+
     public function prepareForValidation(): void
     {
         if ($this->has('linked_template_id')) {
