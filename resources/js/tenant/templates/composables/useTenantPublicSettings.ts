@@ -63,7 +63,10 @@ export const buttonRadius = (settings: TenantPublicSettings | undefined): string
 }
 
 export const fallbackImage = (settings: TenantPublicSettings | undefined): string => {
-  return settingString(settings, 'branding.fallback_image') || settingString(settings, 'seo.open_graph_image')
+  return (
+    settingString(settings, 'branding.fallback_image') ||
+    settingString(settings, 'seo.open_graph_image')
+  )
 }
 
 export const applyTenantPublicHead = (

@@ -124,7 +124,7 @@ The trial length assigned to new tenants.
 ### Default Tenant Template Type
 
 Optional default template category/type for new tenants.
-Example: business-website, landing-page.
+Example: landing-page, agency-website.
 
 ### Default Tenant Template Key
 
