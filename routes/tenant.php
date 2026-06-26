@@ -61,7 +61,7 @@ Route::prefix('app')->name('app.')->group(function (): void {
             Route::post('design-requests/{designRequest}/comments', [DesignRequestController::class, 'comment'])->name('design-requests.comments.store');
             Route::post('design-requests/{designRequest}/actions', [DesignRequestController::class, 'action'])->name('design-requests.actions.store');
 
-            Route::apiResource('sidebars', TenantSidebarController::class);
+            Route::apiResource('sidebars', TenantSidebarController::class)->except('destroy');
 
             Route::get('system-settings/history', [TenantSystemSettingController::class, 'history'])->name('system-settings.history');
             Route::post('system-settings/branding/reset-default', [TenantSystemSettingController::class, 'resetBranding'])->name('system-settings.branding.reset-default');

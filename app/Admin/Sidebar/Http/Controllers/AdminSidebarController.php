@@ -84,24 +84,6 @@ class AdminSidebarController extends Controller
         return $this->success(new SidebarResource($updated), 'Sidebar updated.');
     }
 
-    public function destroy(Request $request, string $sidebar): JsonResponse
-    {
-        $this->authorizeAdmin();
-
-        $record = Sidebar::query()->where('is_admin', true)->find($sidebar);
-
-        if (! $record) {
-            return $this->error('Sidebar not found.', 404);
-        }
-
-        $previous = $record->attributesToArray();
-
-        $this->service->delete($record);
-        $this->auditLogs->recordModel('sidebar.deleted', $record, Auth::user(), $request, $previous, null, 'sidebar');
-
-        return $this->success(null, 'Sidebar deleted.');
-    }
-
     private function authorizeAdmin(): void
     {
         abort_unless(Auth::user()?->user_type === UserType::ADMIN, 403);

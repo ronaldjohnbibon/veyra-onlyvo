@@ -79,23 +79,6 @@ class TenantSidebarController extends Controller
         return $this->success(new SidebarResource($updated), 'Sidebar updated.');
     }
 
-    public function destroy(string $sidebar): JsonResponse
-    {
-        $record = Sidebar::query()
-            ->where('is_admin', false)
-            ->find($sidebar);
-
-        if (! $record) {
-            return $this->error('Sidebar not found.', 404);
-        }
-
-        $previous = $record->attributesToArray();
-        $this->service->delete($record);
-        $this->logs->recordModel('sidebar.deleted', $record, Auth::user(), request(), $previous, null, 'sidebar');
-
-        return $this->success(null, 'Sidebar deleted.');
-    }
-
     private function tenantId(): string
     {
         $tenantId = Auth::user()?->tenant_id;

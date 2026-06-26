@@ -18,11 +18,6 @@ class SidebarService
         return $sidebar->fresh();
     }
 
-    public function delete(Sidebar $sidebar): void
-    {
-        $sidebar->delete();
-    }
-
     /**
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>

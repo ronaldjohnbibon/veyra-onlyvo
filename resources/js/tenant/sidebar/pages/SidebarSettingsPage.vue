@@ -10,17 +10,7 @@ import { Separator } from '@/shared/components/ui/separator'
 import { iconMap, type IconName } from '@/shared/utils/iconMap'
 import type { SidebarData, SidebarNavChild, SidebarNavItem } from '@/shared/types/sidebar'
 import { useSidebarStore } from '@/tenant/sidebar/sidebar-store'
-import {
-  AlertCircle,
-  ChevronDown,
-  ChevronUp,
-  Eye,
-  EyeOff,
-  Link,
-  Plus,
-  Save,
-  Trash2,
-} from 'lucide-vue-next'
+import { AlertCircle, ChevronDown, ChevronUp, Eye, EyeOff, Link, Plus, Save } from 'lucide-vue-next'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -250,15 +240,6 @@ const addGroup = (): void => {
   selected.value = { type: 'group', groupIndex: groups.value.length - 1 }
 }
 
-const deleteGroup = (index: number): void => {
-  groups.value.splice(index, 1)
-  selected.value = {
-    type: 'group',
-    groupIndex: Math.max(0, Math.min(index, groups.value.length - 1)),
-  }
-  normalizeSelection()
-}
-
 const addLink = (groupIndex: number): void => {
   const group = groups.value[groupIndex]
   if (!group) return
@@ -271,15 +252,6 @@ const addLink = (groupIndex: number): void => {
     is_active: true,
   })
   selected.value = { type: 'link', groupIndex, linkIndex: group.items.length - 1 }
-}
-
-const deleteLink = (groupIndex: number, linkIndex: number): void => {
-  const group = groups.value[groupIndex]
-  if (!group || !group.items[linkIndex]) return
-
-  group.items.splice(linkIndex, 1)
-  selected.value = { type: 'group', groupIndex }
-  normalizeSelection()
 }
 
 const moveGroup = (from: number, to: number): void => {
@@ -316,12 +288,6 @@ const moveSelectedLink = (direction: -1 | 1): void => {
     selected.value.linkIndex,
     selected.value.linkIndex + direction
   )
-}
-
-const deleteSelectedLink = (): void => {
-  if (selected.value.type !== 'link') return
-
-  deleteLink(selected.value.groupIndex, selected.value.linkIndex)
 }
 
 const updateSelectedVisibility = (value: boolean | 'indeterminate'): void => {
@@ -618,26 +584,6 @@ onMounted(loadSidebar)
                 @click="moveSelectedLink(1)"
               >
                 <ChevronDown class="size-4" />
-              </Button>
-              <Button
-                v-if="selected.type === 'group'"
-                type="button"
-                size="icon-sm"
-                variant="delete"
-                aria-label="Delete group"
-                @click="deleteGroup(selected.groupIndex)"
-              >
-                <Trash2 class="size-4" />
-              </Button>
-              <Button
-                v-else-if="selectedIsLink"
-                type="button"
-                size="icon-sm"
-                variant="delete"
-                aria-label="Delete link"
-                @click="deleteSelectedLink"
-              >
-                <Trash2 class="size-4" />
               </Button>
             </div>
           </div>

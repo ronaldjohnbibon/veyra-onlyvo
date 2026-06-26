@@ -62,7 +62,7 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
         Route::get('leads', [AdminLeadController::class, 'index'])->name('leads.index');
         Route::put('leads/{lead}/status', [AdminLeadController::class, 'updateStatus'])->name('leads.status.update');
 
-        Route::apiResource('sidebars', AdminSidebarController::class);
+        Route::apiResource('sidebars', AdminSidebarController::class)->except('destroy');
         Route::get('system-settings/history', [AdminSystemSettingController::class, 'history'])->name('system-settings.history');
         Route::post('system-settings/history/{history}/restore', [AdminSystemSettingController::class, 'restoreHistory'])->name('system-settings.history.restore');
         Route::get('system-settings/export', [AdminSystemSettingController::class, 'export'])->name('system-settings.export');
